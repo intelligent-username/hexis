@@ -14,3 +14,10 @@ local.properties
 *.jks
 *.keystore
 release.jks
+
+# General
+notes/
+*.md
+!*README.md*
+!CHANGELOG.md
+!LICENSE.md
