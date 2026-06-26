@@ -32,11 +32,11 @@ import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.shub39.grit.core.data.notification.GritNotificationManager.Companion.createNotificationChannel
+import com.shub39.grit.core.data.notification.HexisNotificationManager.Companion.createNotificationChannel
 import com.shub39.grit.core.interfaces.BiometricUtils
 import com.shub39.grit.shared.ui.LocalWindowSizeClass
 import com.shub39.grit.shared.ui.components.InitialLoading
-import com.shub39.grit.shared.ui.theme.GritTheme
+import com.shub39.grit.shared.ui.theme.HexisTheme
 import com.shub39.grit.shared.ui.viewmodel.MainViewModel
 import io.github.vinceglb.filekit.FileKit
 import io.github.vinceglb.filekit.dialogs.init
@@ -69,7 +69,7 @@ class MainActivity : FragmentActivity() {
                 LaunchedEffect(state.isAppUnlocked, state.isBiometricLockOn) {
                     state.isBiometricLockOn?.let {
                         when {
-                            !it || state.isAppUnlocked -> showContent = true
+                            !it && !showContent || state.isAppUnlocked -> showContent = true
                             else -> {
                                 showBiometricPrompt(
                                     onSuccess = {
@@ -77,6 +77,7 @@ class MainActivity : FragmentActivity() {
                                         showContent = true
                                     },
                                     onError = { errorCode, errString ->
+                                        if (showContent) mainViewModel.setBiometricLock(!it)
                                         handleBiometricError(errorCode, errString) {
                                             showContent = true
                                         }
@@ -87,7 +88,7 @@ class MainActivity : FragmentActivity() {
                     }
                 }
 
-                GritTheme(theme = state.theme) {
+                HexisTheme(theme = state.theme) {
                     if (showContent) {
                         App(
                             state = state,

@@ -34,7 +34,7 @@
     <string name="backup">Резерв күсермә</string>
     <string name="backup_desc">Бурыстарҙы һәм ғәҙәттәрҙе экспортлау йәки тергеҙеү</string>
     <string name="export">Мәғлүмәттәрҙе экспортлау</string>
-    <string name="export_desc">Мәғлүмәт Downloads/Grit һаҡланған</string>
+    <string name="export_desc">Мәғлүмәт Downloads/Hexis һаҡланған</string>
     <string name="restore">Тергеҙеү</string>
     <string name="restore_desc">Мәсьәләләрҙе һәм ғәҙәттәрҙе һайланған файлдан тергеҙеү</string>
     <string name="material_theme_desc">Обойға ярашлы төҫтәр ҡулланыу</string>
@@ -65,7 +65,7 @@
     <string name="overall_analytics">Тулы аналитика</string>
     <string name="unlock_more_plus">Plus менән күберәк мөмкинлектәр асығыҙ</string>
     <string name="unlock_plus">Plus менән асығыҙ</string>
-    <string name="grit_plus">Grit Plus</string>
+    <string name="grit_plus">Hexis Plus</string>
     <string name="monthly_progress">Айлыҡ уҫеш</string>
     <string name="week_breakdown">Аҙна көндәре буйынса буленеш</string>
     <string name="foss">Һеҙ асыҡ сығанаҡлы вариантты ҡулланаһығыҙ</string>

@@ -46,7 +46,7 @@ import org.jetbrains.compose.resources.stringResource
 fun ColorPickerDialog(initialColor: Color, onSelect: (Color) -> Unit, onDismiss: () -> Unit) {
     val controller = rememberColorPickerController()
 
-    GritDialog(onDismissRequest = onDismiss) {
+    HexisDialog(onDismissRequest = onDismiss) {
         Column(
             modifier = Modifier.wrapContentSize().padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,

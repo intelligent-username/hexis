@@ -28,14 +28,14 @@ import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.shub39.grit.R
-import com.shub39.grit.core.data.GritIntentReceiver
+import com.shub39.grit.core.data.HexisIntentReceiver
 import com.shub39.grit.core.habits.Habit
 import com.shub39.grit.core.interfaces.IntentActions
 import com.shub39.grit.core.tasks.Task
 import org.koin.core.annotation.Single
 
 @Single
-class GritNotificationManager(private val context: Context) {
+class HexisNotificationManager(private val context: Context) {
     companion object {
         private const val TAG = "NotificationManager"
         private const val HABIT_NOTIF_ID_OFFSET = 0
@@ -44,7 +44,7 @@ class GritNotificationManager(private val context: Context) {
         fun createNotificationChannel(context: Context) {
             val importance = NotificationManager.IMPORTANCE_DEFAULT
             val channel =
-                NotificationChannel("1", "Grit Notifications", importance).apply {
+                NotificationChannel("1", "Hexis Notifications", importance).apply {
                     description = "Notification Channel for Habits and Tasks"
                 }
             val notificationManager: NotificationManager =
@@ -61,7 +61,7 @@ class GritNotificationManager(private val context: Context) {
         Log.d(TAG, "Sending Habit Notification")
 
         val intent =
-            Intent(context, GritIntentReceiver::class.java).apply {
+            Intent(context, HexisIntentReceiver::class.java).apply {
                 putExtra("habit_id", habit.id)
                 action = IntentActions.ADD_HABIT_STATUS.action
             }
@@ -95,7 +95,7 @@ class GritNotificationManager(private val context: Context) {
     // show task notification if permission granted
     fun taskNotification(task: Task) {
         val intent =
-            Intent(context, GritIntentReceiver::class.java).apply {
+            Intent(context, HexisIntentReceiver::class.java).apply {
                 putExtra("task_id", task.id)
                 action = IntentActions.MARK_TASK_DONE.action
             }

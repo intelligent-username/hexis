@@ -69,7 +69,7 @@ import com.kizitonwose.calendar.compose.rememberCalendarState
 import com.kizitonwose.calendar.core.minusMonths
 import com.kizitonwose.calendar.core.now
 import com.shub39.grit.shared.ui.LocalWindowSizeClass
-import com.shub39.grit.shared.ui.components.GritDialog
+import com.shub39.grit.shared.ui.components.HexisDialog
 import com.shub39.grit.shared.ui.habit.HabitState
 import com.shub39.grit.shared.ui.habit.HabitsAction
 import com.shub39.grit.shared.ui.habit.ui.component.HabitUpsertSheet
@@ -265,7 +265,7 @@ fun AnalyticsPage(
 
     // delete dialog
     if (deleteDialog) {
-        GritDialog(onDismissRequest = { deleteDialog = false }) {
+        HexisDialog(onDismissRequest = { deleteDialog = false }) {
             Column {
                 Box(
                     contentAlignment = Alignment.Center,

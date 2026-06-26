@@ -45,7 +45,7 @@ import com.shub39.grit.shared.ui.components.endItemShape
 import com.shub39.grit.shared.ui.components.leadingItemShape
 import com.shub39.grit.shared.ui.components.listItemColors
 import com.shub39.grit.shared.ui.components.middleItemShape
-import com.shub39.grit.shared.ui.theme.GritTheme
+import com.shub39.grit.shared.ui.theme.HexisTheme
 import com.shub39.grit.shared.ui.theme.flexFontEmphasis
 import com.shub39.grit.shared.ui.theme.flexFontRounded
 import grit.shared.ui.generated.resources.*
@@ -126,7 +126,7 @@ fun Changelog(modifier: Modifier = Modifier, changelog: Changelog, onNavigateBac
 @Preview
 @Composable
 private fun ChangelogPreview() {
-    GritTheme {
+    HexisTheme {
         Changelog(
             changelog =
                 listOf(

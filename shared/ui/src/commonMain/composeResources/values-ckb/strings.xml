@@ -34,7 +34,7 @@
     <string name="backup">کۆپی یەدەگ</string>
     <string name="backup_desc">هەناردەکردن یان گەڕاندنەوەی کار و خووەکانت</string>
     <string name="export">هەناردەکردنی زانیارییەکان</string>
-    <string name="export_desc">هەموو زانیارییەکان هەناردە کران بۆ Downloads/Grit</string>
+    <string name="export_desc">هەموو زانیارییەکان هەناردە کران بۆ Downloads/Hexis</string>
     <string name="restore">گەڕاندنەوە</string>
     <string name="restore_desc">گەڕاندنەوەی کار و خووەکان لەو فایلەی دیاریت کردووە</string>
     <string name="material_theme_desc">بەکارهێنانی ڕەنگەکان لەسەر بنەمای وێنەی پاشبنەما</string>

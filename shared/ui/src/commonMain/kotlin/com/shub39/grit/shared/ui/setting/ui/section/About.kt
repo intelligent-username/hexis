@@ -111,7 +111,7 @@ fun About(versionName: String, onNavigateBack: () -> Unit, modifier: Modifier = 
                 ),
         ) {
             aboutApp(versionName = versionName, uriHandler = uriHandler)
-            engagementLinks(uriHandler)
+
             item {
                 ListItem(
                     colors = listItemColors(),
@@ -129,57 +129,6 @@ fun About(versionName: String, onNavigateBack: () -> Unit, modifier: Modifier = 
                         },
                 )
             }
-        }
-    }
-}
-
-private fun LazyListScope.engagementLinks(uriHandler: UriHandler) {
-    item {
-        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            ListItem(
-                colors = listItemColors(),
-                leadingContent = {
-                    Icon(
-                        imageVector = vectorResource(Res.drawable.buymeacoffee),
-                        contentDescription = null,
-                        modifier = Modifier.size(24.dp),
-                    )
-                },
-                trailingContent = {
-                    Icon(
-                        imageVector = vectorResource(Res.drawable.open_link),
-                        contentDescription = null,
-                    )
-                },
-                headlineContent = { Text(text = stringResource(Res.string.bmc)) },
-                supportingContent = { Text(text = stringResource(Res.string.bmc_desc)) },
-                modifier =
-                    Modifier.clip(leadingItemShape()).clickable {
-                        uriHandler.openUri("https://buymeacoffee.com/shub39")
-                    },
-            )
-            ListItem(
-                colors = listItemColors(),
-                leadingContent = {
-                    Icon(
-                        imageVector = vectorResource(Res.drawable.translate),
-                        contentDescription = null,
-                        modifier = Modifier.size(24.dp),
-                    )
-                },
-                trailingContent = {
-                    Icon(
-                        imageVector = vectorResource(Res.drawable.open_link),
-                        contentDescription = null,
-                    )
-                },
-                headlineContent = { Text(text = stringResource(Res.string.translate)) },
-                supportingContent = { Text(text = stringResource(Res.string.translate_desc)) },
-                modifier =
-                    Modifier.clip(endItemShape()).clickable {
-                        uriHandler.openUri("https://hosted.weblate.org/engage/grit/")
-                    },
-            )
         }
     }
 }
@@ -203,7 +152,7 @@ private fun LazyListScope.aboutApp(versionName: String, uriHandler: UriHandler) 
                         contentAlignment = Alignment.Center,
                     ) {
                         Icon(
-                            imageVector = vectorResource(Res.drawable.grit_icon),
+                            imageVector = vectorResource(Res.drawable.hexis_logo),
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.onPrimaryContainer,
                             modifier = Modifier.size(32.dp),
@@ -214,7 +163,7 @@ private fun LazyListScope.aboutApp(versionName: String, uriHandler: UriHandler) 
 
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Grit",
+                            text = "Hexis",
                             style =
                                 MaterialTheme.typography.headlineMedium.copy(
                                     fontFamily = flexFontRounded()
@@ -230,17 +179,9 @@ private fun LazyListScope.aboutApp(versionName: String, uriHandler: UriHandler) 
                     }
 
                     Row {
+
                         FilledTonalIconButton(
-                            onClick = { uriHandler.openUri("https://discord.gg/nxA2hgtEKf") }
-                        ) {
-                            Icon(
-                                imageVector = vectorResource(Res.drawable.discord),
-                                contentDescription = null,
-                                modifier = Modifier.size(24.dp),
-                            )
-                        }
-                        FilledTonalIconButton(
-                            onClick = { uriHandler.openUri("https://github.com/shub39/Grit") }
+                            onClick = { uriHandler.openUri("https://github.com/shub39/Hexis") }
                         ) {
                             Icon(
                                 imageVector = vectorResource(Res.drawable.github),
@@ -300,7 +241,7 @@ private fun LazyListScope.aboutApp(versionName: String, uriHandler: UriHandler) 
                         listOf(
                                 "https://github.com/shub39" to Res.drawable.github,
                                 "https://shub39.github.io/" to Res.drawable.language,
-                                "mailto:cptnshubham39+grit_app@gmail.com" to Res.drawable.email,
+
                             )
                             .forEach { pair ->
                                 FilledTonalIconButton(

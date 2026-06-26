@@ -34,7 +34,7 @@
     <string name="backup">Kopia zapasowa</string>
     <string name="backup_desc">Eksportuj lub przywróć swoje zadania i nawyki</string>
     <string name="export">Eksportuj dane</string>
-    <string name="export_desc">Dane wyeksportowane do Pobrane/Grit</string>
+    <string name="export_desc">Dane wyeksportowane do Pobrane/Hexis</string>
     <string name="restore">Przywróć</string>
     <string name="restore_desc">Przywróć zadania i nawyki z pliku</string>
     <string name="material_theme_desc">Użyj kolorów z tapety</string>
@@ -65,7 +65,7 @@
     <string name="overall_analytics">Statystyki ogólne</string>
     <string name="unlock_more_plus">Zyskaj więcej z Plus</string>
     <string name="unlock_plus">Zyskaj z Plus</string>
-    <string name="grit_plus">Grit Plus</string>
+    <string name="grit_plus">Hexis Plus</string>
     <string name="monthly_progress">Miesięczny postęp</string>
     <string name="week_breakdown">Podział na dni tygodnia</string>
     <string name="foss">Używasz wersji FOSS</string>

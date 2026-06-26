@@ -34,7 +34,7 @@
     <string name="backup">Рэзервовае капіраванне</string>
     <string name="backup_desc">Экспартуйце ці аднаўляйце свае задачы і звычкі</string>
     <string name="export">Экспарт даных</string>
-    <string name="export_desc">Усе даныя захаваны ў Downloads/Grit</string>
+    <string name="export_desc">Усе даныя захаваны ў Downloads/Hexis</string>
     <string name="restore">Аднавіць</string>
     <string name="restore_desc">Аднавіць задачы і звычкі з файла</string>
     <string name="material_theme_desc">Выкарыстоўваць колеры шпалер</string>
@@ -65,7 +65,7 @@
     <string name="overall_analytics">Падрабязная аналітыка</string>
     <string name="unlock_more_plus">Разблакіраваць больш з падпіскай Плюс</string>
     <string name="unlock_plus">Разблакіраваць з падпіскай Плюс</string>
-    <string name="grit_plus">Grit Плюс</string>
+    <string name="grit_plus">Hexis Плюс</string>
     <string name="monthly_progress">Месячны прагрэс</string>
     <string name="week_breakdown">Размеркаванне па тыдню</string>
     <string name="foss">Вы выкарыстоўваеце FOSS-варыянт</string>

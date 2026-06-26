@@ -34,7 +34,7 @@
     <string name="backup">Biztonsági mentés</string>
     <string name="backup_desc">Tennivalók és szokások mentése és visszaállítása</string>
     <string name="export">Adatok mentése</string>
-    <string name="export_desc">Minden adat a Letöltések/Grit mappába kerül</string>
+    <string name="export_desc">Minden adat a Letöltések/Hexis mappába kerül</string>
     <string name="restore">Adatok visszaállítása</string>
     <string name="restore_desc">Tennivalók és szokások visszaállítása egy fájlból</string>
     <string name="material_theme_desc">Háttérkép színeinek használata</string>
@@ -64,7 +64,7 @@
     <string name="weekly_progress">Heti haladás</string>
     <string name="overall_analytics">Általános statiszkika</string>
     <string name="unlock_more_plus">Több funkció a plusz csomaggal</string>
-    <string name="grit_plus">Grit Plus</string>
+    <string name="grit_plus">Hexis Plus</string>
     <string name="monthly_progress">Havi haladás</string>
     <string name="week_breakdown">Hétköznapi eloszlás</string>
     <string name="foss">Ön a FOSS változatot használja</string>

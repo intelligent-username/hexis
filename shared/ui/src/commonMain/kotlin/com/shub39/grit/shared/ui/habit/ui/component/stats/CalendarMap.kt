@@ -34,7 +34,7 @@ import com.kizitonwose.calendar.compose.rememberCalendarState
 import com.kizitonwose.calendar.core.minusYears
 import com.kizitonwose.calendar.core.now
 import com.shub39.grit.core.habits.HabitStatus
-import com.shub39.grit.shared.ui.GritPreviewWrapper
+import com.shub39.grit.shared.ui.HexisPreviewWrapper
 import com.shub39.grit.shared.ui.habit.daysStartingFrom
 import com.shub39.grit.shared.ui.habit.ui.component.AnalyticsCard
 import com.shub39.grit.shared.ui.habit.ui.component.CalendarMonthHeader
@@ -137,7 +137,7 @@ fun CalendarMap(
     }
 }
 
-@PreviewWrapper(GritPreviewWrapper::class)
+@PreviewWrapper(HexisPreviewWrapper::class)
 @Preview
 @Composable
 private fun Preview() {

@@ -64,7 +64,7 @@
     <string name="overall_analytics">Análise geral</string>
     <string name="unlock_more_plus">Tenha mais com o plano Plus</string>
     <string name="unlock_plus">Desbloqueie com o Plus</string>
-    <string name="grit_plus">Grit Plus</string>
+    <string name="grit_plus">Hexis Plus</string>
     <string name="monthly_progress">Progresso mensal</string>
     <string name="week_breakdown">Resumo por dia da semana</string>
     <string name="foss">Você está usando a variante FOSS</string>
@@ -80,7 +80,7 @@
     <string name="whats_changed">O que mudou</string>
     <string name="select_days">Dias Selecionados</string>
     <string name="bmc_desc">Me apoie com uma pequena doação</string>
-    <string name="translate_desc">Traduza o Grit para sua língua</string>
+    <string name="translate_desc">Traduza o Hexis para sua língua</string>
     <string name="system_default">Padrão do sistema</string>
     <string name="language">Idioma</string>
     <string name="about">Sobre</string>

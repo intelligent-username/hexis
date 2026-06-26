@@ -51,7 +51,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import com.shub39.grit.core.habits.TimeDivision
-import com.shub39.grit.shared.ui.components.GritBottomSheet
+import com.shub39.grit.shared.ui.components.HexisBottomSheet
 import com.shub39.grit.shared.ui.theme.flexFontEmphasis
 import grit.shared.ui.generated.resources.*
 import kotlinx.coroutines.delay
@@ -74,7 +74,7 @@ fun TimeDivisionUpsertSheet(
             initialSelection = TextRange(newDivision.name.length),
         )
 
-    GritBottomSheet(
+    HexisBottomSheet(
         modifier = modifier.imePadding(),
         padding = 0.dp,
         onDismissRequest = onDismiss,

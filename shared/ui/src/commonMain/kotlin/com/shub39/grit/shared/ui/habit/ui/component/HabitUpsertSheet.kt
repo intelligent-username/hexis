@@ -74,14 +74,14 @@ import com.shub39.grit.core.habits.TimeDivision
 import com.shub39.grit.core.now
 import com.shub39.grit.core.toFormattedString
 import com.shub39.grit.shared.ui.components.ExpressiveSwitch
-import com.shub39.grit.shared.ui.components.GritBottomSheet
-import com.shub39.grit.shared.ui.components.GritTimePicker
+import com.shub39.grit.shared.ui.components.HexisBottomSheet
+import com.shub39.grit.shared.ui.components.HexisTimePicker
 import com.shub39.grit.shared.ui.components.detachedItemShape
 import com.shub39.grit.shared.ui.components.endItemShape
 import com.shub39.grit.shared.ui.components.leadingItemShape
 import com.shub39.grit.shared.ui.components.listItemColors
 import com.shub39.grit.shared.ui.components.middleItemShape
-import com.shub39.grit.shared.ui.theme.GritTheme
+import com.shub39.grit.shared.ui.theme.HexisTheme
 import com.shub39.grit.shared.ui.theme.flexFontEmphasis
 import com.shub39.grit.shared.ui.theme.flexFontRounded
 import grit.shared.ui.generated.resources.*
@@ -146,7 +146,7 @@ fun HabitUpsertSheetContent(
         keyboardController?.show()
     }
 
-    GritBottomSheet(
+    HexisBottomSheet(
         onDismissRequest = onDismissRequest,
         padding = 0.dp,
         modifier = modifier
@@ -466,7 +466,7 @@ fun HabitUpsertSheetContent(
                     is24Hour = is24Hr,
                 )
 
-            GritTimePicker(
+            HexisTimePicker(
                 onDismissRequest = { timePickerDialog = false },
                 state = timePickerState,
                 onConfirm = {
@@ -493,7 +493,7 @@ fun HabitUpsertSheetContent(
 @Preview
 @Composable
 private fun Preview() {
-    GritTheme {
+    HexisTheme {
         HabitUpsertSheet(
             habit =
                 Habit(

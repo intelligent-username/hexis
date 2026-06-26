@@ -60,7 +60,7 @@ import androidx.compose.ui.util.fastRoundToInt
 import com.shub39.grit.core.habits.WeeklyTimePeriod
 import com.shub39.grit.core.habits.WeeklyTimePeriod.Companion.toDisplayString
 import com.shub39.grit.core.habits.WeeklyTimePeriod.Companion.toWeeks
-import com.shub39.grit.shared.ui.GritPreviewWrapper
+import com.shub39.grit.shared.ui.HexisPreviewWrapper
 import com.shub39.grit.shared.ui.habit.ui.component.AnalyticsCard
 import com.shub39.grit.shared.ui.habit.ui.component.NotEnoughData
 import com.shub39.grit.shared.ui.theme.flexFontRounded
@@ -229,7 +229,7 @@ fun WeeklyActivity(lineChartData: List<Double>, modifier: Modifier = Modifier) {
     }
 }
 
-@PreviewWrapper(GritPreviewWrapper::class)
+@PreviewWrapper(HexisPreviewWrapper::class)
 @Preview
 @Composable
 private fun Preview() {

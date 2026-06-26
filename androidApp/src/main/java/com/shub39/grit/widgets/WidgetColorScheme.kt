@@ -36,7 +36,7 @@ import com.shub39.grit.shared.ui.toMPaletteStyle
  * every [androidx.glance.GlanceTheme] call inside a widget reflects the same
  * color palette the user configured in Settings.
  *
- * The logic follows [com.shub39.grit.shared.ui.theme.GritTheme] (Android
+ * The logic follows [com.shub39.grit.shared.ui.theme.HexisTheme] (Android
  * target) exactly:
  * - If Material You is enabled on Android 12+, use the system dynamic scheme.
  * - Otherwise derive a dynamic scheme from the stored seed color + palette style.

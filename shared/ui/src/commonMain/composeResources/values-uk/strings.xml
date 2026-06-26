@@ -33,7 +33,7 @@
     <string name="backup">Резервна копія</string>
     <string name="backup_desc">Експортуйте або відновіть ваші завдання та звички</string>
     <string name="export">Експорт даних</string>
-    <string name="export_desc">Усі дані експортовано до Завантаження/Grit</string>
+    <string name="export_desc">Усі дані експортовано до Завантаження/Hexis</string>
     <string name="restore">Відновити</string>
     <string name="restore_desc">Відновити завдання та звички з вибраного файлу</string>
     <string name="material_theme_desc">Використовувати кольори на основі шпалер</string>
@@ -64,7 +64,7 @@
     <string name="overall_analytics">Загальна аналітика</string>
     <string name="unlock_more_plus">Відкрийте більше з Plus</string>
     <string name="unlock_plus">Відкрити з Plus</string>
-    <string name="grit_plus">Grit Plus</string>
+    <string name="grit_plus">Hexis Plus</string>
     <string name="monthly_progress">Прогрес за місяць</string>
     <string name="week_breakdown">Розбивка за днями тижня</string>
     <string name="foss">Ви використовуєте варіант FOSS</string>

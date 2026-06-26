@@ -30,7 +30,7 @@ interface PomodoroDao {
     @Query("UPDATE pomodoro_sessions SET timeFinished = :timeFinished, completed = :completed, timeCompletedMinutes = :timeCompletedMinutes WHERE id = :id")
     suspend fun finish(id: Long, timeFinished: LocalDateTime, completed: Boolean, timeCompletedMinutes: Float)
 
-    @Query("SELECT COUNT(*) AS sessionCount, COALESCE(SUM(timeCompletedMinutes), 0) AS totalMinutes FROM pomodoro_sessions WHERE timeStarted >= :todayStart")
+    @Query("SELECT CAST(COUNT(*) AS INTEGER) AS sessionCount, CAST(COALESCE(SUM(timeCompletedMinutes), 0.0) AS REAL) AS totalMinutes FROM pomodoro_sessions WHERE timeStarted >= :todayStart")
     suspend fun getTodayStats(todayStart: LocalDateTime): PomodoroStats
 
     @Query("SELECT DISTINCT CAST(timeStarted / 86400 AS INTEGER) FROM pomodoro_sessions WHERE completed = 1 ORDER BY timeStarted DESC")

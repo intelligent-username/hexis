@@ -39,7 +39,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
-import com.shub39.grit.shared.ui.components.GritBottomSheet
+import com.shub39.grit.shared.ui.components.HexisBottomSheet
 
 // yeeted from nsh07/Tomato
 @Composable
@@ -350,7 +350,7 @@ fun LicenseBottomSheet(modifier: Modifier = Modifier, onDismissRequest: () -> Un
         )
     }
 
-    GritBottomSheet(onDismissRequest = onDismissRequest, padding = 0.dp) {
+    HexisBottomSheet(onDismissRequest = onDismissRequest, padding = 0.dp) {
         LazyColumn(
             modifier = Modifier.clip(shapes.large).heightIn(max = 500.dp),
             contentPadding = PaddingValues(16.dp),

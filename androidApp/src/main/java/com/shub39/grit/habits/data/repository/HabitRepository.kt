@@ -16,7 +16,7 @@
  */
 package com.shub39.grit.habits.data.repository
 
-import com.shub39.grit.core.data.notification.GritNotificationManager
+import com.shub39.grit.core.data.notification.HexisNotificationManager
 import com.shub39.grit.core.habits.Habit
 import com.shub39.grit.core.habits.HabitRanking
 import com.shub39.grit.core.habits.HabitRepo
@@ -54,7 +54,7 @@ class HabitRepository(
     private val habitDao: HabitsDao,
     private val habitStatusDao: HabitStatusDao,
     private val datastore: SettingsDatastore,
-    private val notificationManager: GritNotificationManager,
+    private val notificationManager: HexisNotificationManager,
 ) : HabitRepo {
 
     private val habits =

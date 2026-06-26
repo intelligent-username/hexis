@@ -75,7 +75,7 @@ import com.shub39.grit.core.tasks.PomodoroRepo
 import com.shub39.grit.core.tasks.PomodoroSession
 import com.shub39.grit.core.tasks.PomodoroSettings
 import com.shub39.grit.core.tasks.PomodoroStats
-import com.shub39.grit.shared.ui.components.GritBottomSheet
+import com.shub39.grit.shared.ui.components.HexisBottomSheet
 import com.shub39.grit.shared.ui.theme.flexFontRounded
 import grit.shared.ui.generated.resources.Res
 import grit.shared.ui.generated.resources.close
@@ -516,7 +516,7 @@ fun PomodoroPage(onDismiss: () -> Unit) {
     // --- settings bottom sheet ---
 
     if (showSettings) {
-        GritBottomSheet(
+        HexisBottomSheet(
             onDismissRequest = { showSettings = false },
             padding = 0.dp,
         ) {

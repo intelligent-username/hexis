@@ -33,7 +33,7 @@
     <string name="backup">Бекап</string>
     <string name="backup_desc">Экспортировать или восстановить ваши задачи и привычки</string>
     <string name="export">Экспорт данных</string>
-    <string name="export_desc">Данные сохранены в Downloads/Grit</string>
+    <string name="export_desc">Данные сохранены в Downloads/Hexis</string>
     <string name="restore">Восстановить</string>
     <string name="restore_desc">Восстановить задачи и привычки из выбранного файла</string>
     <string name="material_theme_desc">Использовать цвета обоев</string>
@@ -64,7 +64,7 @@
     <string name="overall_analytics">Подробная аналитика</string>
     <string name="unlock_more_plus">Разблокируйте больше с подпиской Plus</string>
     <string name="unlock_plus">Разблокируйте с подпиской Plus</string>
-    <string name="grit_plus">Grit Plus</string>
+    <string name="grit_plus">Hexis Plus</string>
     <string name="monthly_progress">Месячный прогресс</string>
     <string name="week_breakdown">Разбивка по дням недели</string>
     <string name="foss">Вы используйте вариант приложения с открытым исходным кодом</string>

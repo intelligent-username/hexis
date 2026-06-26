@@ -34,7 +34,7 @@
     <string name="backup">Còpia de seguretat</string>
     <string name="backup_desc">Exporta o restaura les teves tasques i hàbits</string>
     <string name="export">Exportar dades</string>
-    <string name="export_desc">Totes les dades exportades a Descàrregues/Grit</string>
+    <string name="export_desc">Totes les dades exportades a Descàrregues/Hexis</string>
     <string name="restore">Restaurar</string>
     <string name="restore_desc">Restaurar tasques i hàbits des d\u0027un fitxer seleccionat</string>
     <string name="material_theme_desc">Utilitzar colors basats en el fons de pantalla</string>
@@ -65,7 +65,7 @@
     <string name="overall_analytics">Estadístiques generals</string>
     <string name="unlock_more_plus">Desbloqueja més amb Plus</string>
     <string name="unlock_plus">Desbloqueja amb Plus</string>
-    <string name="grit_plus">Grit Plus</string>
+    <string name="grit_plus">Hexis Plus</string>
     <string name="monthly_progress">Progrés mensual</string>
     <string name="week_breakdown">Desglossament per dia de la setmana</string>
     <string name="foss">Esteu utilitzant la variant FOSS</string>

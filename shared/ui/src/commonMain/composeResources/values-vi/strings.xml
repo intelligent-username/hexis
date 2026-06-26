@@ -18,7 +18,7 @@
     <string name="backup">Sao lưu</string>
     <string name="backup_desc">Xuất hoặc nhập các tác vụ và thói quen của bạn</string>
     <string name="export">Xuất dữ liệu</string>
-    <string name="export_desc">Tất cả dữ liệu đã được xuất vào thư mục Downloads/Grit</string>
+    <string name="export_desc">Tất cả dữ liệu đã được xuất vào thư mục Downloads/Hexis</string>
     <string name="restore">Khôi phục</string>
     <string name="restore_desc">Khôi phục các tác vụ và thói quen từ dữ liệu trong tệp tin đã chọn</string>
     <string name="material_theme_desc">Sử dụng các màu sắc dựa trên hình nền</string>
@@ -63,7 +63,7 @@
     <string name="foss">Bạn đang sử dụng ứng dụng miễn phí và mã nguồn mở</string>
     <string name="foss_desc">Tất cả tính năng đã được mở khóa. Ứng dụng này không hỗ trợ giao dịch mua trong ứng dụng. Nếu ứng dụng này hữu ích cho cuộc sống của bạn, hỗ trợ tôi bằng cách quyên góp cho tôi tại</string>
     <string name="add_reminder">Thêm Lời nhắc</string>
-    <string name="grit_plus">Grit cao cấp</string>
+    <string name="grit_plus">Hexis cao cấp</string>
     <string name="add_reminder_desc">Nhận thông báo nhắc nhở trong các ngày đã chọn</string>
     <string name="habit_map">Sơ đồ thói quen</string>
     <string name="select_seed">Chọn màu gốc</string>
@@ -82,7 +82,7 @@
     <string name="system_default">Mặc định của hệ thống</string>
     <string name="language">Ngôn ngữ</string>
     <string name="bmc_desc">Hỗ trợ tôi bằng một khoản quyên góp nhỏ</string>
-    <string name="translate_desc">Dịch Grit sang ngôn ngữ của bạn</string>
+    <string name="translate_desc">Dịch Hexis sang ngôn ngữ của bạn</string>
     <string name="about">Giới thiệu</string>
     <string name="consistency">Sự phù hợp (Consistency)</string>
     <string name="yearly">Hằng năm</string>

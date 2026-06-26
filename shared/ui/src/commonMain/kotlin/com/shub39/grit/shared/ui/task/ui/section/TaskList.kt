@@ -90,7 +90,7 @@ import com.shub39.grit.core.tasks.CategoryColors
 import com.shub39.grit.core.tasks.Task
 import com.shub39.grit.shared.ui.LocalWindowSizeClass
 import com.shub39.grit.shared.ui.components.Empty
-import com.shub39.grit.shared.ui.components.GritDialog
+import com.shub39.grit.shared.ui.components.HexisDialog
 import com.shub39.grit.shared.ui.components.PageFill
 import com.shub39.grit.shared.ui.components.detachedItemShape
 import com.shub39.grit.shared.ui.components.endItemShape
@@ -763,7 +763,7 @@ private fun ExpandedTasksView(
             }
 
             if (showReorderDialog) {
-                GritDialog(onDismissRequest = { showReorderDialog = false }, padding = 0.dp) {
+                HexisDialog(onDismissRequest = { showReorderDialog = false }, padding = 0.dp) {
                     var reorderableTasks = remember { displayTasks }
 
                     val listState = rememberLazyListState()
@@ -870,7 +870,7 @@ private fun ExpandedTasksView(
 
 @Composable
 private fun DeleteTasksDialog(onDismiss: () -> Unit, onConfirm: () -> Unit) {
-    GritDialog(onDismissRequest = onDismiss) {
+    HexisDialog(onDismissRequest = onDismiss) {
         Column {
             Box(
                 contentAlignment = Alignment.Center,

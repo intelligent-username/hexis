@@ -43,7 +43,7 @@ import com.kizitonwose.calendar.compose.heatmapcalendar.HeatMapCalendarState
 import com.kizitonwose.calendar.compose.heatmapcalendar.rememberHeatMapCalendarState
 import com.kizitonwose.calendar.core.now
 import com.shub39.grit.core.toFormattedString
-import com.shub39.grit.shared.ui.GritPreviewWrapper
+import com.shub39.grit.shared.ui.HexisPreviewWrapper
 import com.shub39.grit.shared.ui.components.endItemShape
 import com.shub39.grit.shared.ui.components.leadingItemShape
 import com.shub39.grit.shared.ui.habit.daysStartingFrom
@@ -181,7 +181,7 @@ fun HabitHeatMap(
     }
 }
 
-@PreviewWrapper(GritPreviewWrapper::class)
+@PreviewWrapper(HexisPreviewWrapper::class)
 @Preview
 @Composable
 private fun Preview() {

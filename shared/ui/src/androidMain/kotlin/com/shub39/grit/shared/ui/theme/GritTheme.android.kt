@@ -31,7 +31,7 @@ import com.shub39.grit.shared.ui.toFontRes
 import com.shub39.grit.shared.ui.toMPaletteStyle
 
 @Composable
-actual fun GritTheme(theme: Theme, content: @Composable (() -> Unit)) {
+actual fun HexisTheme(theme: Theme, content: @Composable (() -> Unit)) {
     val isDark =
         when (theme.appTheme) {
             SYSTEM -> isSystemInDarkTheme()

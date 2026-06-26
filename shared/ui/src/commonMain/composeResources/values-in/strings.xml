@@ -34,7 +34,7 @@
     <string name="backup">Cadangkan data</string>
     <string name="backup_desc">Ekspor atau balikin data tugas dan kebiasaanmu</string>
     <string name="export">Expor Data</string>
-    <string name="export_desc">Semua data diekspor ke dalam folder Downloads/Grit</string>
+    <string name="export_desc">Semua data diekspor ke dalam folder Downloads/Hexis</string>
     <string name="restore">Balikin data</string>
     <string name="restore_desc">Pulihkan tugas dan kebiasaan dari file yang dipilih</string>
     <string name="material_theme_desc">Ikuti warna walpaper</string>
@@ -65,11 +65,11 @@
     <string name="overall_analytics">Ringkasan progress</string>
     <string name="unlock_more_plus">Dapatkan fitur lebih dengan pkus</string>
     <string name="unlock_plus">Harus upgrade ke plus sih</string>
-    <string name="grit_plus">Grit Plus</string>
+    <string name="grit_plus">Hexis Plus</string>
     <string name="monthly_progress">Progres bulanan</string>
     <string name="week_breakdown">Rincian progres harian</string>
     <string name="foss">Kamu pakai versi Open Source</string>
-    <string name="foss_desc">Udah kebuka semua ya fiturnya! Versi ini bebas biaya alias gak ada in-app purchase. Kalau ngerasa Grit bikin hidupmu lebih tertata, yuk traktir kopi aku di</string>
+    <string name="foss_desc">Udah kebuka semua ya fiturnya! Versi ini bebas biaya alias gak ada in-app purchase. Kalau ngerasa Hexis bikin hidupmu lebih tertata, yuk traktir kopi aku di</string>
     <string name="add_reminder">Tambahin Pengingat</string>
     <string name="add_reminder_desc">Terima pengingat notifikasi pada hari-hari tertentu</string>
     <string name="invalid_date_time">Waduh, masa lalu jangan diungkit lagi :\u0027)</string>
@@ -80,7 +80,7 @@
     <string name="whats_changed">Apa aja yang Berubah</string>
     <string name="select_days">Pilih hari</string>
     <string name="bmc_desc">Dukung saya dengan memberikan donasi kecil</string>
-    <string name="translate_desc">Terjemahkan Grit ke dalam bahasa Anda</string>
+    <string name="translate_desc">Terjemahkan Hexis ke dalam bahasa Anda</string>
     <string name="system_default">Default Sistem</string>
     <string name="language">Bahasa</string>
     <string name="about">Tentang</string>

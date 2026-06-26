@@ -38,7 +38,7 @@ import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.resources.vectorResource
 
 @Composable
-fun GritTimePicker(
+fun HexisTimePicker(
     onDismissRequest: () -> Unit,
     modifier: Modifier = Modifier,
     state: TimePickerState = rememberTimePickerState(),

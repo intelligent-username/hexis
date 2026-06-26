@@ -50,7 +50,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.shub39.grit.shared.ui.components.GritDialog
+import com.shub39.grit.shared.ui.components.HexisDialog
 import com.shub39.grit.shared.ui.components.detachedItemShape
 import com.shub39.grit.shared.ui.components.endItemShape
 import com.shub39.grit.shared.ui.components.leadingItemShape
@@ -93,7 +93,7 @@ private fun CategoryEditDialog(
     onAction: (TaskAction) -> Unit,
     onDismissRequest: () -> Unit,
 ) {
-    GritDialog(onDismissRequest = onDismissRequest, padding = 0.dp) {
+    HexisDialog(onDismissRequest = onDismissRequest, padding = 0.dp) {
         var categories by remember(state.tasks) { mutableStateOf(state.tasks.keys.toList()) }
 
         val listState = rememberLazyListState()
@@ -208,7 +208,7 @@ private fun CategoryEditDialog(
                     }
 
                     if (showDeleteDialog) {
-                        GritDialog(onDismissRequest = { showDeleteDialog = false }) {
+                        HexisDialog(onDismissRequest = { showDeleteDialog = false }) {
                             Icon(
                                 imageVector = vectorResource(Res.drawable.warning),
                                 contentDescription = null,

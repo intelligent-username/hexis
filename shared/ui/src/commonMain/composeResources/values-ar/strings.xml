@@ -34,7 +34,7 @@
     <string name="backup">نسخة احتياطية</string>
     <string name="backup_desc">تصدير او استعادة مهامك وعاداتك</string>
     <string name="export">صدِّر البيانات</string>
-    <string name="export_desc">صدِّرت كافة البيانات الى Downloads/Grit</string>
+    <string name="export_desc">صدِّرت كافة البيانات الى Downloads/Hexis</string>
     <string name="restore">استعادة</string>
     <string name="restore_desc">استعِد المهام والعادات من الملف المختار</string>
     <string name="material_theme_desc">استخدام الوان بناء على خلفية الشاشة</string>
@@ -65,11 +65,11 @@
     <string name="overall_analytics">التحليلات العامة</string>
     <string name="unlock_more_plus">افتح مزايا اكثر مع Plus</string>
     <string name="unlock_plus">فتح مع Plus</string>
-    <string name="grit_plus">Grit Plus</string>
+    <string name="grit_plus">Hexis Plus</string>
     <string name="monthly_progress">التقدم الشهري</string>
     <string name="week_breakdown">تفصيل ايام الاسبوع</string>
     <string name="foss">انت تستخدم نسخة FOSS</string>
-    <string name="foss_desc">جميع المزايا مفتوحة. هذه النسخة لا تدعم الشراء داخل التطبيق. اذا كان Grit اضاف قيمة لحياتك، ادعمني بالتبرع عبر</string>
+    <string name="foss_desc">جميع المزايا مفتوحة. هذه النسخة لا تدعم الشراء داخل التطبيق. اذا كان Hexis اضاف قيمة لحياتك، ادعمني بالتبرع عبر</string>
     <string name="add_reminder">أضف تذكير</string>
     <string name="invalid_date_time">الوقت المحدد في الماضي :\u0027)</string>
     <string name="reorder_tasks">إعادة ترتيب المهام</string>

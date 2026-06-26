@@ -30,7 +30,7 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
 import androidx.savedstate.serialization.SavedStateConfiguration
-import com.shub39.grit.shared.ui.GritPreviewWrapper
+import com.shub39.grit.shared.ui.HexisPreviewWrapper
 import com.shub39.grit.shared.ui.components.PageFill
 import com.shub39.grit.shared.ui.navigation.horizontalTransitionMetadata
 import com.shub39.grit.shared.ui.setting.SettingsAction
@@ -140,7 +140,7 @@ fun SettingsGraph(
         )
     }
 
-@PreviewWrapper(GritPreviewWrapper::class)
+@PreviewWrapper(HexisPreviewWrapper::class)
 @Preview
 @Composable
 private fun Preview() {

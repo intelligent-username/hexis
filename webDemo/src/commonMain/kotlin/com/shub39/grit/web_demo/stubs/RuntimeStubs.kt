@@ -187,7 +187,7 @@ class TaskRepoStub : TaskRepo {
 
         _tasks.update {
             listOf(
-                Task(id = 1, categoryId = 1, title = "Welcome to Grit!"),
+                Task(id = 1, categoryId = 1, title = "Welcome to Hexis!"),
                 Task(id = 2, categoryId = 2, title = "Complete project documentation"),
                 Task(id = 3, categoryId = 2, title = "Team meeting", status = true),
                 Task(id = 4, categoryId = 3, title = "Buy groceries"),

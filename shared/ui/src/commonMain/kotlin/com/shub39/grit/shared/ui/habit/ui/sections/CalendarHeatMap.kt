@@ -68,7 +68,7 @@ import com.kizitonwose.calendar.core.now
 import com.shub39.grit.core.habits.CalendarType
 import com.shub39.grit.core.toFormattedString
 import com.shub39.grit.shared.ui.LocalWindowSizeClass
-import com.shub39.grit.shared.ui.components.GritBottomSheet
+import com.shub39.grit.shared.ui.components.HexisBottomSheet
 import com.shub39.grit.shared.ui.components.endItemShape
 import com.shub39.grit.shared.ui.components.leadingItemShape
 import com.shub39.grit.shared.ui.habit.HabitState
@@ -100,7 +100,7 @@ fun CalendarHeatMap(
     LaunchedEffect(selectedDay) { onChangeSelectedDay(selectedDay) }
 
     if (state.overallAnalytics.completedHabits != null) {
-        GritBottomSheet(onDismissRequest = { selectedDay = null }, padding = 16.dp) {
+        HexisBottomSheet(onDismissRequest = { selectedDay = null }, padding = 16.dp) {
             state.overallAnalytics.completedHabits?.let { (date, habits) ->
                 Text(
                     text = date.toFormattedString(),

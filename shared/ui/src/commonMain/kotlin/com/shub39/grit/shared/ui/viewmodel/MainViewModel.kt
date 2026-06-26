@@ -115,7 +115,7 @@ class MainViewModel(
 
                 settingsDatastore
                     .getBiometricLockPref()
-                    .onEach { pref -> _state.update { it.copy(isBiometricLockOn = pref) } }
+                    .onEach { pref -> _state.update { it.copy(isBiometricLockOn = pref, isAppUnlocked = false) } }
                     .launchIn(this)
             }
     }

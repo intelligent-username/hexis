@@ -50,7 +50,7 @@ import com.kizitonwose.calendar.core.now
 import com.kizitonwose.calendar.core.plusDays
 import com.shub39.grit.core.habits.HabitStatus
 import com.shub39.grit.core.habits.StreakPosition
-import com.shub39.grit.shared.ui.GritPreviewWrapper
+import com.shub39.grit.shared.ui.HexisPreviewWrapper
 import com.shub39.grit.shared.ui.components.endItemShape
 import com.shub39.grit.shared.ui.components.leadingItemShape
 import com.shub39.grit.shared.ui.habit.daysStartingFrom
@@ -269,7 +269,7 @@ fun WeeklyBooleanHeatMap(
     }
 }
 
-@PreviewWrapper(GritPreviewWrapper::class)
+@PreviewWrapper(HexisPreviewWrapper::class)
 @Preview
 @Composable
 private fun Preview() {

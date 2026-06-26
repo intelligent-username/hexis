@@ -69,8 +69,8 @@ import com.shub39.grit.core.tasks.Category
 import com.shub39.grit.core.tasks.Task
 import com.shub39.grit.core.toFormattedString
 import com.shub39.grit.shared.ui.components.ExpressiveSwitch
-import com.shub39.grit.shared.ui.components.GritBottomSheet
-import com.shub39.grit.shared.ui.components.GritTimePicker
+import com.shub39.grit.shared.ui.components.HexisBottomSheet
+import com.shub39.grit.shared.ui.components.HexisTimePicker
 import com.shub39.grit.shared.ui.components.detachedItemShape
 import com.shub39.grit.shared.ui.components.listItemColors
 import com.shub39.grit.shared.ui.theme.flexFontEmphasis
@@ -127,7 +127,7 @@ fun TaskUpsertSheetContent(
             newTask.reminder!! > LocalDateTime.now()
         } else true
 
-    GritBottomSheet(
+    HexisBottomSheet(
         modifier = modifier.imePadding(),
         padding = 0.dp,
         onDismissRequest = onDismissRequest,
@@ -349,7 +349,7 @@ fun TaskUpsertSheetContent(
             DatePicker(state = datePickerState)
 
             if (showTimePicker) {
-                GritTimePicker(
+                HexisTimePicker(
                     onDismissRequest = { showTimePicker = false },
                     state = timePickerState,
                     onConfirm = { showTimePicker = false },

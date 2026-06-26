@@ -44,7 +44,7 @@ import androidx.compose.ui.unit.dp
 import com.shub39.grit.core.app.VersionEntry
 import com.shub39.grit.core.theme.AppTheme
 import com.shub39.grit.core.theme.Theme
-import com.shub39.grit.shared.ui.theme.GritTheme
+import com.shub39.grit.shared.ui.theme.HexisTheme
 import com.shub39.grit.shared.ui.theme.flexFontEmphasis
 import com.shub39.grit.shared.ui.theme.flexFontRounded
 import grit.shared.ui.generated.resources.*
@@ -57,7 +57,7 @@ fun ChangelogSheet(
     currentLog: VersionEntry,
     onDismissRequest: () -> Unit,
 ) {
-    GritBottomSheet(onDismissRequest = onDismissRequest, modifier = modifier, padding = 0.dp) {
+    HexisBottomSheet(onDismissRequest = onDismissRequest, modifier = modifier, padding = 0.dp) {
         Column(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -124,7 +124,7 @@ fun ChangelogSheet(
 @Preview
 @Composable
 private fun Preview() {
-    GritTheme(theme = Theme(appTheme = AppTheme.DARK)) {
+    HexisTheme(theme = Theme(appTheme = AppTheme.DARK)) {
         ChangelogSheet(
             currentLog =
                 VersionEntry(

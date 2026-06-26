@@ -22,7 +22,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.util.Log
-import com.shub39.grit.core.data.GritIntentReceiver
+import com.shub39.grit.core.data.HexisIntentReceiver
 import com.shub39.grit.core.habits.Habit
 import com.shub39.grit.core.interfaces.AlarmScheduler
 import com.shub39.grit.core.interfaces.IntentActions
@@ -62,7 +62,7 @@ class NotificationAlarmScheduler(private val context: Context) : AlarmScheduler 
         }
 
         val notificationIntent =
-            Intent(context, GritIntentReceiver::class.java).apply {
+            Intent(context, HexisIntentReceiver::class.java).apply {
                 action = IntentActions.HABIT_NOTIFICATION.action
                 putExtra("habit_id", habit.id)
             }
@@ -97,7 +97,7 @@ class NotificationAlarmScheduler(private val context: Context) : AlarmScheduler 
         }
 
         val notificationIntent =
-            Intent(context, GritIntentReceiver::class.java).apply {
+            Intent(context, HexisIntentReceiver::class.java).apply {
                 action = IntentActions.TASK_NOTIFICATION.action
                 putExtra("task_id", task.id)
             }
@@ -121,7 +121,7 @@ class NotificationAlarmScheduler(private val context: Context) : AlarmScheduler 
 
     override fun cancel(habit: Habit) {
         val cancelIntent =
-            Intent(context, GritIntentReceiver::class.java).apply {
+            Intent(context, HexisIntentReceiver::class.java).apply {
                 action = IntentActions.HABIT_NOTIFICATION.action
             }
 
@@ -139,7 +139,7 @@ class NotificationAlarmScheduler(private val context: Context) : AlarmScheduler 
 
     override fun cancel(task: Task) {
         val cancelIntent =
-            Intent(context, GritIntentReceiver::class.java).apply {
+            Intent(context, HexisIntentReceiver::class.java).apply {
                 action = IntentActions.TASK_NOTIFICATION.action
             }
 

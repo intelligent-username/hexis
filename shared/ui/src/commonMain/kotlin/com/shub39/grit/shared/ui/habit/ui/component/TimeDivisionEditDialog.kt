@@ -51,7 +51,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.shub39.grit.core.habits.TimeDivision
 import com.shub39.grit.shared.ui.components.Empty
-import com.shub39.grit.shared.ui.components.GritDialog
+import com.shub39.grit.shared.ui.components.HexisDialog
 import com.shub39.grit.shared.ui.components.detachedItemShape
 import com.shub39.grit.shared.ui.components.endItemShape
 import com.shub39.grit.shared.ui.components.leadingItemShape
@@ -72,7 +72,7 @@ fun TimeDivisionEditDialog(
     onAction: (HabitsAction) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    GritDialog(onDismissRequest = onDismiss, padding = 0.dp) {
+    HexisDialog(onDismissRequest = onDismiss, padding = 0.dp) {
         var showAddSheet by remember { mutableStateOf(false) }
         val divisions = state.timeDivisions
         
@@ -176,7 +176,7 @@ fun TimeDivisionEditDialog(
                         }
 
                         if (showDeleteDialog) {
-                            GritDialog(onDismissRequest = { showDeleteDialog = false }) {
+                            HexisDialog(onDismissRequest = { showDeleteDialog = false }) {
                                 Icon(
                                     imageVector = vectorResource(Res.drawable.warning),
                                     contentDescription = null,

@@ -33,7 +33,7 @@
     <string name="backup">Copia de Seguridad</string>
     <string name="backup_desc">Exporta o restaura tus tareas y hábitos</string>
     <string name="export">Exportar datos</string>
-    <string name="export_desc">Todos los datos exportados a Descargas/Grit</string>
+    <string name="export_desc">Todos los datos exportados a Descargas/Hexis</string>
     <string name="restore">Restaurar</string>
     <string name="restore_desc">Restaura tareas y hábitos desde el archivo seleccionado</string>
     <string name="material_theme_desc">Usa colores basados en el fondo de pantalla</string>
@@ -64,7 +64,7 @@
     <string name="overall_analytics">Estadísticas generales</string>
     <string name="unlock_more_plus">Desbloquea más con Plus</string>
     <string name="unlock_plus">Desbloquear con Plus</string>
-    <string name="grit_plus">Grit Plus</string>
+    <string name="grit_plus">Hexis Plus</string>
     <string name="monthly_progress">Progreso mensual</string>
     <string name="week_breakdown">Desglose por día de la semana</string>
     <string name="foss">Estás usando la variante FOSS</string>
@@ -79,7 +79,7 @@
     <string name="add_reminder_desc">Recibe un recordatorio de notificación en los días seleccionados</string>
     <string name="select_days">Días Seleccionados</string>
     <string name="bmc_desc">Apóyame haciendo una pequeña donación</string>
-    <string name="translate_desc">Traduce Grit en tu idioma</string>
+    <string name="translate_desc">Traduce Hexis en tu idioma</string>
     <string name="language">Idioma</string>
     <string name="about">Acerca de</string>
     <string name="system_default">Por defecto del sistema</string>

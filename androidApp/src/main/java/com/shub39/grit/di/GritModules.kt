@@ -35,7 +35,7 @@ import org.koin.core.annotation.Single
 
 @Module(includes = [UIModules::class])
 @ComponentScan("com.shub39.grit")
-class GritModules {
+class HexisModules {
     @Single fun getHabitDb(dbFactory: HabitDbFactory): HabitDatabase = dbFactory.create().build()
 
     @Single fun getTaskDb(dbFactory: TaskDbFactory): TaskDatabase = dbFactory.create().build()

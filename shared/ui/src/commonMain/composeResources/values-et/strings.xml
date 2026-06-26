@@ -51,7 +51,7 @@
     <string name="palette_style">Paletti stiil</string>
     <string name="look_and_feel_desc">Kohanda rakendust</string>
     <string name="backup_desc">Ekspordi või taasta oma ülesandeid ja harjumusi</string>
-    <string name="export_desc">Kõik andmed on eksporditud allalaadimistesse/Griti</string>
+    <string name="export_desc">Kõik andmed on eksporditud allalaadimistesse/Hexisi</string>
     <string name="restore">Taasta</string>
     <string name="restore_desc">Taasta ülesanded ja harjumused valitud failist</string>
     <string name="show_habits">Näita alguses harjumusi</string>
@@ -65,7 +65,7 @@
     <string name="weekly_graph">Nädala võrdlus</string>
     <string name="unlock_more_plus">Ava Plusiga rohkem</string>
     <string name="unlock_plus">Ava Plusiga</string>
-    <string name="grit_plus">Grit Plus</string>
+    <string name="grit_plus">Hexis Plus</string>
     <string name="monthly_progress">Kuu edenemine</string>
     <string name="week_breakdown">Nädalapäevade järgi</string>
     <string name="foss">Kasutad FOSS varianti</string>

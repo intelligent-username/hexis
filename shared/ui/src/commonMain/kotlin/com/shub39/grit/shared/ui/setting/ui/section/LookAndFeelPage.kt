@@ -70,7 +70,7 @@ import com.shub39.grit.shared.ui.components.listItemColors
 import com.shub39.grit.shared.ui.components.middleItemShape
 import com.shub39.grit.shared.ui.setting.SettingsAction
 import com.shub39.grit.shared.ui.setting.SettingsState
-import com.shub39.grit.shared.ui.theme.GritTheme
+import com.shub39.grit.shared.ui.theme.HexisTheme
 import com.shub39.grit.shared.ui.theme.flexFontEmphasis
 import com.shub39.grit.shared.ui.toDisplayString
 import com.shub39.grit.shared.ui.toFontRes
@@ -346,7 +346,7 @@ expect fun PaletteStylePicker(
 @Preview
 @Composable
 private fun Preview() {
-    GritTheme(theme = Theme(appTheme = AppTheme.DARK)) {
+    HexisTheme(theme = Theme(appTheme = AppTheme.DARK)) {
         Surface {
             LookAndFeelPage(
                 state = SettingsState(),

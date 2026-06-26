@@ -20,7 +20,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.util.Log
-import com.shub39.grit.core.data.notification.GritNotificationManager
+import com.shub39.grit.core.data.notification.HexisNotificationManager
 import com.shub39.grit.core.habits.HabitRepo
 import com.shub39.grit.core.habits.HabitStatus
 import com.shub39.grit.core.interfaces.AlarmScheduler
@@ -38,10 +38,10 @@ import kotlinx.datetime.LocalDate
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.get
 
-class GritIntentReceiver : BroadcastReceiver(), KoinComponent {
+class HexisIntentReceiver : BroadcastReceiver(), KoinComponent {
 
     companion object {
-        private const val TAG = "GritIntentReceiver"
+        private const val TAG = "HexisIntentReceiver"
     }
 
     private val receiverScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
@@ -89,7 +89,7 @@ class GritIntentReceiver : BroadcastReceiver(), KoinComponent {
 
         Log.d(TAG, "Task marked as complete successfully")
 
-        get<GritNotificationManager>().cancelNotification(taskId.toInt())
+        get<HexisNotificationManager>().cancelNotification(taskId.toInt())
     }
 
     private suspend fun addHabitStatus(intent: Intent) {
@@ -103,7 +103,7 @@ class GritIntentReceiver : BroadcastReceiver(), KoinComponent {
 
         Log.d(TAG, "Habit status added successfully")
 
-        get<GritNotificationManager>().cancelNotification(habitId.toInt())
+        get<HexisNotificationManager>().cancelNotification(habitId.toInt())
     }
 
     private suspend fun taskNotification(intent: Intent) {
@@ -116,7 +116,7 @@ class GritIntentReceiver : BroadcastReceiver(), KoinComponent {
         val task = taskRepo.getTaskById(taskId) ?: return
         if (!task.status && task.reminder != null) {
             Log.d(TAG, "sending Task notification")
-            get<GritNotificationManager>().taskNotification(task)
+            get<HexisNotificationManager>().taskNotification(task)
         }
     }
 
@@ -136,7 +136,7 @@ class GritIntentReceiver : BroadcastReceiver(), KoinComponent {
         if (habitStatus.any { it.date == LocalDate.now() }) {
             Log.d(TAG, "Habit already completed today")
         } else {
-            get<GritNotificationManager>().habitNotification(habit)
+            get<HexisNotificationManager>().habitNotification(habit)
         }
 
         get<AlarmScheduler>().schedule(habit)

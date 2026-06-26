@@ -77,7 +77,7 @@ class ExportImpl(private val taskRepo: TaskRepo, private val habitsRepo: HabitRe
             val time = LocalDateTime.now().toString().replace(":", "").replace(" ", "")
             val file =
                 FileKit.openFileSaver(
-                    suggestedName = "Grit-Export-$time",
+                    suggestedName = "Hexis-Export-$time",
                     defaultExtension = "json",
                 )
 

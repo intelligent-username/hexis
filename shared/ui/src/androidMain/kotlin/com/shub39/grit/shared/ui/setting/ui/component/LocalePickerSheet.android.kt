@@ -39,7 +39,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import com.shub39.grit.shared.ui.components.GritBottomSheet
+import com.shub39.grit.shared.ui.components.HexisBottomSheet
 import com.shub39.grit.shared.ui.components.listItemColors
 import com.shub39.grit.shared.ui.components.segmentedListItemShapes
 import grit.shared.ui.generated.resources.*
@@ -87,7 +87,7 @@ actual fun LocalePickerSheet(onDismissRequest: () -> Unit, modifier: Modifier) {
 
     val supportedLocalesSize = supportedLocaleList?.size ?: 0
 
-    GritBottomSheet(
+    HexisBottomSheet(
         onDismissRequest = onDismissRequest,
         sheetState = sheetState,
         modifier = modifier,

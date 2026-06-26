@@ -52,7 +52,7 @@ import com.shub39.grit.shared.ui.components.leadingItemShape
 import com.shub39.grit.shared.ui.components.listItemColors
 import com.shub39.grit.shared.ui.setting.SettingsAction
 import com.shub39.grit.shared.ui.setting.SettingsState
-import com.shub39.grit.shared.ui.theme.GritTheme
+import com.shub39.grit.shared.ui.theme.HexisTheme
 import com.shub39.grit.shared.ui.theme.flexFontEmphasis
 import grit.shared.ui.generated.resources.*
 import org.jetbrains.compose.resources.painterResource
@@ -203,7 +203,7 @@ fun BackupPage(
 @Preview
 @Composable
 private fun Preview() {
-    GritTheme(theme = Theme(appTheme = AppTheme.DARK)) {
+    HexisTheme(theme = Theme(appTheme = AppTheme.DARK)) {
         Surface { BackupPage(state = SettingsState(), onAction = {}, onNavigateBack = {}) }
     }
 }

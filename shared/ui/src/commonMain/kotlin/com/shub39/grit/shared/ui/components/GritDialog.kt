@@ -30,7 +30,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun GritDialog(
+fun HexisDialog(
     onDismissRequest: () -> Unit,
     modifier: Modifier = Modifier,
     padding: Dp = 16.dp,

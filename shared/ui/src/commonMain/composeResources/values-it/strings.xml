@@ -33,7 +33,7 @@
     <string name="backup">Backup</string>
     <string name="backup_desc">Esporta o Reimposta le tue task e abitudini</string>
     <string name="export">Esporta dati</string>
-    <string name="export_desc">Dati completamente esportati in Download/Grit</string>
+    <string name="export_desc">Dati completamente esportati in Download/Hexis</string>
     <string name="restore">Reimposta</string>
     <string name="restore_desc">Reimposta task e abitudini da un file selezionato</string>
     <string name="material_theme_desc">Usa i colori dello sfondo</string>
@@ -63,7 +63,7 @@
     <string name="overall_analytics">Statistiche Generali</string>
     <string name="unlock_more_plus">Sblocca di più con Plus</string>
     <string name="unlock_plus">Sblocca con Plus</string>
-    <string name="grit_plus">Grit Plus</string>
+    <string name="grit_plus">Hexis Plus</string>
     <string name="monthly_progress">Progresso Mensile</string>
     <string name="week_breakdown">Ripartizione nella Settimana</string>
     <string name="foss">Stai usando la variante FOSS</string>

@@ -21,7 +21,7 @@ import android.app.Application
 import android.os.Build
 import androidx.glance.appwidget.GlanceAppWidgetManager
 import com.shub39.grit.billing.BillingInitializer
-import com.shub39.grit.di.GritModules
+import com.shub39.grit.di.HexisModules
 import com.shub39.grit.widgets.all_tasks_widget.AllTasksWidgetReceiver
 import com.shub39.grit.widgets.habit_overview_widget.HabitOverviewWidgetReceiver
 import com.shub39.grit.widgets.habit_streak_widget.HabitStreakWidgetReceiver
@@ -32,14 +32,14 @@ import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
 import org.koin.plugin.module.dsl.startKoin
 
-class GritApplication : Application() {
+class HexisApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
 
-        startKoin<GritModules> {
+        startKoin<HexisModules> {
             androidLogger()
-            androidContext(this@GritApplication)
+            androidContext(this@HexisApplication)
         }
 
         BillingInitializer().initialize(this)
