@@ -20,6 +20,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import com.shub39.grit.core.habits.HabitWithAnalytics
 import com.shub39.grit.core.habits.OverallAnalytics
+import com.shub39.grit.core.habits.TimeDivision
 import kotlinx.datetime.DayOfWeek
 
 /**
@@ -61,4 +62,7 @@ data class HabitState(
     val showArchivedHabits: Boolean = false,
     val showOverallAnalytics: Boolean = false,
     val isReordering: Boolean = false,
+    val timeDivisions: List<TimeDivision> = emptyList(),
+    val habitTimeDivisionMap: Map<Long, Long> = emptyMap(),
+    val selectedTimeDivisionId: Long? = null,
 )

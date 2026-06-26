@@ -22,11 +22,15 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
+import com.shub39.grit.core.habits.TimeDivision
 import com.shub39.grit.core.interfaces.SettingsDatastore
 import com.shub39.grit.core.settings.Sections
+import com.shub39.grit.core.tasks.PomodoroSettings
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.DayOfWeek
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import org.koin.core.annotation.Single
 
 @Single(binds = [SettingsDatastore::class])
@@ -42,6 +46,9 @@ class SettingsDatastoreImpl(private val datastore: DataStore<Preferences>) : Set
         private val compactHabitView = booleanPreferencesKey("compact_habit_view")
         private val lastChangelogShownKey = stringPreferencesKey("last_changelog_shown")
         private val archivedHabitIdsKey = stringSetPreferencesKey("archived_habit_ids")
+        private val timeDivisionsKey = stringPreferencesKey("time_divisions")
+        private val habitTimeDivisionMapKey = stringPreferencesKey("habit_time_division_map")
+        private val pomodoroSettingsKey = stringPreferencesKey("pomodoro_settings")
     }
 
     override fun getStartOfTheWeekPref(): Flow<DayOfWeek> =
@@ -115,5 +122,40 @@ class SettingsDatastoreImpl(private val datastore: DataStore<Preferences>) : Set
         datastore.edit { prefs ->
             prefs[archivedHabitIdsKey] = ids.map { it.toString() }.toSet()
         }
+    }
+
+    override fun getTimeDivisions(): Flow<List<TimeDivision>> =
+        datastore.data.map { prefs ->
+            prefs[timeDivisionsKey]?.let { Json.decodeFromString(it) } ?: emptyList()
+        }
+
+    override suspend fun setTimeDivisions(divisions: List<TimeDivision>) {
+        datastore.edit { prefs -> prefs[timeDivisionsKey] = Json.encodeToString(divisions) }
+    }
+
+    override fun getHabitTimeDivisionMap(): Flow<Map<Long, Long>> =
+        datastore.data.map { prefs ->
+            prefs[habitTimeDivisionMapKey]?.let { Json.decodeFromString<Map<String, Long>>(it) }
+                ?.mapKeys { it.key.toLong() } ?: emptyMap()
+        }
+
+    override suspend fun setHabitTimeDivision(habitId: Long, divisionId: Long?) {
+        datastore.edit { prefs ->
+            val current =
+                prefs[habitTimeDivisionMapKey]?.let { Json.decodeFromString<Map<String, Long>>(it) }
+                    ?.toMutableMap() ?: mutableMapOf()
+            if (divisionId != null) current[habitId.toString()] = divisionId
+            else current.remove(habitId.toString())
+            prefs[habitTimeDivisionMapKey] = Json.encodeToString(current)
+        }
+    }
+
+    override fun getPomodoroSettings(): Flow<PomodoroSettings> =
+        datastore.data.map { prefs ->
+            prefs[pomodoroSettingsKey]?.let { Json.decodeFromString(it) } ?: PomodoroSettings()
+        }
+
+    override suspend fun setPomodoroSettings(settings: PomodoroSettings) {
+        datastore.edit { prefs -> prefs[pomodoroSettingsKey] = Json.encodeToString(settings) }
     }
 }

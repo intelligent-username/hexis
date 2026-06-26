@@ -20,10 +20,23 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
@@ -42,7 +55,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
@@ -71,6 +86,13 @@ import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
+import org.jetbrains.compose.resources.vectorResource
+import com.shub39.grit.shared.ui.habit.ui.component.TimeDivisionEditDialog
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.ToggleButton
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.material3.FilledTonalIconButton
 
 @Serializable
 private sealed interface HabitRoutes : NavKey {
@@ -111,7 +133,9 @@ fun HabitsGraph(
 
     val filteredState = state.copy(
         habitsWithAnalytics = state.habitsWithAnalytics.filter {
-            (it.habit.id in state.archivedHabitIds) == state.showArchivedHabits
+            val matchesArchive = (it.habit.id in state.archivedHabitIds) == state.showArchivedHabits
+            val matchesDivision = state.selectedTimeDivisionId == null || state.habitTimeDivisionMap[it.habit.id] == state.selectedTimeDivisionId
+            matchesArchive && matchesDivision
         }
     )
 
@@ -138,6 +162,11 @@ fun HabitsGraph(
                                 state = filteredState,
                                 onAction = onAction,
                                 scrollBehavior = scrollBehavior,
+                            )
+                            
+                            TimeDivisionSelector(
+                                state = state,
+                                onAction = onAction,
                             )
 
                             PageFill {
@@ -390,6 +419,108 @@ private fun ExpandedScreen(
 }
 
 @Composable
+private fun TimeDivisionSelector(
+    state: HabitState,
+    onAction: (HabitsAction) -> Unit,
+) {
+    var showEditDialog by remember { mutableStateOf(false) }
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+    ) {
+        val isAllSelected = state.selectedTimeDivisionId == null
+        Surface(
+            shape = RoundedCornerShape(50),
+            color = if (isAllSelected) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainerHighest,
+            modifier = Modifier.height(40.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .clickable { onAction(HabitsAction.SelectTimeDivision(null)) }
+                    .padding(horizontal = 16.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "All",
+                    fontFamily = flexFontRounded(),
+                    style = MaterialTheme.typography.labelLarge,
+                    maxLines = 1,
+                    color = if (isAllSelected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurface
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.width(12.dp))
+
+        Surface(
+            shape = RoundedCornerShape(50),
+            color = MaterialTheme.colorScheme.surfaceContainerHighest,
+            modifier = Modifier.weight(1f).height(40.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxSize()) {
+                LazyRow(
+                    modifier = Modifier.weight(1f).fillMaxHeight(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    items(state.timeDivisions, key = { it.id }) { division ->
+                        val selected = state.selectedTimeDivisionId == division.id
+                        Box(
+                            modifier = Modifier
+                                .fillMaxHeight()
+                                .clickable { onAction(HabitsAction.SelectTimeDivision(division.id)) }
+                                .background(if (selected) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent)
+                                .padding(horizontal = 16.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = division.name,
+                                fontFamily = flexFontRounded(),
+                                style = MaterialTheme.typography.labelLarge,
+                                maxLines = 1,
+                                color = if (selected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .fillMaxHeight()
+                                .padding(vertical = 8.dp)
+                                .width(1.dp)
+                                .background(MaterialTheme.colorScheme.outlineVariant)
+                        )
+                    }
+                }
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .clickable(enabled = !state.editState) { showEditDialog = true }
+                        .padding(horizontal = 16.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = vectorResource(Res.drawable.edit),
+                        contentDescription = "Edit Divisions",
+                        modifier = Modifier.size(20.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+    }
+
+    if (showEditDialog) {
+        TimeDivisionEditDialog(
+            state = state,
+            onAction = onAction,
+            onDismiss = { showEditDialog = false }
+        )
+    }
+}
+
+@Composable
 private fun HabitsTopAppBar(
     state: HabitState,
     onAction: (HabitsAction) -> Unit,
@@ -422,6 +553,22 @@ private fun HabitsTopAppBar(
             ) {
                 Row {
                     FilledTonalIconToggleButton(
+                        checked = state.showArchivedHabits,
+                        shapes =
+                            IconToggleButtonShapes(
+                                shape = CircleShape,
+                                checkedShape = MaterialTheme.shapes.small,
+                                pressedShape = MaterialTheme.shapes.extraSmall,
+                            ),
+                        onCheckedChange = { onAction(HabitsAction.ToggleShowArchivedHabits(it)) },
+                    ) {
+                        Icon(
+                            painter = painterResource(Res.drawable.download),
+                            contentDescription = "Archived Habits",
+                        )
+                    }
+
+                    FilledTonalIconToggleButton(
                         checked = state.compactHabitView,
                         shapes =
                             IconToggleButtonShapes(
@@ -441,22 +588,6 @@ private fun HabitsTopAppBar(
                                     }
                                 ),
                             contentDescription = "Compact View",
-                        )
-                    }
-
-                    FilledTonalIconToggleButton(
-                        checked = state.showArchivedHabits,
-                        shapes =
-                            IconToggleButtonShapes(
-                                shape = CircleShape,
-                                checkedShape = MaterialTheme.shapes.small,
-                                pressedShape = MaterialTheme.shapes.extraSmall,
-                            ),
-                        onCheckedChange = { onAction(HabitsAction.ToggleShowArchivedHabits(it)) },
-                    ) {
-                        Icon(
-                            painter = painterResource(Res.drawable.download),
-                            contentDescription = "Archived Habits",
                         )
                     }
 

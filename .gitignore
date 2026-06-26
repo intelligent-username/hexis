@@ -15,9 +15,10 @@ local.properties
 *.keystore
 release.jks
 
-# General
+# General local testing/type stuff
 notes/
 *.md
 !*README.md*
 !CHANGELOG.md
 !LICENSE.md
+*.lnk

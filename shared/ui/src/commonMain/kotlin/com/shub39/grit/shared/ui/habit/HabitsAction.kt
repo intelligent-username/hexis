@@ -17,6 +17,7 @@
 package com.shub39.grit.shared.ui.habit
 
 import com.shub39.grit.core.habits.Habit
+import com.shub39.grit.core.habits.TimeDivision
 import kotlinx.datetime.LocalDate
 
 /**
@@ -59,4 +60,18 @@ sealed interface HabitsAction {
     data class ToggleShowArchivedHabits(val show: Boolean) : HabitsAction
 
     data class ToggleOverallAnalytics(val show: Boolean) : HabitsAction
+
+    data class AddTimeDivision(val division: TimeDivision) : HabitsAction
+
+    data class UpdateTimeDivision(val division: TimeDivision) : HabitsAction
+
+    data class DeleteTimeDivision(val id: Long) : HabitsAction
+
+    data class ReorderTimeDivisions(val mapping: List<Pair<Int, TimeDivision>>) : HabitsAction
+
+    data class SetHabitTimeDivision(val habitId: Long, val divisionId: Long?) : HabitsAction
+
+    data class SelectTimeDivision(val divisionId: Long?) : HabitsAction
+
+    data object ToggleTimeDivisionSheet : HabitsAction
 }

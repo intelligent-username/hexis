@@ -36,6 +36,7 @@ import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlin.time.Clock
 import kotlinx.datetime.LocalDate
 import org.koin.core.annotation.KoinViewModel
 import org.koin.core.annotation.Provided
@@ -172,6 +173,52 @@ class HabitViewModel(
                 is ToggleOverallAnalytics -> {
                     _state.update { it.copy(showOverallAnalytics = action.show) }
                 }
+
+                is AddTimeDivision -> {
+                    val currentList = _state.value.timeDivisions.toMutableList()
+                    val newDivision = action.division.copy(id = Clock.System.now().toEpochMilliseconds())
+                    currentList.add(newDivision)
+                    datastore.setTimeDivisions(currentList)
+                }
+
+                is UpdateTimeDivision -> {
+                    val currentList = _state.value.timeDivisions.toMutableList()
+                    val index = currentList.indexOfFirst { it.id == action.division.id }
+                    if (index != -1) {
+                        currentList[index] = action.division
+                        datastore.setTimeDivisions(currentList)
+                    }
+                }
+
+                is DeleteTimeDivision -> {
+                    val currentList = _state.value.timeDivisions.toMutableList()
+                    currentList.removeAll { it.id == action.id }
+                    datastore.setTimeDivisions(currentList)
+                    
+                    val map = _state.value.habitTimeDivisionMap
+                    val affectedHabits = map.filterValues { it == action.id }.keys
+                    affectedHabits.forEach { habitId ->
+                        datastore.setHabitTimeDivision(habitId, null)
+                    }
+                    if (_state.value.selectedTimeDivisionId == action.id) {
+                        _state.update { it.copy(selectedTimeDivisionId = null) }
+                    }
+                }
+
+                is ReorderTimeDivisions -> {
+                    val currentList = action.mapping.map { it.second }.toMutableList()
+                    datastore.setTimeDivisions(currentList)
+                }
+
+                is SetHabitTimeDivision -> {
+                    datastore.setHabitTimeDivision(action.habitId, action.divisionId)
+                }
+
+                is SelectTimeDivision -> {
+                    _state.update { it.copy(selectedTimeDivisionId = action.divisionId) }
+                }
+
+                is ToggleTimeDivisionSheet -> {}
             }
         }
     }
@@ -226,6 +273,16 @@ class HabitViewModel(
                 datastore
                     .getArchivedHabitIds()
                     .onEach { pref -> _state.update { it.copy(archivedHabitIds = pref) } }
+                    .launchIn(this)
+                    
+                datastore
+                    .getTimeDivisions()
+                    .onEach { list -> _state.update { it.copy(timeDivisions = list) } }
+                    .launchIn(this)
+
+                datastore
+                    .getHabitTimeDivisionMap()
+                    .onEach { map -> _state.update { it.copy(habitTimeDivisionMap = map) } }
                     .launchIn(this)
             }
     }

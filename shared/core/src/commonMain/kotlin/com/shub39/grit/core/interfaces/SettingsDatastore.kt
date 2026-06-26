@@ -16,7 +16,9 @@
  */
 package com.shub39.grit.core.interfaces
 
+import com.shub39.grit.core.habits.TimeDivision
 import com.shub39.grit.core.settings.Sections
+import com.shub39.grit.core.tasks.PomodoroSettings
 import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.DayOfWeek
 
@@ -56,4 +58,16 @@ interface SettingsDatastore {
     fun getArchivedHabitIds(): Flow<Set<Long>>
 
     suspend fun setArchivedHabitIds(ids: Set<Long>)
+
+    fun getTimeDivisions(): Flow<List<TimeDivision>>
+
+    suspend fun setTimeDivisions(divisions: List<TimeDivision>)
+
+    fun getHabitTimeDivisionMap(): Flow<Map<Long, Long>>
+
+    suspend fun setHabitTimeDivision(habitId: Long, divisionId: Long?)
+
+    fun getPomodoroSettings(): Flow<PomodoroSettings>
+
+    suspend fun setPomodoroSettings(settings: PomodoroSettings)
 }

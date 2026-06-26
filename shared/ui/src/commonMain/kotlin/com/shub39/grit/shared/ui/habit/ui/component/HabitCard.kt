@@ -205,11 +205,22 @@ fun HabitCard(
                 }
             },
             supportingContent = {
-                if (habitWithAnalytics.habit.reminder) {
-                    Text(
-                        text = habitWithAnalytics.habit.time.time.toFormattedString(is24Hr),
-                        style = MaterialTheme.typography.labelMedium,
-                    )
+                Column {
+                    if (!compactView && habitWithAnalytics.habit.description.isNotBlank()) {
+                        Text(
+                            text = habitWithAnalytics.habit.description,
+                            style = MaterialTheme.typography.bodyMedium,
+                            maxLines = 2,
+                            modifier = Modifier.padding(bottom = 2.dp),
+                            color = cardContent.copy(alpha = 0.8f)
+                        )
+                    }
+                    if (habitWithAnalytics.habit.reminder) {
+                        Text(
+                            text = habitWithAnalytics.habit.time.time.toFormattedString(is24Hr),
+                            style = MaterialTheme.typography.labelMedium,
+                        )
+                    }
                 }
             },
             trailingContent = {
@@ -221,6 +232,7 @@ fun HabitCard(
                         Icon(
                             imageVector = vectorResource(Res.drawable.heat),
                             contentDescription = null,
+                            tint = Color(0xFFFF9800),
                         )
 
                         Text(text = habitWithAnalytics.currentStreak.toString())

@@ -28,6 +28,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.shub39.grit.core.habits.Habit
@@ -42,7 +44,9 @@ import com.shub39.grit.shared.ui.habit.HabitState
 import com.shub39.grit.shared.ui.habit.HabitsAction
 import com.shub39.grit.shared.ui.habit.ui.component.HabitCard
 import com.shub39.grit.shared.ui.habit.ui.component.HabitUpsertSheet
+import com.shub39.grit.shared.ui.habit.ui.component.TimeDivisionEditDialog
 import grit.shared.ui.generated.resources.*
+import kotlin.time.Clock
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDateTime
 import org.jetbrains.compose.resources.vectorResource
@@ -126,10 +130,22 @@ fun HabitsList(
     }
 
     // add dialog
+    val showTimeDivisionEditDialog = remember { mutableStateOf(false) }
+    
+    if (showTimeDivisionEditDialog.value) {
+        TimeDivisionEditDialog(
+            state = state,
+            onAction = onAction,
+            onDismiss = { showTimeDivisionEditDialog.value = false }
+        )
+    }
+
     if (state.showHabitAddSheet) {
+        val newHabitId = remember { Clock.System.now().toEpochMilliseconds() }
         HabitUpsertSheet(
             habit =
                 Habit(
+                    id = newHabitId,
                     title = "",
                     description = "",
                     time = LocalDateTime.now(),
@@ -137,8 +153,14 @@ fun HabitsList(
                     index = state.habitsWithAnalytics.size,
                     reminder = false,
                 ),
+            timeDivisions = state.timeDivisions,
+            selectedDivisionId = state.selectedTimeDivisionId,
             onDismissRequest = { onAction(HabitsAction.DismissAddHabitDialog) },
-            onUpsertHabit = { onAction(HabitsAction.AddHabit(it)) },
+            onUpsertHabit = { habit, divId -> 
+                onAction(HabitsAction.AddHabit(habit))
+                onAction(HabitsAction.SetHabitTimeDivision(habit.id, divId))
+            },
+            onManageTimeDivisions = { showTimeDivisionEditDialog.value = true },
             is24Hr = state.is24Hr,
         )
     }

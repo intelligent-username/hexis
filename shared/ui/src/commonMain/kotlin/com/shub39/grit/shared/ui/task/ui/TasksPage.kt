@@ -62,18 +62,21 @@ import com.shub39.grit.shared.ui.task.ui.component.CategoryUpsertSheet
 import com.shub39.grit.shared.ui.task.ui.section.TaskList
 import com.shub39.grit.shared.ui.theme.flexFontEmphasis
 import grit.shared.ui.generated.resources.*
-import grit.shared.ui.generated.resources.add
-import kotlin.invoke
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.resources.vectorResource
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 
 @Composable
-fun TasksPage(state: TaskState, onAction: (TaskAction) -> Unit) {
+fun TasksPage(state: TaskState, onAction: (TaskAction) -> Unit, onPomodoroClick: () -> Unit) {
     var showCategoryEditor by remember { mutableStateOf(false) }
 
-    TaskList(state = state, onAction = onAction, onEditCategories = { showCategoryEditor = true })
+    TaskList(
+        state = state,
+        onAction = onAction,
+        onEditCategories = { showCategoryEditor = true },
+        onPomodoroClick = onPomodoroClick,
+    )
 
     if (showCategoryEditor) {
         CategoryEditDialog(

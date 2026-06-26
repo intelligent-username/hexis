@@ -98,8 +98,7 @@ class HabitRepository(
     }
 
     override fun getHabitsWithAnalytics(): Flow<List<HabitWithAnalytics>> {
-        return habits
-            .combine(habitStatuses) { habitsFlow, habitStatusesFlow ->
+        return combine(habits, habitStatuses, firstDayOfWeek) { habitsFlow, habitStatusesFlow, firstDay ->
                 habitsFlow.map { habit ->
                     val habitStatusesForHabit = habitStatusesFlow.filter { it.habitId == habit.id }
                     val dates = habitStatusesForHabit.map { it.date }
@@ -112,10 +111,10 @@ class HabitRepository(
                         bestStreak = countBestStreak(dates = dates, eligibleWeekdays = habit.days),
                         weeklyComparisonData =
                             prepareLineChartData(
-                                firstDay = firstDayOfWeek.value,
+                                firstDay = firstDay,
                                 habitStatuses = habitStatusesForHabit,
                             ),
-                        weekDayFrequencyData = prepareWeekDayFrequencyData(dates = dates, firstDayOfWeek = firstDayOfWeek.value),
+                        weekDayFrequencyData = prepareWeekDayFrequencyData(dates = dates, firstDayOfWeek = firstDay),
                         startedDaysAgo = habit.time.date.daysUntil(LocalDate.now()).toLong(),
                         consistency = calculateConsistency(dates, habit.days),
                     )
@@ -133,8 +132,7 @@ class HabitRepository(
     }
 
     override fun getOverallAnalytics(): Flow<OverallAnalytics> {
-        return habits
-            .combine(habitStatuses) { habitsFlow, habitStatusesFlow ->
+        return combine(habits, habitStatuses, firstDayOfWeek) { habitsFlow, habitStatusesFlow, firstDay ->
                 val habitConsistencies =
                     habitsFlow.map { habit ->
                         val dates =
@@ -156,7 +154,7 @@ class HabitRepository(
                 OverallAnalytics(
                     heatMapData = prepareHeatMapData(habitStatusesFlow),
                     weekDayFrequencyData =
-                        prepareWeekDayFrequencyData(habitStatusesFlow.map { it.date }, firstDayOfWeek.value),
+                        prepareWeekDayFrequencyData(habitStatusesFlow.map { it.date }, firstDay),
                     consistency = overallConsistency,
                     topHabits = topHabits,
                 )

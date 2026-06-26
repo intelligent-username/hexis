@@ -54,6 +54,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -69,6 +73,7 @@ import com.shub39.grit.shared.ui.components.GritDialog
 import com.shub39.grit.shared.ui.habit.HabitState
 import com.shub39.grit.shared.ui.habit.HabitsAction
 import com.shub39.grit.shared.ui.habit.ui.component.HabitUpsertSheet
+import com.shub39.grit.shared.ui.habit.ui.component.TimeDivisionEditDialog
 import com.shub39.grit.shared.ui.habit.ui.component.stats.CalendarMap
 import com.shub39.grit.shared.ui.habit.ui.component.stats.StartStats
 import com.shub39.grit.shared.ui.habit.ui.component.stats.WeekDayBreakdown
@@ -320,11 +325,27 @@ fun AnalyticsPage(
         }
     }
 
+    val showTimeDivisionEditDialog = remember { mutableStateOf(false) }
+    
+    if (showTimeDivisionEditDialog.value) {
+        TimeDivisionEditDialog(
+            state = state,
+            onAction = onAction,
+            onDismiss = { showTimeDivisionEditDialog.value = false }
+        )
+    }
+
     if (editDialog) {
         HabitUpsertSheet(
             habit = currentHabit.habit,
+            timeDivisions = state.timeDivisions,
+            selectedDivisionId = state.habitTimeDivisionMap[currentHabit.habit.id],
             onDismissRequest = { editDialog = false },
-            onUpsertHabit = { onAction(HabitsAction.UpdateHabit(it)) },
+            onUpsertHabit = { habit, divId -> 
+                onAction(HabitsAction.UpdateHabit(habit))
+                onAction(HabitsAction.SetHabitTimeDivision(habit.id, divId))
+            },
+            onManageTimeDivisions = { showTimeDivisionEditDialog.value = true },
             is24Hr = state.is24Hr,
             isEditSheet = true,
         )

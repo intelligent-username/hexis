@@ -31,12 +31,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import com.shub39.grit.core.habits.Habit
+import com.shub39.grit.core.habits.TimeDivision
 
 @Composable
 actual fun HabitUpsertSheet(
     habit: Habit,
+    timeDivisions: List<TimeDivision>,
+    selectedDivisionId: Long?,
     onDismissRequest: () -> Unit,
-    onUpsertHabit: (Habit) -> Unit,
+    onUpsertHabit: (Habit, Long?) -> Unit,
+    onManageTimeDivisions: () -> Unit,
     is24Hr: Boolean,
     modifier: Modifier,
     isEditSheet: Boolean,
@@ -67,9 +71,12 @@ actual fun HabitUpsertSheet(
 
     HabitUpsertSheetContent(
         newHabit = newHabit,
+        timeDivisions = timeDivisions,
+        selectedDivisionId = selectedDivisionId,
         updateHabit = { newHabit = it },
         onDismissRequest = onDismissRequest,
         onUpsertHabit = onUpsertHabit,
+        onManageTimeDivisions = onManageTimeDivisions,
         is24Hr = is24Hr,
         isEditSheet = isEditSheet,
         notificationPermission = notificationPermission,

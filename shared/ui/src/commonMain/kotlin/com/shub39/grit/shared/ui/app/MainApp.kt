@@ -35,7 +35,10 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -47,6 +50,7 @@ import com.shub39.grit.shared.ui.app.AppSections.Companion.toStringRes
 import com.shub39.grit.shared.ui.habit.ui.HabitsGraph
 import com.shub39.grit.shared.ui.setting.ui.SettingsGraph
 import com.shub39.grit.shared.ui.task.ui.TasksPage
+import com.shub39.grit.shared.ui.task.ui.component.PomodoroPage
 import com.shub39.grit.shared.ui.viewmodel.HabitViewModel
 import com.shub39.grit.shared.ui.viewmodel.SettingsViewModel
 import com.shub39.grit.shared.ui.viewmodel.TasksViewModel
@@ -72,6 +76,8 @@ fun MainApp(state: MainAppState, onNavigateToPaywall: () -> Unit) {
     val mvm: MainViewModel = koinViewModel()
     val tvm: TasksViewModel = koinViewModel()
     val hvm: HabitViewModel = koinViewModel()
+
+    var showPomodoro by remember { mutableStateOf(false) }
 
     androidx.compose.runtime.LaunchedEffect(state.shortcutAction) {
         state.shortcutAction?.let { action ->
@@ -120,12 +126,16 @@ fun MainApp(state: MainAppState, onNavigateToPaywall: () -> Unit) {
                                 bottom = padding.calculateBottomPadding(),
                             )
                             .background(MaterialTheme.colorScheme.background),
-                ) { page ->
+                    ) { page ->
                     when (val route = AppSections.mainRoutes[page]) {
                         is AppSections.TaskPages -> {
                             val taskPageState by tvm.state.collectAsStateWithLifecycle()
 
-                            TasksPage(state = taskPageState, onAction = tvm::onAction)
+                            TasksPage(
+                                state = taskPageState,
+                                onAction = tvm::onAction,
+                                onPomodoroClick = { showPomodoro = true },
+                            )
                         }
 
                         is AppSections.SettingsPages -> {
@@ -179,7 +189,11 @@ fun MainApp(state: MainAppState, onNavigateToPaywall: () -> Unit) {
                         is AppSections.TaskPages -> {
                             val taskPageState by tvm.state.collectAsStateWithLifecycle()
 
-                            TasksPage(state = taskPageState, onAction = tvm::onAction)
+                            TasksPage(
+                                state = taskPageState,
+                                onAction = tvm::onAction,
+                                onPomodoroClick = { showPomodoro = true },
+                            )
                         }
 
                         is AppSections.SettingsPages -> {
@@ -208,6 +222,10 @@ fun MainApp(state: MainAppState, onNavigateToPaywall: () -> Unit) {
                 }
             }
         }
+    }
+
+    if (showPomodoro) {
+        PomodoroPage(onDismiss = { showPomodoro = false })
     }
 }
 

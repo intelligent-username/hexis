@@ -112,7 +112,7 @@ import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 
 @Composable
-fun TaskList(state: TaskState, onAction: (TaskAction) -> Unit, onEditCategories: () -> Unit) =
+fun TaskList(state: TaskState, onAction: (TaskAction) -> Unit, onEditCategories: () -> Unit, onPomodoroClick: () -> Unit) =
     PageFill {
         val windowSizeClass = LocalWindowSizeClass.current
 
@@ -152,6 +152,7 @@ fun TaskList(state: TaskState, onAction: (TaskAction) -> Unit, onEditCategories:
                 onAction = onAction,
                 onAddCategoryClick = { showCategoryAddSheet = true },
                 onEditCategoriesClick = onEditCategories,
+                onPomodoroClick = onPomodoroClick,
                 isExpanded = windowSizeClass.widthSizeClass == WindowWidthSizeClass.Expanded,
                 onReorderModeChange = { editState = it },
             )
@@ -348,6 +349,7 @@ private fun CategorySelector(
     onAction: (TaskAction) -> Unit,
     onAddCategoryClick: () -> Unit,
     onEditCategoriesClick: () -> Unit,
+    onPomodoroClick: () -> Unit,
     isExpanded: Boolean,
     onReorderModeChange: (Boolean) -> Unit,
 ) {
@@ -382,6 +384,12 @@ private fun CategorySelector(
                         contentDescription = "Edit Categories",
                     )
                 }
+                FilledTonalIconButton(onClick = onPomodoroClick, enabled = !isReorderMode) {
+                    Icon(
+                        imageVector = vectorResource(Res.drawable.schedule),
+                        contentDescription = "Pomodoro",
+                    )
+                }
             }
         } else {
             item {
@@ -401,6 +409,15 @@ private fun CategorySelector(
                     )
                     Spacer(Modifier.width(ButtonDefaults.IconSpacing))
                     Text(text = stringResource(Res.string.edit_categories))
+                }
+                Spacer(Modifier.width(8.dp))
+                FilledTonalButton(onClick = onPomodoroClick, enabled = !isReorderMode) {
+                    Icon(
+                        imageVector = vectorResource(Res.drawable.schedule),
+                        contentDescription = null,
+                    )
+                    Spacer(Modifier.width(ButtonDefaults.IconSpacing))
+                    Text(text = "Pomodoro")
                 }
             }
         }

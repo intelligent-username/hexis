@@ -19,6 +19,7 @@ package com.shub39.grit.shared.ui.habit.ui.component
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -60,16 +61,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.shub39.grit.core.habits.Habit
+import com.shub39.grit.core.habits.TimeDivision
 import com.shub39.grit.core.now
 import com.shub39.grit.core.toFormattedString
 import com.shub39.grit.shared.ui.components.ExpressiveSwitch
@@ -94,8 +95,11 @@ import org.jetbrains.compose.resources.vectorResource
 @Composable
 expect fun HabitUpsertSheet(
     habit: Habit,
+    timeDivisions: List<TimeDivision>,
+    selectedDivisionId: Long?,
     onDismissRequest: () -> Unit,
-    onUpsertHabit: (Habit) -> Unit,
+    onUpsertHabit: (Habit, Long?) -> Unit,
+    onManageTimeDivisions: () -> Unit,
     is24Hr: Boolean,
     modifier: Modifier = Modifier,
     isEditSheet: Boolean = false,
@@ -104,9 +108,12 @@ expect fun HabitUpsertSheet(
 @Composable
 fun HabitUpsertSheetContent(
     newHabit: Habit,
+    timeDivisions: List<TimeDivision>,
+    selectedDivisionId: Long?,
     updateHabit: (Habit) -> Unit,
     onDismissRequest: () -> Unit,
-    onUpsertHabit: (Habit) -> Unit,
+    onUpsertHabit: (Habit, Long?) -> Unit,
+    onManageTimeDivisions: () -> Unit,
     is24Hr: Boolean,
     isEditSheet: Boolean = false,
     notificationPermission: Boolean,
@@ -117,6 +124,7 @@ fun HabitUpsertSheetContent(
     val focusRequester = remember { FocusRequester() }
 
     var timePickerDialog by remember { mutableStateOf(false) }
+    var localSelectedDivisionId by remember { mutableStateOf(selectedDivisionId) }
 
     val titleTextFieldState =
         rememberTextFieldState(
@@ -359,13 +367,74 @@ fun HabitUpsertSheetContent(
             }
 
             item {
+                Card(
+                    colors =
+                        CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                        ),
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text(
+                                text = "Time Division",
+                                style = MaterialTheme.typography.titleSmall,
+                                modifier = Modifier.weight(1f),
+                            )
+                            FilledTonalIconButton(onClick = onManageTimeDivisions) {
+                                Icon(
+                                    imageVector = vectorResource(Res.drawable.edit),
+                                    contentDescription = "Manage Divisions",
+                                )
+                            }
+                        }
+
+                        if (timeDivisions.isNotEmpty()) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row(
+                                horizontalArrangement =
+                                    Arrangement.spacedBy(8.dp),
+                            ) {
+                                ToggleButton(
+                                    checked = localSelectedDivisionId == null,
+                                    onCheckedChange = { localSelectedDivisionId = null },
+                                    colors = ToggleButtonDefaults.tonalToggleButtonColors(),
+                                ) {
+                                    Text(text = "None")
+                                }
+                                timeDivisions.forEach { div ->
+                                    ToggleButton(
+                                        checked = localSelectedDivisionId == div.id,
+                                        onCheckedChange = { localSelectedDivisionId = div.id },
+                                        colors = ToggleButtonDefaults.tonalToggleButtonColors(),
+                                    ) {
+                                        Text(text = div.name)
+                                    }
+                                }
+                            }
+                        } else {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "No time divisions yet. Tap edit to create one.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                }
+            }
+
+            item {
                 Button(
                     onClick = {
                         onUpsertHabit(
                             newHabit.copy(
                                 title = titleTextFieldState.text.toString().trim(),
                                 description = descTextFieldState.text.toString().trim(),
-                            )
+                            ),
+                            localSelectedDivisionId,
                         )
                         onDismissRequest()
                     },
@@ -436,8 +505,11 @@ private fun Preview() {
                     index = 1,
                     reminder = false,
                 ),
+            timeDivisions = emptyList(),
+            selectedDivisionId = null,
             onDismissRequest = {},
-            onUpsertHabit = {},
+            onUpsertHabit = { _, _ -> },
+            onManageTimeDivisions = {},
             is24Hr = true,
             isEditSheet = true,
         )
