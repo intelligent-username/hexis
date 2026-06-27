@@ -411,6 +411,19 @@ class HabitRepoStub(private val datastore: SettingsDatastore) : HabitRepo {
         return newValue
     }
 
+    override suspend fun decrementHabitProgress(habitId: Long, date: LocalDate, decrementBy: Double): Double {
+        val index = _statuses.value.indexOfFirst { it.habitId == habitId && it.date == date }
+        if (index == -1) return 0.0
+        val existing = _statuses.value[index]
+        val newValue = existing.value - decrementBy
+        if (newValue <= 0.0) {
+            _statuses.update { list -> list.toMutableList().also { it.removeAt(index) } }
+        } else {
+            _statuses.update { list -> list.toMutableList().also { it[index] = existing.copy(value = newValue) } }
+        }
+        return newValue.coerceAtLeast(0.0)
+    }
+
     override suspend fun getHabitProgress(habitId: Long, date: LocalDate): Double {
         return _statuses.value.find { it.habitId == habitId && it.date == date }?.value ?: 0.0
     }

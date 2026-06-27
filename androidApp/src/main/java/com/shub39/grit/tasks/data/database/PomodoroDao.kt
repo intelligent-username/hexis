@@ -7,6 +7,11 @@ import kotlinx.coroutines.flow.Flow
 import com.shub39.grit.core.tasks.PomodoroStats
 import kotlinx.datetime.LocalDateTime
 
+data class EpochDayCount(
+    val epochDay: Long,
+    val count: Int,
+)
+
 @Dao
 interface PomodoroDao {
     @Upsert suspend fun insert(session: PomodoroSessionEntity): Long
@@ -19,6 +24,16 @@ interface PomodoroDao {
 
     @Query("SELECT DISTINCT CAST(timeStarted / 86400 AS INTEGER) FROM pomodoro_sessions WHERE completed = 1 ORDER BY timeStarted DESC")
     fun getCompletedDates(): Flow<List<Long>>
+
+    @Query("""
+        SELECT CAST(timeStarted / 86400 AS INTEGER) AS epochDay,
+               COUNT(*) AS count
+        FROM pomodoro_sessions
+        WHERE completed = 1
+        GROUP BY epochDay
+        ORDER BY epochDay
+    """)
+    fun getSessionCountsByDay(): Flow<List<EpochDayCount>>
 
     @Query("SELECT MIN(timeStarted) FROM pomodoro_sessions")
     suspend fun getEarliestSessionDate(): LocalDateTime?

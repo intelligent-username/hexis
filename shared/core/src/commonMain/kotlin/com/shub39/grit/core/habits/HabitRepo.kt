@@ -32,6 +32,8 @@ interface HabitRepo {
 
     suspend fun incrementHabitProgress(habitId: Long, date: LocalDate, incrementBy: Double = 1.0): Double
 
+    suspend fun decrementHabitProgress(habitId: Long, date: LocalDate, decrementBy: Double = 1.0): Double
+
     suspend fun getHabitProgress(habitId: Long, date: LocalDate): Double
 
     fun observePomodoroLinkedHabits(): Flow<List<Habit>>

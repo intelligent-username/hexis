@@ -1,6 +1,7 @@
 package com.shub39.grit.tasks.data.repository
 
 import com.shub39.grit.core.now
+import com.shub39.grit.core.tasks.PomodoroDayCount
 import com.shub39.grit.core.tasks.PomodoroRepo
 import com.shub39.grit.core.tasks.PomodoroSession
 import com.shub39.grit.core.tasks.PomodoroStats
@@ -9,6 +10,7 @@ import com.shub39.grit.tasks.data.toPomodoroSession
 import com.shub39.grit.tasks.data.toPomodoroSessionEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.LocalDate
@@ -49,5 +51,16 @@ class PomodoroRepository(
 
     override suspend fun getEarliestSessionDate(): LocalDate? {
         return pomodoroDao.getEarliestSessionDate()?.date
+    }
+
+    override fun getSessionCountsByDay(): Flow<List<PomodoroDayCount>> {
+        return pomodoroDao.getSessionCountsByDay().map { list ->
+            list.map {
+                PomodoroDayCount(
+                    date = LocalDate.fromEpochDays(it.epochDay.toInt()),
+                    count = it.count,
+                )
+            }
+        }.flowOn(Dispatchers.IO)
     }
 }

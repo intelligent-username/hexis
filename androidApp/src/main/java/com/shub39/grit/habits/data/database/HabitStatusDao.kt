@@ -34,9 +34,9 @@ interface HabitStatusDao {
     @Query("SELECT value FROM habit_status WHERE habitId = :habitId AND date = :date LIMIT 1")
     suspend fun getProgress(habitId: Long, date: LocalDate): Double?
 
-    @Query("SELECT id FROM habit_status WHERE habitId = :habitId AND date = :date LIMIT 1")
-    suspend fun getStatusId(habitId: Long, date: LocalDate): Long?
+    @Query("SELECT * FROM habit_status WHERE habitId = :habitId AND date = :date ORDER BY id DESC LIMIT 1")
+    suspend fun getStatus(habitId: Long, date: LocalDate): HabitStatusEntity?
 
-    @Query("SELECT COALESCE(value, 0.0) FROM habit_status WHERE habitId = :habitId AND date = :date LIMIT 1")
+    @Query("SELECT COALESCE(SUM(value), 0.0) FROM habit_status WHERE habitId = :habitId AND date = :date")
     suspend fun getProgressOrDefault(habitId: Long, date: LocalDate): Double
 }

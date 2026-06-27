@@ -23,6 +23,7 @@ import androidx.compose.material3.ButtonShapes
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonShapes
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
@@ -38,10 +39,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -76,6 +73,7 @@ fun AnalyticsPage(
     onAction: (HabitsAction) -> Unit,
     onNavigateBack: () -> Unit,
     onNavigateToCalendar: () -> Unit,
+    onPomodoroClick: (Long?) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val windowSizeClass = LocalWindowSizeClass.current
@@ -166,6 +164,18 @@ fun AnalyticsPage(
                     )
                 }
 
+                if (currentHabit.habit.pomodoroLinked && currentHabit.habit.displayMode == com.shub39.grit.core.habits.DisplayMode.PROGRESS) {
+                    FilledTonalIconButton(
+                        onClick = { onPomodoroClick(currentHabit.habit.id) },
+                        shapes = IconButtonShapes(shape = CircleShape, pressedShape = MaterialTheme.shapes.small),
+                    ) {
+                        Icon(
+                            imageVector = vectorResource(Res.drawable.schedule),
+                            contentDescription = "Go to Pomodoro",
+                        )
+                    }
+                }
+
                 FilledIconButton(
                     onClick = { editDialog = true },
                     shapes =
@@ -202,10 +212,80 @@ fun AnalyticsPage(
                 )
             }
 
+            if (currentHabit.habit.displayMode == com.shub39.grit.core.habits.DisplayMode.PROGRESS) {
+                val today = kotlinx.datetime.LocalDate.now()
+                val currentValue = currentHabit.statuses.find { it.date == today }?.value ?: 0.0
+                val targetValue = currentHabit.habit.targetValue ?: 1.0
+                val incrementBy = currentHabit.habit.incrementBy
+
+                item {
+                    var undoBudget by remember { mutableStateOf(0) }
+
+                    Column(
+                        modifier = Modifier.fillMaxWidth().background(
+                            MaterialTheme.colorScheme.surfaceContainerHigh,
+                            shape = MaterialTheme.shapes.large
+                        ).padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Text(
+                            text = "Progress",
+                            style = MaterialTheme.typography.titleSmall,
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(0.dp),
+                        ) {
+                            IconButton(
+                                onClick = {
+                                    if (currentValue > 0.0) {
+                                        onAction(HabitsAction.DecrementHabitProgress(currentHabit.habit, today))
+                                        undoBudget++
+                                    }
+                                },
+                            ) {
+                                Icon(
+                                    imageVector = vectorResource(Res.drawable.arrow_back),
+                                    contentDescription = "Decrement",
+                                )
+                            }
+
+                            Text(
+                                text = "${currentValue.toInt()}",
+                                style = MaterialTheme.typography.displaySmall.copy(fontFamily = flexFontRounded()),
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                            Text(
+                                text = "/${targetValue.toInt()}",
+                                style = MaterialTheme.typography.headlineSmall.copy(fontFamily = flexFontRounded()),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+
+                            val canUndo = undoBudget > 0 && currentValue + incrementBy <= targetValue
+                            IconButton(
+                                onClick = {
+                                    onAction(HabitsAction.IncrementHabitProgress(currentHabit.habit, today))
+                                    undoBudget--
+                                },
+                                enabled = canUndo,
+                            ) {
+                                Icon(
+                                    imageVector = vectorResource(Res.drawable.arrow_forward),
+                                    contentDescription = "Increment",
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
             item {
                 WeeklyBooleanHeatMap(
                     heatMapState = heatMapState,
                     statuses = currentHabit.statuses,
+                    targetValue = currentHabit.habit.targetValue ?: 1.0,
+                    displayMode = currentHabit.habit.displayMode,
                     days = currentHabit.habit.days,
                     startDate = currentHabit.habit.time.date,
                     onDateClick = { onAction(HabitsAction.ToggleHabitProgress(currentHabit.habit, it)) },
@@ -216,6 +296,8 @@ fun AnalyticsPage(
                 CalendarMap(
                     calendarState = calendarState,
                     statuses = currentHabit.statuses,
+                    targetValue = currentHabit.habit.targetValue ?: 1.0,
+                    displayMode = currentHabit.habit.displayMode,
                     days = currentHabit.habit.days,
                     startDate = currentHabit.habit.time.date,
                     onNavigateToCalendar = onNavigateToCalendar,

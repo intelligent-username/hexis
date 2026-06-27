@@ -1,5 +1,6 @@
 package com.shub39.grit.shared.ui.habit.ui.component.stats
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
@@ -22,16 +24,22 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewWrapper
 import androidx.compose.ui.unit.dp
 import com.kizitonwose.calendar.compose.HeatMapCalendar
 import com.kizitonwose.calendar.compose.heatmapcalendar.HeatMapCalendarState
 import com.kizitonwose.calendar.compose.heatmapcalendar.rememberHeatMapCalendarState
+import com.kizitonwose.calendar.core.CalendarDay
 import com.kizitonwose.calendar.core.minusDays
 import com.kizitonwose.calendar.core.now
 import com.kizitonwose.calendar.core.plusDays
+import com.shub39.grit.core.habits.DisplayMode
 import com.shub39.grit.core.habits.HabitStatus
 import com.shub39.grit.core.habits.StreakPosition
 import com.shub39.grit.shared.ui.HexisPreviewWrapper
@@ -54,27 +62,24 @@ import kotlinx.datetime.format.char
 import kotlinx.datetime.minus
 import org.jetbrains.compose.resources.stringResource
 
-/**
- * Weekly Boolean heatmap of completed days, highlighting streaks
- *
- * @param heatMapState created HeatMapState
- * @param days set of eligible [DayOfWeek]
- * @param statuses list of [com.shub39.grit.core.habits.HabitStatus]
- * @param onDateClick callback when a day is clicked
- */
 @Composable
 fun WeeklyBooleanHeatMap(
     heatMapState: HeatMapCalendarState,
     days: Set<DayOfWeek>,
     startDate: LocalDate,
     statuses: List<HabitStatus>,
+    targetValue: Double,
+    displayMode: DisplayMode,
     onDateClick: (LocalDate) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val today = LocalDate.now()
     val scope = rememberCoroutineScope()
 
-    val doneDates = remember(statuses) { statuses.map { it.date }.toSet() }
+    val isProgress = displayMode == DisplayMode.PROGRESS && targetValue > 1.0
+    val statusMap = remember(statuses) { statuses.associateBy { it.date } }
+
+    val doneDates = remember(statuses, targetValue) { statuses.filter { it.value >= targetValue }.map { it.date }.toSet() }
     val edgeWeeks =
         listOf(heatMapState.firstDayOfWeek, daysStartingFrom(heatMapState.firstDayOfWeek).last())
 
@@ -152,8 +157,26 @@ fun WeeklyBooleanHeatMap(
                     dayContent = { day, _ ->
                         if (day.date > today) return@HeatMapCalendar
 
-                        val done = day.date in doneDates
                         val validDay = day.date.dayOfWeek in days && day.date >= startDate
+
+                        if (isProgress) {
+                            val dayStatus = statusMap[day.date]
+                            val value = dayStatus?.value ?: 0.0
+                            val progress = if (targetValue > 0.0) (value / targetValue).coerceIn(0.0, 1.0).toFloat() else 0f
+                            val completed = value >= targetValue
+
+                            HeatMapProgressCell(
+                                day = day,
+                                progress = progress,
+                                completed = completed,
+                                validDay = validDay,
+                                startDate = startDate,
+                                onDateClick = onDateClick,
+                            )
+                            return@HeatMapCalendar
+                        }
+
+                        val done = day.date in doneDates
 
                         val donePrevious = day.date.minusDays(1) in doneDates
                         val doneAfter = day.date.plusDays(1) in doneDates
@@ -253,6 +276,92 @@ fun WeeklyBooleanHeatMap(
     }
 }
 
+@Composable
+private fun HeatMapProgressCell(
+    day: CalendarDay,
+    progress: Float,
+    completed: Boolean,
+    validDay: Boolean,
+    startDate: LocalDate,
+    onDateClick: (LocalDate) -> Unit,
+) {
+    val cellSize = 30.dp
+    val strokeWidth = 2.dp
+    val primary = MaterialTheme.colorScheme.primary
+    val onPrimary = MaterialTheme.colorScheme.onPrimary
+    val onSurface = MaterialTheme.colorScheme.onSurface
+    val surfaceLow = MaterialTheme.colorScheme.surfaceContainerLow
+
+    Box(
+        modifier = Modifier
+            .padding(horizontal = 1.dp)
+            .size(35.dp)
+            .clickable(enabled = validDay) { onDateClick(day.date) },
+        contentAlignment = Alignment.Center,
+    ) {
+        if (completed) {
+            Box(
+                modifier = Modifier
+                    .size(cellSize)
+                    .background(color = primary, shape = MaterialShapes.Circle.toShape()),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = day.date.day.toString(),
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontFamily = flexFontRounded(),
+                        color = onPrimary,
+                    ),
+                )
+            }
+        } else if (progress > 0f) {
+            Box(
+                modifier = Modifier
+                    .size(cellSize)
+                    .background(color = surfaceLow, shape = MaterialShapes.Circle.toShape()),
+                contentAlignment = Alignment.Center,
+            ) {
+                Canvas(modifier = Modifier.fillMaxSize()) {
+                    val sw = strokeWidth.toPx()
+                    val arcS = Size(this.size.width - sw, this.size.height - sw)
+                    drawArc(
+                        color = primary,
+                        startAngle = -90f,
+                        sweepAngle = progress * 360f,
+                        useCenter = false,
+                        topLeft = Offset(sw / 2f, sw / 2f),
+                        size = arcS,
+                        style = Stroke(width = sw, cap = StrokeCap.Round),
+                    )
+                }
+                Text(
+                    text = day.date.day.toString(),
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontFamily = flexFontRounded(),
+                        color = onSurface,
+                    ),
+                )
+            }
+        } else {
+            Text(
+                text = day.date.day.toString(),
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontFamily = flexFontRounded(),
+                    color = if (!validDay) onSurface.copy(alpha = 0.5f) else onSurface,
+                ),
+            )
+        }
+
+        if (day.date == startDate) {
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .border(width = 1.dp, color = Color(0xFFFFD700), shape = MaterialShapes.Circle.toShape())
+            )
+        }
+    }
+}
+
 @PreviewWrapper(HexisPreviewWrapper::class)
 @Preview
 @Composable
@@ -269,6 +378,8 @@ private fun Preview() {
             (0..40).map {
                 HabitStatus(habitId = 1, date = LocalDate.now().minus(it, DateTimeUnit.DAY))
             },
+        targetValue = 1.0,
+        displayMode = DisplayMode.CHECKBOX,
         days = DayOfWeek.entries.toSet(),
         startDate = LocalDate.now().minus(40, DateTimeUnit.DAY),
         onDateClick = {},

@@ -36,6 +36,12 @@ sealed interface HabitsAction {
     /** Increment/decrement progress for [habit] at given [date] */
     data class ToggleHabitProgress(val habit: Habit, val date: LocalDate) : HabitsAction
 
+    /** Decrement progress for [habit] at given [date] by its incrementBy */
+    data class DecrementHabitProgress(val habit: Habit, val date: LocalDate) : HabitsAction
+
+    /** Force increment (bypasses pomodoroLinked guard, for undo) */
+    data class IncrementHabitProgress(val habit: Habit, val date: LocalDate) : HabitsAction
+
     data class UpdateHabit(val habit: Habit) : HabitsAction
 
     data object ReorderHabits : HabitsAction

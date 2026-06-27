@@ -62,9 +62,13 @@ class HabitViewModel(
 
                 is DeleteHabit -> deleteHabit(action.habit)
 
-                is InsertStatus -> insertHabitStatus(action.habit, action.date)
+                is InsertStatus -> toggleHabitProgress(action.habit, action.date)
 
                 is HabitsAction.ToggleHabitProgress -> toggleHabitProgress(action.habit, action.date)
+
+                is HabitsAction.DecrementHabitProgress -> decrementHabitProgress(action.habit, action.date)
+
+                is HabitsAction.IncrementHabitProgress -> incrementHabitProgress(action.habit, action.date)
 
                 is UpdateHabit -> upsertHabit(action.habit)
 
@@ -303,5 +307,13 @@ class HabitViewModel(
         } else {
             repo.incrementHabitProgress(habit.id, date, habit.incrementBy)
         }
+    }
+
+    private suspend fun decrementHabitProgress(habit: Habit, date: LocalDate) {
+        repo.decrementHabitProgress(habit.id, date, habit.incrementBy)
+    }
+
+    private suspend fun incrementHabitProgress(habit: Habit, date: LocalDate) {
+        repo.incrementHabitProgress(habit.id, date, habit.incrementBy)
     }
 }

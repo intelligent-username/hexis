@@ -88,11 +88,11 @@ fun countBestStreak(
 fun prepareLineChartData(
     firstDay: DayOfWeek,
     habitStatuses: List<HabitStatus>,
+    targetValue: Double,
 ): WeeklyComparisonData {
     val today = LocalDate.now()
     val totalWeeks = 52
 
-    // Find the start date of the 15-week period
     val startDateOfTodayWeek =
         today.minus(today.dayOfWeek.isoDayNumber - firstDay.isoDayNumber, DateTimeUnit.DAY)
     val startDateOfPeriod = startDateOfTodayWeek.minus(totalWeeks, DateTimeUnit.WEEK)
@@ -101,22 +101,19 @@ fun prepareLineChartData(
         habitStatuses
             .filter { it.date in startDateOfPeriod..today }
             .groupBy {
-                // Calculate the start date of the week for the given habit date
                 val daysFromFirstDay =
                     (it.date.dayOfWeek.isoDayNumber - firstDay.isoDayNumber + 7) % 7
                 it.date.minus(daysFromFirstDay, DateTimeUnit.DAY)
             }
-            .mapValues { (_, habitStatuses) -> habitStatuses.size }
+            .mapValues { (_, statuses) ->
+                statuses.sumOf { minOf(it.value, targetValue) / targetValue }
+            }
 
     val values =
         (0..totalWeeks).map { i ->
-            // The start of the current week in the loop, starting from 15 weeks ago
             val currentWeekStart = startDateOfPeriod.plus(i, DateTimeUnit.WEEK)
-
-            // The key for the map is the LocalDate representing the start of the week
             val weekKey = currentWeekStart
-
-            (habitCompletionByWeek[weekKey]?.toDouble() ?: 0.0).coerceIn(0.0, 7.0)
+            (habitCompletionByWeek[weekKey] ?: 0.0).coerceIn(0.0, 7.0)
         }
     return values
 }

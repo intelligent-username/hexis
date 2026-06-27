@@ -35,6 +35,7 @@ import com.kizitonwose.calendar.compose.yearcalendar.rememberYearCalendarState
 import com.kizitonwose.calendar.core.Year
 import com.kizitonwose.calendar.core.now
 import com.shub39.grit.core.habits.CalendarType
+import com.shub39.grit.core.habits.DisplayMode
 import com.shub39.grit.core.habits.Habit
 import com.shub39.grit.core.habits.HabitWithAnalytics
 import com.shub39.grit.shared.ui.LocalWindowSizeClass
@@ -68,8 +69,8 @@ fun Calendar(
         state.habitsWithAnalytics.find { it.habit.id == state.analyticsHabitId } ?: return
     val windowSizeClass = LocalWindowSizeClass.current
     val today = LocalDate.now()
-    val doneDates =
-        remember(currentHabit.statuses) { currentHabit.statuses.map { it.date }.toSet() }
+    val targetValue = currentHabit.habit.targetValue ?: 1.0
+    val displayMode = currentHabit.habit.displayMode
     val edgeWeeks = listOf(state.startingDay, daysStartingFrom(state.startingDay).last())
 
     Column(modifier = modifier.fillMaxSize()) {
@@ -120,8 +121,9 @@ fun Calendar(
                         today = today,
                         state = state,
                         modifier = modifier,
-                        doneDates = doneDates,
                         currentHabit = currentHabit,
+                        targetValue = targetValue,
+                        displayMode = displayMode,
                         edgeWeeks = edgeWeeks,
                         onDateClick = onDateClick,
                     )
@@ -130,9 +132,10 @@ fun Calendar(
                 MONTH -> {
                     MonthlyCalendar(
                         state = state,
-                        doneDates = doneDates,
                         today = today,
                         currentHabit = currentHabit,
+                        targetValue = targetValue,
+                        displayMode = displayMode,
                         edgeWeeks = edgeWeeks,
                         onDateClick = onDateClick,
                     )
@@ -147,8 +150,9 @@ private fun YearlyCalendar(
     today: LocalDate,
     state: HabitState,
     modifier: Modifier,
-    doneDates: Set<LocalDate>,
     currentHabit: HabitWithAnalytics,
+    targetValue: Double,
+    displayMode: DisplayMode,
     onDateClick: (Habit, LocalDate) -> Unit,
     edgeWeeks: List<DayOfWeek>,
 ) {
@@ -193,7 +197,9 @@ private fun YearlyCalendar(
             if (day.date.yearMonth <= today.yearMonth) {
                 YearlyCalendarDayContent(
                     day = day,
-                    doneDates = doneDates,
+                    statuses = currentHabit.statuses,
+                    targetValue = targetValue,
+                    displayMode = displayMode,
                     today = today,
                     habitDays = currentHabit.habit.days,
                     startDate = currentHabit.habit.time.date,
@@ -208,9 +214,10 @@ private fun YearlyCalendar(
 @Composable
 private fun MonthlyCalendar(
     state: HabitState,
-    doneDates: Set<LocalDate>,
     today: LocalDate,
     currentHabit: HabitWithAnalytics,
+    targetValue: Double,
+    displayMode: DisplayMode,
     edgeWeeks: List<DayOfWeek>,
     onDateClick: (Habit, LocalDate) -> Unit,
     modifier: Modifier = Modifier,
@@ -232,7 +239,9 @@ private fun MonthlyCalendar(
         dayContent = { day ->
             MonthlyCalendarDayContent(
                 day = day,
-                doneDates = doneDates,
+                statuses = currentHabit.statuses,
+                targetValue = targetValue,
+                displayMode = displayMode,
                 today = today,
                 habitDays = currentHabit.habit.days,
                 startDate = currentHabit.habit.time.date,

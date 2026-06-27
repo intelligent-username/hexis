@@ -98,6 +98,7 @@ class HabitRepository(
                             prepareLineChartData(
                                 firstDay = firstDay,
                                 habitStatuses = habitStatusesForHabit,
+                                targetValue = habit.targetValue ?: 1.0,
                             ),
                         weekDayFrequencyData = prepareWeekDayFrequencyData(dates = completedDates, firstDayOfWeek = firstDay),
                         startedDaysAgo = habit.time.date.daysUntil(LocalDate.now()).toLong(),
@@ -191,10 +192,9 @@ class HabitRepository(
     override suspend fun incrementHabitProgress(habitId: Long, date: LocalDate, incrementBy: Double): Double {
         val currentValue = habitStatusDao.getProgressOrDefault(habitId, date)
         val newValue = currentValue + incrementBy
-        val existingId = habitStatusDao.getStatusId(habitId, date) ?: 0L
+        habitStatusDao.deleteStatus(habitId, date)
         habitStatusDao.upsert(
             com.shub39.grit.habits.data.database.HabitStatusEntity(
-                id = existingId,
                 habitId = habitId,
                 date = date,
                 value = newValue,
@@ -206,6 +206,17 @@ class HabitRepository(
         }
 
         return newValue
+    }
+
+    override suspend fun decrementHabitProgress(habitId: Long, date: LocalDate, decrementBy: Double): Double {
+        val existing = habitStatusDao.getStatus(habitId, date) ?: return 0.0
+        val newValue = existing.value - decrementBy
+        if (newValue <= 0.0) {
+            habitStatusDao.deleteStatus(habitId, date)
+        } else {
+            habitStatusDao.upsert(existing.copy(value = newValue))
+        }
+        return newValue.coerceAtLeast(0.0)
     }
 
     override suspend fun getHabitProgress(habitId: Long, date: LocalDate): Double {

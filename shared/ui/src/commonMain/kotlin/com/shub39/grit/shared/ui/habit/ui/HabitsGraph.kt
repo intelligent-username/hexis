@@ -107,6 +107,7 @@ private val config = SavedStateConfiguration {
 fun HabitsGraph(
     state: HabitState,
     onAction: (HabitsAction) -> Unit,
+    onPomodoroClick: (Long?) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val windowSizeClass = LocalWindowSizeClass.current
@@ -192,6 +193,7 @@ fun HabitsGraph(
                                 if (backstack.size != 1) backstack.removeLastOrNull()
                             },
                             onNavigateToCalendar = { backstack.add(HabitRoutes.Calendar) },
+                            onPomodoroClick = onPomodoroClick,
                             modifier = Modifier.background(MaterialTheme.colorScheme.background),
                         )
                     }
@@ -242,6 +244,7 @@ fun HabitsGraph(
             modifier = modifier,
             state = filteredState,
             onAction = onAction,
+            onPomodoroClick = onPomodoroClick,
             scrollBehavior = scrollBehavior,
         )
     }
@@ -252,6 +255,7 @@ private fun ExpandedScreen(
     modifier: Modifier,
     state: HabitState,
     onAction: (HabitsAction) -> Unit,
+    onPomodoroClick: (Long?) -> Unit,
     scrollBehavior: TopAppBarScrollBehavior,
 ) {
     Column(modifier = modifier.background(MaterialTheme.colorScheme.background)) {
@@ -319,6 +323,7 @@ private fun ExpandedScreen(
                                         onAction(HabitsAction.PrepareAnalytics(null))
                                     },
                                     onNavigateToCalendar = { backstack.add(HabitRoutes.Calendar) },
+                                    onPomodoroClick = onPomodoroClick,
                                     modifier =
                                         Modifier.background(
                                             MaterialTheme.colorScheme.surfaceContainerHighest

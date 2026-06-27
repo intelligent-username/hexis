@@ -17,6 +17,7 @@ import com.kizitonwose.calendar.compose.HorizontalCalendar
 import com.kizitonwose.calendar.compose.rememberCalendarState
 import com.kizitonwose.calendar.core.minusYears
 import com.kizitonwose.calendar.core.now
+import com.shub39.grit.core.habits.DisplayMode
 import com.shub39.grit.core.habits.HabitStatus
 import com.shub39.grit.shared.ui.HexisPreviewWrapper
 import com.shub39.grit.shared.ui.habit.daysStartingFrom
@@ -46,6 +47,8 @@ import org.jetbrains.compose.resources.stringResource
 fun CalendarMap(
     calendarState: CalendarState,
     statuses: List<HabitStatus>,
+    targetValue: Double,
+    displayMode: DisplayMode,
     days: Set<DayOfWeek>,
     startDate: LocalDate,
     onNavigateToCalendar: () -> Unit,
@@ -55,7 +58,6 @@ fun CalendarMap(
     val today = LocalDate.now()
     val scope = rememberCoroutineScope()
 
-    val doneDates = remember(statuses) { statuses.map { it.date }.toSet() }
     val edgeWeeks =
         listOf(calendarState.firstDayOfWeek, daysStartingFrom(calendarState.firstDayOfWeek).last())
 
@@ -104,7 +106,9 @@ fun CalendarMap(
             dayContent = { day ->
                 MonthlyCalendarDayContent(
                     day = day,
-                    doneDates = doneDates,
+                    statuses = statuses,
+                    targetValue = targetValue,
+                    displayMode = displayMode,
                     today = today,
                     habitDays = days,
                     startDate = startDate,
@@ -131,6 +135,8 @@ private fun Preview() {
             (0..40).map {
                 HabitStatus(habitId = 1, date = LocalDate.now().minus(it, DateTimeUnit.DAY))
             },
+        targetValue = 1.0,
+        displayMode = DisplayMode.CHECKBOX,
         days = DayOfWeek.entries.toSet(),
         startDate = LocalDate.now().minus(40, DateTimeUnit.DAY),
         onDateClick = {},

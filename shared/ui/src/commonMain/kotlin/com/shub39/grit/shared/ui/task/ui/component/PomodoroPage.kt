@@ -5,6 +5,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -64,6 +65,7 @@ import com.shub39.grit.core.tasks.PomodoroStats
 import com.shub39.grit.shared.ui.components.HexisBottomSheet
 import com.shub39.grit.shared.ui.theme.flexFontRounded
 import grit.shared.ui.generated.resources.Res
+import grit.shared.ui.generated.resources.chart_data
 import grit.shared.ui.generated.resources.close
 import grit.shared.ui.generated.resources.edit
 import grit.shared.ui.generated.resources.pause
@@ -83,7 +85,7 @@ import org.koin.compose.koinInject
 private enum class PomodoroPhase { FOCUS, SHORT_BREAK, LONG_BREAK }
 
 @Composable
-fun PomodoroPage(onDismiss: () -> Unit) {
+fun PomodoroPage(linkedHabitId: Long? = null, onDismiss: () -> Unit) {
     val repo: PomodoroRepo = koinInject()
     val settingsDatastore: com.shub39.grit.core.interfaces.SettingsDatastore = koinInject()
 
@@ -98,13 +100,23 @@ fun PomodoroPage(onDismiss: () -> Unit) {
     var transitionCountdown by remember { mutableStateOf(0) }
     var todayStats by remember { mutableStateOf<PomodoroStats?>(null) }
     var showSettings by remember { mutableStateOf(false) }
+    var showAnalytics by remember { mutableStateOf(false) }
 
     var focusText by remember { mutableStateOf("") }
     var shortBreakText by remember { mutableStateOf("") }
     var longBreakText by remember { mutableStateOf("") }
     var intervalText by remember { mutableStateOf("") }
+    var habitTitle by remember { mutableStateOf("") }
 
     val habitRepo: HabitRepo = koinInject()
+
+    LaunchedEffect(linkedHabitId) {
+        habitTitle = ""
+        if (linkedHabitId != null) {
+            val h = habitRepo.getHabitById(linkedHabitId); if (h != null) habitTitle = h.title
+        }
+    }
+
     val scope = rememberCoroutineScope()
     val vibrator: VibratorUtil = koinInject()
     val pomodoroAlarm: PomodoroAlarm = koinInject()
@@ -173,9 +185,12 @@ fun PomodoroPage(onDismiss: () -> Unit) {
                 scope.launch {
                     id?.let { repo.finishSession(it, nw, true, elapsed) }
                     todayStats = repo.getTodayStats()
-                    val linkedHabits = habitRepo.observePomodoroLinkedHabits().first()
-                    linkedHabits.forEach { habit ->
-                        habitRepo.incrementHabitProgress(habit.id, LocalDate.now(), habit.incrementBy)
+                    val hId = linkedHabitId
+                    if (hId != null) {
+                        val habit = habitRepo.getHabitById(hId)
+                        if (habit != null) {
+                            habitRepo.incrementHabitProgress(hId, LocalDate.now(), habit.incrementBy)
+                        }
                     }
                 }
                 cyclesCompleted++
@@ -328,18 +343,47 @@ fun PomodoroPage(onDismiss: () -> Unit) {
                     Icon(vectorResource(Res.drawable.close), contentDescription = "Close", tint = onSurfaceVariant)
                 }
 
-                todayStats?.let { stats ->
-                    val tenths = (stats.totalMinutes * 10).toInt()
-                    val whole = tenths / 10
-                    val frac = tenths % 10
-                    val display = if (frac == 0) "${whole}m" else "$whole.${frac}m"
-                    Surface(shape = RoundedCornerShape(20.dp), color = breakColor.copy(alpha = 0.12f)) {
-                        Text(
-                            text = "${stats.sessionCount}  \u00B7  $display",
-                            fontFamily = flexFontRounded(),
-                            style = MaterialTheme.typography.labelLarge,
-                            color = breakColor,
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                if (habitTitle.isNotEmpty()) {
+                    Text(
+                        text = habitTitle,
+                        fontFamily = flexFontRounded(),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = onSurface,
+                        maxLines = 1,
+                        modifier = Modifier.weight(1f).padding(horizontal = 8.dp),
+                    )
+                }
+
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    todayStats?.let { stats ->
+                        val tenths = (stats.totalMinutes * 10).toInt()
+                        val whole = tenths / 10
+                        val frac = tenths % 10
+                        val display = if (frac == 0) "${whole}m" else "$whole.${frac}m"
+                        Surface(shape = RoundedCornerShape(20.dp), color = breakColor.copy(alpha = 0.12f)) {
+                            Text(
+                                text = "${stats.sessionCount}  \u00B7  $display",
+                                fontFamily = flexFontRounded(),
+                                style = MaterialTheme.typography.labelLarge,
+                                color = breakColor,
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                            )
+                        }
+                    }
+
+                    FilledTonalIconButton(
+                        onClick = { showAnalytics = true },
+                        modifier = Modifier.size(36.dp),
+                        colors = IconButtonDefaults.filledTonalIconButtonColors(
+                            containerColor = surfaceContainerHigh,
+                            contentColor = onSurfaceVariant,
+                        ),
+                        shapes = IconButtonShapes(shape = CircleShape, pressedShape = MaterialTheme.shapes.small),
+                    ) {
+                        Icon(
+                            imageVector = vectorResource(Res.drawable.chart_data),
+                            contentDescription = "Session History",
+                            modifier = Modifier.size(18.dp),
                         )
                     }
                 }
@@ -551,6 +595,10 @@ fun PomodoroPage(onDismiss: () -> Unit) {
                 }
             }
         }
+    }
+
+    if (showAnalytics) {
+        PomodoroAnalytics(onDismiss = { showAnalytics = false })
     }
 }
 

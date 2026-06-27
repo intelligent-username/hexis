@@ -63,6 +63,7 @@ fun MainApp(state: MainAppState) {
     val svm: SettingsViewModel = koinViewModel()
 
     var showPomodoro by remember { mutableStateOf(false) }
+    var pomodoroLinkedHabitId by remember { mutableStateOf<Long?>(null) }
 
     androidx.compose.runtime.LaunchedEffect(state.shortcutAction) {
         state.shortcutAction?.let { action ->
@@ -138,6 +139,7 @@ fun MainApp(state: MainAppState) {
                             HabitsGraph(
                                 state = habitsPageState,
                                 onAction = hvm::onAction,
+                                onPomodoroClick = { pomodoroLinkedHabitId = it },
                             )
                         }
                     }
@@ -191,6 +193,7 @@ fun MainApp(state: MainAppState) {
                             HabitsGraph(
                                 state = habitsPageState,
                                 onAction = hvm::onAction,
+                                onPomodoroClick = { pomodoroLinkedHabitId = it },
                             )
                         }
                     }
@@ -199,8 +202,11 @@ fun MainApp(state: MainAppState) {
         }
     }
 
-    if (showPomodoro) {
-        PomodoroPage(onDismiss = { showPomodoro = false })
+    if (showPomodoro || pomodoroLinkedHabitId != null) {
+        PomodoroPage(
+            linkedHabitId = if (showPomodoro) null else pomodoroLinkedHabitId,
+            onDismiss = { showPomodoro = false; pomodoroLinkedHabitId = null }
+        )
     }
 }
 
