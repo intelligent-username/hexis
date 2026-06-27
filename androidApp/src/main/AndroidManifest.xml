@@ -40,6 +40,8 @@
 
         <receiver android:name=".core.data.HexisIntentReceiver" />
 
+        <receiver android:name=".core.data.pomodoroalarm.PomodoroAlarmReceiver" android:exported="false" />
+
         <receiver android:name=".core.data.BootReceiver"
             android:exported="true">
             <intent-filter>

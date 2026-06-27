@@ -1,22 +1,5 @@
-/*
- * Copyright (C) 2026  Shubham Gorai
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- */
 package com.shub39.grit.habits.data.database
 
-import androidx.room3.AutoMigration
 import androidx.room3.ColumnTypeConverters
 import androidx.room3.Database
 import androidx.room3.RoomDatabase
@@ -29,7 +12,6 @@ import com.shub39.grit.core.data.Converters
     entities = [HabitEntity::class, HabitStatusEntity::class],
     version = HabitDatabase.SCHEMA_VERSION,
     exportSchema = true,
-    autoMigrations = [AutoMigration(from = 4, to = 5)],
 )
 @ColumnTypeConverters(Converters::class)
 abstract class HabitDatabase : RoomDatabase() {
@@ -38,7 +20,7 @@ abstract class HabitDatabase : RoomDatabase() {
     abstract fun habitStatusDao(): HabitStatusDao
 
     companion object {
-        const val SCHEMA_VERSION = 5
+        const val SCHEMA_VERSION = 6
         const val DB_NAME = "habit_database"
 
         val migrate_3_4 =
@@ -47,6 +29,17 @@ abstract class HabitDatabase : RoomDatabase() {
                     connection.execSQL(
                         "ALTER TABLE habit_index ADD COLUMN days TEXT NOT NULL DEFAULT '${Converters.allDays}'"
                     )
+                }
+            }
+
+        val migrate_5_6 =
+            object : Migration(5, 6) {
+                override suspend fun migrate(connection: SQLiteConnection) {
+                    connection.execSQL("ALTER TABLE habit_index ADD COLUMN displayMode TEXT NOT NULL DEFAULT 'CHECKBOX'")
+                    connection.execSQL("ALTER TABLE habit_index ADD COLUMN targetValue REAL DEFAULT 1.0")
+                    connection.execSQL("ALTER TABLE habit_index ADD COLUMN pomodoroLinked INTEGER NOT NULL DEFAULT 0")
+                    connection.execSQL("ALTER TABLE habit_index ADD COLUMN incrementBy REAL NOT NULL DEFAULT 1.0")
+                    connection.execSQL("ALTER TABLE habit_status ADD COLUMN value REAL NOT NULL DEFAULT 1.0")
                 }
             }
     }

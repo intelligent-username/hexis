@@ -1,19 +1,3 @@
-/*
- * Copyright (C) 2026  Shubham Gorai
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- */
 package com.shub39.grit.shared.ui.habit.ui.component.stats
 
 import androidx.compose.animation.animateContentSize
@@ -60,12 +44,10 @@ import org.jetbrains.compose.resources.stringResource
  */
 @Composable
 fun CalendarMap(
-    canSeeContent: Boolean,
     calendarState: CalendarState,
     statuses: List<HabitStatus>,
     days: Set<DayOfWeek>,
     startDate: LocalDate,
-    onNavigateToPaywall: () -> Unit,
     onNavigateToCalendar: () -> Unit,
     onDateClick: (LocalDate) -> Unit,
     modifier: Modifier = Modifier,
@@ -80,8 +62,6 @@ fun CalendarMap(
     AnalyticsCard(
         title = stringResource(Res.string.monthly_progress),
         icon = Res.drawable.calendar_month,
-        canSeeContent = canSeeContent,
-        onPlusClick = onNavigateToPaywall,
         header = {
             CardArrows(
                 onBackAction = {
@@ -99,7 +79,6 @@ fun CalendarMap(
                     }
                 },
                 onExpandAction = onNavigateToCalendar,
-                enabled = canSeeContent,
             )
         },
         modifier = modifier,
@@ -114,7 +93,7 @@ fun CalendarMap(
                     .animateContentSize()
                     .padding(vertical = 16.dp),
             contentPadding = PaddingValues(horizontal = 16.dp),
-            userScrollEnabled = canSeeContent,
+            userScrollEnabled = true,
             monthHeader = {
                 CalendarMonthHeader(
                     calendarMonth = it,
@@ -142,7 +121,6 @@ fun CalendarMap(
 @Composable
 private fun Preview() {
     CalendarMap(
-        canSeeContent = true,
         calendarState =
             rememberCalendarState(
                 startMonth = YearMonth.now().minusYears(1),
@@ -155,7 +133,6 @@ private fun Preview() {
             },
         days = DayOfWeek.entries.toSet(),
         startDate = LocalDate.now().minus(40, DateTimeUnit.DAY),
-        onNavigateToPaywall = {},
         onDateClick = {},
         onNavigateToCalendar = {},
     )

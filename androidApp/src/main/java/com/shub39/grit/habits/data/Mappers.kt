@@ -1,21 +1,6 @@
-/*
- * Copyright (C) 2026  Shubham Gorai
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- */
 package com.shub39.grit.habits.data
 
+import com.shub39.grit.core.habits.DisplayMode
 import com.shub39.grit.core.habits.Habit
 import com.shub39.grit.core.habits.HabitStatus
 import com.shub39.grit.habits.data.database.HabitEntity
@@ -30,11 +15,15 @@ fun HabitEntity.toHabit(): Habit {
         days = days,
         index = index,
         reminder = reminder,
+        displayMode = try { DisplayMode.valueOf(displayMode) } catch (_: Exception) { DisplayMode.CHECKBOX },
+        targetValue = targetValue ?: 1.0,
+        pomodoroLinked = pomodoroLinked,
+        incrementBy = incrementBy,
     )
 }
 
 fun HabitStatusEntity.toHabitStatus(): HabitStatus {
-    return HabitStatus(id = id, habitId = habitId, date = date)
+    return HabitStatus(id = id, habitId = habitId, date = date, value = value)
 }
 
 fun Habit.toHabitEntity(): HabitEntity {
@@ -46,9 +35,13 @@ fun Habit.toHabitEntity(): HabitEntity {
         index = index,
         days = days,
         reminder = reminder,
+        displayMode = displayMode.name,
+        targetValue = targetValue,
+        pomodoroLinked = pomodoroLinked,
+        incrementBy = incrementBy,
     )
 }
 
 fun HabitStatus.toHabitStatusEntity(): HabitStatusEntity {
-    return HabitStatusEntity(id = id, habitId = habitId, date = date)
+    return HabitStatusEntity(id = id, habitId = habitId, date = date, value = value)
 }

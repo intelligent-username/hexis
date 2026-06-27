@@ -1,23 +1,8 @@
-/*
- * Copyright (C) 2026  Shubham Gorai
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- */
 package com.shub39.grit.shared.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.shub39.grit.core.now
 import com.shub39.grit.core.habits.Habit
 import com.shub39.grit.core.habits.HabitRepo
 import com.shub39.grit.core.habits.HabitStatus
@@ -25,6 +10,7 @@ import com.shub39.grit.core.interfaces.AlarmScheduler
 import com.shub39.grit.core.interfaces.SettingsDatastore
 import com.shub39.grit.shared.ui.habit.HabitState
 import com.shub39.grit.shared.ui.habit.HabitsAction
+import com.shub39.grit.shared.ui.habit.HabitsAction.*
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -36,8 +22,10 @@ import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlin.time.Clock
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toInstant
 import org.koin.core.annotation.KoinViewModel
 import org.koin.core.annotation.Provided
 
@@ -75,6 +63,8 @@ class HabitViewModel(
                 is DeleteHabit -> deleteHabit(action.habit)
 
                 is InsertStatus -> insertHabitStatus(action.habit, action.date)
+
+                is HabitsAction.ToggleHabitProgress -> toggleHabitProgress(action.habit, action.date)
 
                 is UpdateHabit -> upsertHabit(action.habit)
 
@@ -176,7 +166,7 @@ class HabitViewModel(
 
                 is AddTimeDivision -> {
                     val currentList = _state.value.timeDivisions.toMutableList()
-                    val newDivision = action.division.copy(id = Clock.System.now().toEpochMilliseconds())
+                    val newDivision = action.division.copy(id = LocalDateTime.now().toInstant(TimeZone.currentSystemDefault()).toEpochMilliseconds())
                     currentList.add(newDivision)
                     datastore.setTimeDivisions(currentList)
                 }
@@ -302,16 +292,16 @@ class HabitViewModel(
     }
 
     private suspend fun insertHabitStatus(habit: Habit, date: LocalDate) {
-        val isHabitCompleted =
-            _state.value.habitsWithAnalytics
-                .find { it.habit == habit }
-                ?.statuses
-                ?.any { it.date == date } ?: false
+        toggleHabitProgress(habit, date)
+    }
 
-        if (isHabitCompleted) {
+    private suspend fun toggleHabitProgress(habit: Habit, date: LocalDate) {
+        if (habit.pomodoroLinked) return
+        val currentValue = repo.getHabitProgress(habit.id, date)
+        if (currentValue >= (habit.targetValue ?: 1.0)) {
             repo.deleteHabitStatus(habit.id, date)
         } else {
-            repo.insertHabitStatus(HabitStatus(habitId = habit.id, date = date))
+            repo.incrementHabitProgress(habit.id, date, habit.incrementBy)
         }
     }
 }

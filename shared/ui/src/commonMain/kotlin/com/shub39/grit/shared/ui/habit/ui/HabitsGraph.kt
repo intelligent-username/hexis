@@ -1,19 +1,3 @@
-/*
- * Copyright (C) 2026  Shubham Gorai
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- */
 package com.shub39.grit.shared.ui.habit.ui
 
 import androidx.compose.animation.AnimatedVisibility
@@ -123,8 +107,6 @@ private val config = SavedStateConfiguration {
 fun HabitsGraph(
     state: HabitState,
     onAction: (HabitsAction) -> Unit,
-    onNavigateToPaywall: () -> Unit,
-    isUserSubscribed: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val windowSizeClass = LocalWindowSizeClass.current
@@ -197,8 +179,6 @@ fun HabitsGraph(
                                     state = filteredState,
                                     fabVisible = fabVisible,
                                     onAction = onAction,
-                                    onNavigateToPaywall = onNavigateToPaywall,
-                                    isUserSubscribed = isUserSubscribed,
                                 )
                             }
                         }
@@ -211,9 +191,7 @@ fun HabitsGraph(
                             onNavigateBack = {
                                 if (backstack.size != 1) backstack.removeLastOrNull()
                             },
-                            onNavigateToPaywall = onNavigateToPaywall,
                             onNavigateToCalendar = { backstack.add(HabitRoutes.Calendar) },
-                            isUserSubscribed = isUserSubscribed,
                             modifier = Modifier.background(MaterialTheme.colorScheme.background),
                         )
                     }
@@ -224,8 +202,6 @@ fun HabitsGraph(
                             onNavigateBack = {
                                 if (backstack.size != 1) backstack.removeLastOrNull()
                             },
-                            onNavigateToPaywall = onNavigateToPaywall,
-                            isUserSubscribed = isUserSubscribed,
                             onAction = onAction,
                             modifier = Modifier.background(MaterialTheme.colorScheme.background),
                             onNavigateToCalendarHeatMap = {
@@ -241,7 +217,7 @@ fun HabitsGraph(
                                 if (backstack.size != 1) backstack.removeLastOrNull()
                             },
                             onDateClick = { habit, date ->
-                                onAction(HabitsAction.InsertStatus(habit, date))
+                                onAction(HabitsAction.ToggleHabitProgress(habit, date))
                             },
                             modifier = Modifier.background(MaterialTheme.colorScheme.surface),
                         )
@@ -267,8 +243,6 @@ fun HabitsGraph(
             state = filteredState,
             onAction = onAction,
             scrollBehavior = scrollBehavior,
-            onNavigateToPaywall = onNavigateToPaywall,
-            isUserSubscribed = isUserSubscribed,
         )
     }
 }
@@ -279,8 +253,6 @@ private fun ExpandedScreen(
     state: HabitState,
     onAction: (HabitsAction) -> Unit,
     scrollBehavior: TopAppBarScrollBehavior,
-    onNavigateToPaywall: () -> Unit,
-    isUserSubscribed: Boolean,
 ) {
     Column(modifier = modifier.background(MaterialTheme.colorScheme.background)) {
         HabitsTopAppBar(state = state, onAction = onAction, scrollBehavior = scrollBehavior)
@@ -313,8 +285,6 @@ private fun ExpandedScreen(
                     state = state,
                     fabVisible = fabVisible,
                     onAction = onAction,
-                    onNavigateToPaywall = onNavigateToPaywall,
-                    isUserSubscribed = isUserSubscribed,
                 )
             }
 
@@ -348,9 +318,7 @@ private fun ExpandedScreen(
                                     onNavigateBack = {
                                         onAction(HabitsAction.PrepareAnalytics(null))
                                     },
-                                    onNavigateToPaywall = onNavigateToPaywall,
                                     onNavigateToCalendar = { backstack.add(HabitRoutes.Calendar) },
-                                    isUserSubscribed = isUserSubscribed,
                                     modifier =
                                         Modifier.background(
                                             MaterialTheme.colorScheme.surfaceContainerHighest
@@ -365,7 +333,7 @@ private fun ExpandedScreen(
                                         if (backstack.size != 1) backstack.removeLastOrNull()
                                     },
                                     onDateClick = { habit, date ->
-                                        onAction(HabitsAction.InsertStatus(habit, date))
+                                        onAction(HabitsAction.ToggleHabitProgress(habit, date))
                                     },
                                     modifier =
                                         Modifier.background(
@@ -381,8 +349,6 @@ private fun ExpandedScreen(
                                     state = state,
                                     onNavigateBack = {},
                                     showNavigateBack = false,
-                                    onNavigateToPaywall = onNavigateToPaywall,
-                                    isUserSubscribed = isUserSubscribed,
                                     onAction = onAction,
                                     onNavigateToCalendarHeatMap = {
                                         backstack.add(HabitRoutes.CalendarHeatMap)

@@ -1,19 +1,3 @@
-/*
- * Copyright (C) 2026  Shubham Gorai
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- */
 package com.shub39.grit.shared.ui.habit.ui.component
 
 import androidx.compose.animation.AnimatedContent
@@ -32,6 +16,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -153,8 +138,8 @@ fun HabitCard(
                 contentColor = cardContent,
             ),
         onClick = {
-            if (canCompleteToday) {
-                action(HabitsAction.InsertStatus(habitWithAnalytics.habit, today))
+            if (canCompleteToday && !habitWithAnalytics.habit.pomodoroLinked) {
+                action(HabitsAction.ToggleHabitProgress(habitWithAnalytics.habit, today))
             }
         },
         shape = shape,
@@ -180,14 +165,40 @@ fun HabitCard(
                     leadingIconColor = cardContent,
                 ),
             leadingContent = {
-                AnimatedContent(targetState = completed) {
-                    Icon(
-                        imageVector =
-                            vectorResource(
-                                if (!it) Res.drawable.circle_border else Res.drawable.check_circle
-                            ),
-                        contentDescription = null,
-                    )
+                val displayMode = habitWithAnalytics.habit.displayMode
+                if (displayMode == com.shub39.grit.core.habits.DisplayMode.PROGRESS) {
+                    val currentValue = habitWithAnalytics.habit.targetValue?.let { target ->
+                        val status = habitWithAnalytics.statuses.find { it.date == today }
+                        (status?.value ?: 0.0).coerceAtMost(target)
+                    } ?: 0.0
+                    val targetValue = habitWithAnalytics.habit.targetValue ?: 1.0
+                    Box(
+                        modifier = Modifier.size(24.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        androidx.compose.material3.CircularProgressIndicator(
+                            progress = { (currentValue / targetValue).toFloat() },
+                            modifier = Modifier.fillMaxSize(),
+                            strokeWidth = 2.dp,
+                            trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                            color = if (completed) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                        )
+                        Text(
+                            text = "${currentValue.toInt()}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (completed) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                        )
+                    }
+                } else {
+                    AnimatedContent(targetState = completed) {
+                        Icon(
+                            imageVector =
+                                vectorResource(
+                                    if (!it) Res.drawable.circle_border else Res.drawable.check_circle
+                                ),
+                            contentDescription = null,
+                        )
+                    }
                 }
             },
             headlineContent = {
@@ -339,12 +350,14 @@ fun HabitCard(
                                     role = Role.Button,
                                     enabled = validDay,
                                     onClick = {
-                                        action(
-                                            HabitsAction.InsertStatus(
-                                                habit = habitWithAnalytics.habit,
-                                                date = weekDay.date,
+                                        if (!habitWithAnalytics.habit.pomodoroLinked) {
+                                            action(
+                                                HabitsAction.ToggleHabitProgress(
+                                                    habit = habitWithAnalytics.habit,
+                                                    date = weekDay.date,
+                                                )
                                             )
-                                        )
+                                        }
                                     },
                                 ),
                         contentAlignment = Alignment.Center,

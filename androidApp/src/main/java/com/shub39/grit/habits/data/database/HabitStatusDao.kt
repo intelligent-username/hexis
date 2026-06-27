@@ -1,25 +1,10 @@
-/*
- * Copyright (C) 2026  Shubham Gorai
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- */
 package com.shub39.grit.habits.data.database
 
 import androidx.room3.Dao
 import androidx.room3.Insert
 import androidx.room3.OnConflictStrategy
 import androidx.room3.Query
+import androidx.room3.Upsert
 import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.LocalDate
 
@@ -42,4 +27,16 @@ interface HabitStatusDao {
     suspend fun deleteStatus(habitId: Long, date: LocalDate)
 
     @Query("DELETE FROM habit_status") suspend fun deleteAllHabitStatus()
+
+    @Upsert
+    suspend fun upsert(habitStatusEntity: HabitStatusEntity)
+
+    @Query("SELECT value FROM habit_status WHERE habitId = :habitId AND date = :date LIMIT 1")
+    suspend fun getProgress(habitId: Long, date: LocalDate): Double?
+
+    @Query("SELECT id FROM habit_status WHERE habitId = :habitId AND date = :date LIMIT 1")
+    suspend fun getStatusId(habitId: Long, date: LocalDate): Long?
+
+    @Query("SELECT COALESCE(value, 0.0) FROM habit_status WHERE habitId = :habitId AND date = :date LIMIT 1")
+    suspend fun getProgressOrDefault(habitId: Long, date: LocalDate): Double
 }

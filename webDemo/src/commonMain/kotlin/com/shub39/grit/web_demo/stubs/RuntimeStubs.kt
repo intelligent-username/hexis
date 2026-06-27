@@ -1,19 +1,3 @@
-/*
- * Copyright (C) 2026  Shubham Gorai
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- */
 package com.shub39.grit.web_demo.stubs
 
 import com.shub39.grit.core.habits.Habit
@@ -409,6 +393,35 @@ class HabitRepoStub(private val datastore: SettingsDatastore) : HabitRepo {
     override suspend fun getCompletedHabitsForDate(date: LocalDate): List<Habit> {
         val completedIds = _statuses.value.filter { it.date == date }.map { it.habitId }
         return _habits.value.filter { it.id in completedIds }
+    }
+
+    override suspend fun incrementHabitProgress(habitId: Long, date: LocalDate, incrementBy: Double): Double {
+        val existing = _statuses.value.find { it.habitId == habitId && it.date == date }
+        val newValue = (existing?.value ?: 0.0) + incrementBy
+        if (existing != null) {
+            _statuses.update { list ->
+                list.map { if (it.habitId == habitId && it.date == date) it.copy(value = newValue) else it }
+            }
+        } else {
+            val newId = (_statuses.value.maxOfOrNull { it.id } ?: 0L) + 1
+            _statuses.update { list ->
+                list + HabitStatus(id = newId, habitId = habitId, date = date, value = newValue)
+            }
+        }
+        return newValue
+    }
+
+    override suspend fun getHabitProgress(habitId: Long, date: LocalDate): Double {
+        return _statuses.value.find { it.habitId == habitId && it.date == date }?.value ?: 0.0
+    }
+
+    override fun observePomodoroLinkedHabits(): Flow<List<Habit>> =
+        _habits.asStateFlow().map { list -> list.filter { it.pomodoroLinked } }
+
+    override suspend fun isHabitCompleted(habitId: Long, date: LocalDate): Boolean {
+        val habit = _habits.value.find { it.id == habitId } ?: return false
+        val value = _statuses.value.find { it.habitId == habitId && it.date == date }?.value ?: 0.0
+        return value >= (habit.targetValue ?: 1.0)
     }
 }
 

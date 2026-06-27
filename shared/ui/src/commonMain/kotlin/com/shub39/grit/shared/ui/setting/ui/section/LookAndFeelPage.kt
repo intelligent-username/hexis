@@ -1,25 +1,8 @@
-/*
- * Copyright (C) 2026  Shubham Gorai
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- */
 package com.shub39.grit.shared.ui.setting.ui.section
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
@@ -28,13 +11,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
-import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MediumFlexibleTopAppBar
@@ -49,7 +30,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -83,8 +63,6 @@ import org.jetbrains.compose.resources.vectorResource
 fun LookAndFeelPage(
     state: SettingsState,
     onAction: (SettingsAction) -> Unit,
-    isUserSubscribed: Boolean,
-    onNavigateToPaywall: () -> Unit,
     onNavigateBack: () -> Unit,
 ) {
     var colorPickerDialog by remember { mutableStateOf(false) }
@@ -173,40 +151,16 @@ fun LookAndFeelPage(
                     }
 
                     MaterialYouToggle(
-                        isUserSubscribed = isUserSubscribed,
                         isMaterialYou = state.theme.isMaterialYou,
                         onClick = { onAction(SettingsAction.ChangeMaterialYou(it)) },
                     )
-
-                    // plus redirect
-                    if (!isUserSubscribed) {
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier.fillParentMaxWidth().height(60.dp),
-                        ) {
-                            LinearWavyProgressIndicator(
-                                progress = { 0.90f },
-                                modifier = Modifier.fillParentMaxWidth(),
-                            )
-
-                            Button(onClick = onNavigateToPaywall) {
-                                Text(text = stringResource(Res.string.unlock_more_plus))
-                            }
-                        }
-                    }
 
                     // font picker
                     Column(
                         modifier =
                             Modifier.clip(
-                                when {
-                                    state.theme.isMaterialYou && !isUserSubscribed ->
-                                        detachedItemShape()
-
-                                    state.theme.isMaterialYou -> endItemShape()
-                                    isUserSubscribed -> middleItemShape()
-                                    else -> leadingItemShape()
-                                }
+                                if (state.theme.isMaterialYou) endItemShape()
+                                else middleItemShape()
                             )
                     ) {
                         ListItem(
@@ -233,7 +187,6 @@ fun LookAndFeelPage(
                                     onCheckedChange = {
                                         onAction(SettingsAction.ChangeFontPref(font))
                                     },
-                                    enabled = isUserSubscribed,
                                     colors =
                                         ToggleButtonDefaults.toggleButtonColors(
                                             containerColor =
@@ -263,7 +216,6 @@ fun LookAndFeelPage(
                             trailingContent = {
                                 ExpressiveSwitch(
                                     checked = state.theme.isAmoled,
-                                    enabled = isUserSubscribed,
                                     onCheckedChange = { onAction(SettingsAction.ChangeAmoled(it)) },
                                 )
                             },
@@ -288,7 +240,6 @@ fun LookAndFeelPage(
                                             contentColor =
                                                 contentColorFor(Color(state.theme.seedColor)),
                                         ),
-                                    enabled = isUserSubscribed,
                                 ) {
                                     Icon(
                                         imageVector = vectorResource(Res.drawable.edit),
@@ -307,7 +258,6 @@ fun LookAndFeelPage(
                             seedColor = Color(state.theme.seedColor),
                             appTheme = state.theme.appTheme,
                             isAmoled = state.theme.isAmoled,
-                            isUserSubscribed = isUserSubscribed,
                             onClick = { onAction(SettingsAction.ChangePaletteStyle(it)) },
                         )
                     }
@@ -327,7 +277,6 @@ fun LookAndFeelPage(
 
 @Composable
 expect fun MaterialYouToggle(
-    isUserSubscribed: Boolean,
     isMaterialYou: Boolean,
     onClick: (Boolean) -> Unit,
 )
@@ -339,7 +288,6 @@ expect fun PaletteStylePicker(
     seedColor: Color,
     appTheme: AppTheme,
     isAmoled: Boolean,
-    isUserSubscribed: Boolean,
     onClick: (PaletteStyle) -> Unit,
 )
 
@@ -350,10 +298,8 @@ private fun Preview() {
         Surface {
             LookAndFeelPage(
                 state = SettingsState(),
-                isUserSubscribed = false,
                 onAction = {},
                 onNavigateBack = {},
-                onNavigateToPaywall = {},
             )
         }
     }

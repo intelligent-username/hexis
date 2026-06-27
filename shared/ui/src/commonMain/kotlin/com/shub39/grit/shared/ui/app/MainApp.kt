@@ -1,19 +1,3 @@
-/*
- * Copyright (C) 2026  Shubham Gorai
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- */
 package com.shub39.grit.shared.ui.app
 
 import androidx.compose.foundation.background
@@ -61,7 +45,7 @@ import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
-fun MainApp(state: MainAppState, onNavigateToPaywall: () -> Unit) {
+fun MainApp(state: MainAppState) {
     val windowSizeClass = LocalWindowSizeClass.current
 
     val pagerState = rememberPagerState(
@@ -76,6 +60,7 @@ fun MainApp(state: MainAppState, onNavigateToPaywall: () -> Unit) {
     val mvm: MainViewModel = koinViewModel()
     val tvm: TasksViewModel = koinViewModel()
     val hvm: HabitViewModel = koinViewModel()
+    val svm: SettingsViewModel = koinViewModel()
 
     var showPomodoro by remember { mutableStateOf(false) }
 
@@ -139,14 +124,11 @@ fun MainApp(state: MainAppState, onNavigateToPaywall: () -> Unit) {
                         }
 
                         is AppSections.SettingsPages -> {
-                            val svm: SettingsViewModel = koinViewModel()
                             val settingsState by svm.state.collectAsStateWithLifecycle()
 
                             SettingsGraph(
                                 state = settingsState,
                                 onAction = svm::onAction,
-                                isUserSubscribed = state.isUserSubscribed,
-                                onNavigateToPaywall = onNavigateToPaywall,
                             )
                         }
 
@@ -156,8 +138,6 @@ fun MainApp(state: MainAppState, onNavigateToPaywall: () -> Unit) {
                             HabitsGraph(
                                 state = habitsPageState,
                                 onAction = hvm::onAction,
-                                isUserSubscribed = state.isUserSubscribed,
-                                onNavigateToPaywall = onNavigateToPaywall,
                             )
                         }
                     }
@@ -197,14 +177,11 @@ fun MainApp(state: MainAppState, onNavigateToPaywall: () -> Unit) {
                         }
 
                         is AppSections.SettingsPages -> {
-                            val svm: SettingsViewModel = koinViewModel()
                             val settingsState by svm.state.collectAsStateWithLifecycle()
 
                             SettingsGraph(
                                 state = settingsState,
                                 onAction = svm::onAction,
-                                isUserSubscribed = state.isUserSubscribed,
-                                onNavigateToPaywall = onNavigateToPaywall,
                             )
                         }
 
@@ -214,8 +191,6 @@ fun MainApp(state: MainAppState, onNavigateToPaywall: () -> Unit) {
                             HabitsGraph(
                                 state = habitsPageState,
                                 onAction = hvm::onAction,
-                                isUserSubscribed = state.isUserSubscribed,
-                                onNavigateToPaywall = onNavigateToPaywall,
                             )
                         }
                     }

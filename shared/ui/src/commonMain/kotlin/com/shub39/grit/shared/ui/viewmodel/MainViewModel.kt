@@ -1,24 +1,7 @@
-/*
- * Copyright (C) 2026  Shubham Gorai
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- */
 package com.shub39.grit.shared.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.shub39.grit.core.billing.BillingHandler
 import com.shub39.grit.core.interfaces.ChangelogManager
 import com.shub39.grit.core.interfaces.SettingsDatastore
 import com.shub39.grit.core.interfaces.ThemeDatastore
@@ -42,7 +25,6 @@ import org.koin.core.annotation.Provided
 class MainViewModel(
     @Provided private val themeDatastore: ThemeDatastore,
     @Provided private val settingsDatastore: SettingsDatastore,
-    @Provided private val billingHandler: BillingHandler,
     @Provided private val changelogManager: ChangelogManager,
 ) : ViewModel() {
     var observerJob: Job? = null
@@ -53,7 +35,6 @@ class MainViewModel(
         _state
             .asStateFlow()
             .onStart {
-                checkSubscription()
                 checkChangelog()
                 observeDatastore()
             }
@@ -69,10 +50,6 @@ class MainViewModel(
 
     fun setBiometricLock(value: Boolean) {
         viewModelScope.launch { settingsDatastore.setBiometricPref(value) }
-    }
-
-    fun updateSubscription() {
-        viewModelScope.launch { checkSubscription() }
     }
 
     private fun observeDatastore() {
@@ -128,17 +105,6 @@ class MainViewModel(
             if (lastShownChangelog != changeLogs.firstOrNull()?.version) {
                 _state.update { it.copy(currentChangelog = changeLogs.firstOrNull()) }
             }
-        }
-    }
-
-    private suspend fun checkSubscription() {
-        val isSubscribed = billingHandler.userResult()
-
-        when (isSubscribed) {
-            Subscribed -> {
-                _state.update { it.copy(isUserSubscribed = true) }
-            }
-            else -> {}
         }
     }
 

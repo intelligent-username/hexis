@@ -1,19 +1,3 @@
-/*
- * Copyright (C) 2026  Shubham Gorai
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- */
 package com.shub39.grit.shared.ui.habit.ui.component.stats
 
 import androidx.compose.animation.AnimatedVisibility
@@ -55,9 +39,7 @@ import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun WeekDayBreakdown(
-    canSeeContent: Boolean,
     weekDayData: WeekDayFrequencyData,
-    onNavigateToPaywall: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val max = weekDayData.values.takeIf { it.any { value -> value != 0 } }?.maxOrNull()
@@ -65,8 +47,6 @@ fun WeekDayBreakdown(
     AnalyticsCard(
         title = stringResource(Res.string.week_breakdown),
         icon = Res.drawable.view_day,
-        canSeeContent = canSeeContent,
-        onPlusClick = onNavigateToPaywall,
         modifier = modifier.heightIn(min = 200.dp),
     ) {
         if (max != null) {
@@ -160,9 +140,7 @@ fun WeekDayBreakdown(
 @Composable
 private fun Preview() {
     WeekDayBreakdown(
-        canSeeContent = true,
         weekDayData =
             DayOfWeekNames.ENGLISH_ABBREVIATED.names.associateWith { Random.nextInt(0..100) },
-        onNavigateToPaywall = {},
     )
 }

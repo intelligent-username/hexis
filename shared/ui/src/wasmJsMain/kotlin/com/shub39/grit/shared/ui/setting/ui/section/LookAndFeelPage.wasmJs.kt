@@ -1,19 +1,3 @@
-/*
- * Copyright (C) 2026  Shubham Gorai
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- */
 package com.shub39.grit.shared.ui.setting.ui.section
 
 import androidx.compose.foundation.Canvas
@@ -51,7 +35,6 @@ import org.jetbrains.compose.resources.vectorResource
 
 @Composable
 actual fun MaterialYouToggle(
-    isUserSubscribed: Boolean,
     isMaterialYou: Boolean,
     onClick: (Boolean) -> Unit,
 ) {}
@@ -63,7 +46,6 @@ actual fun PaletteStylePicker(
     seedColor: Color,
     appTheme: AppTheme,
     isAmoled: Boolean,
-    isUserSubscribed: Boolean,
     onClick: (PaletteStyle) -> Unit,
 ) {
     Column(modifier = Modifier.clip(endItemShape())) {
@@ -114,7 +96,7 @@ actual fun PaletteStylePicker(
                                     if (selected) MaterialShapes.VerySunny.toShape()
                                     else CircleShape
                             )
-                            .clickable(enabled = isUserSubscribed) { onClick(style) },
+                            .clickable { onClick(style) },
                     contentAlignment = Alignment.Center,
                 ) {
                     Canvas(modifier = Modifier.matchParentSize()) {

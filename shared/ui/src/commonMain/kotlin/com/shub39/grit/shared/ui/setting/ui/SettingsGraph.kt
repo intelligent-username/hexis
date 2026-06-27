@@ -1,19 +1,3 @@
-/*
- * Copyright (C) 2026  Shubham Gorai
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- */
 package com.shub39.grit.shared.ui.setting.ui
 
 import androidx.compose.foundation.background
@@ -73,8 +57,6 @@ private val configuration = SavedStateConfiguration {
 fun SettingsGraph(
     state: SettingsState,
     onAction: (SettingsAction) -> Unit,
-    isUserSubscribed: Boolean,
-    onNavigateToPaywall: () -> Unit,
     modifier: Modifier = Modifier,
 ) =
     PageFill(modifier = modifier.background(MaterialTheme.colorScheme.background)) {
@@ -91,7 +73,6 @@ fun SettingsGraph(
                             onAction = onAction,
                             onNavigateToLookAndFeel = { backStack.add(SettingsRoutes.LookAndFeel) },
                             onNavigateToBackup = { backStack.add(SettingsRoutes.Backup) },
-                            onNavigateToPaywall = onNavigateToPaywall,
                             onNavigateToChangelog = { backStack.add(SettingsRoutes.Changelog) },
                             onNavigateToAppInfo = { backStack.add(SettingsRoutes.About) },
                         )
@@ -101,8 +82,6 @@ fun SettingsGraph(
                         LookAndFeelPage(
                             state = state,
                             onAction = onAction,
-                            isUserSubscribed = isUserSubscribed,
-                            onNavigateToPaywall = onNavigateToPaywall,
                             onNavigateBack = {
                                 if (backStack.size != 1) backStack.removeLastOrNull()
                             },
@@ -147,7 +126,5 @@ private fun Preview() {
     SettingsGraph(
         state = SettingsState(),
         onAction = {},
-        onNavigateToPaywall = {},
-        isUserSubscribed = true,
     )
 }

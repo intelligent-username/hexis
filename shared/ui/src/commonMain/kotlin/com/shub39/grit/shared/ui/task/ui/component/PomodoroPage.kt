@@ -1,19 +1,3 @@
-/*
- * Copyright (C) 2026  Shubham Gorai
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- */
 package com.shub39.grit.shared.ui.task.ui.component
 
 import androidx.compose.animation.AnimatedVisibility
@@ -64,6 +48,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import com.shub39.grit.core.interfaces.PomodoroAlarm
 import com.shub39.grit.core.interfaces.VibratorUtil
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -71,6 +56,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.shub39.grit.core.now
+import com.shub39.grit.core.habits.HabitRepo
 import com.shub39.grit.core.tasks.PomodoroRepo
 import com.shub39.grit.core.tasks.PomodoroSession
 import com.shub39.grit.core.tasks.PomodoroSettings
@@ -87,6 +73,7 @@ import grit.shared.ui.generated.resources.skip
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
@@ -105,6 +92,7 @@ fun PomodoroPage(onDismiss: () -> Unit) {
     var secondsRemaining by remember { mutableStateOf((settings.focusMinutes * 60).toInt()) }
     var isRunning by remember { mutableStateOf(false) }
     var cyclesCompleted by remember { mutableStateOf(0) }
+    var currentSessionInBatch by remember { mutableStateOf(1) }
     var currentSessionId by remember { mutableStateOf<Long?>(null) }
     var sessionStartTime by remember { mutableStateOf<LocalDateTime?>(null) }
     var transitionCountdown by remember { mutableStateOf(0) }
@@ -116,8 +104,10 @@ fun PomodoroPage(onDismiss: () -> Unit) {
     var longBreakText by remember { mutableStateOf("") }
     var intervalText by remember { mutableStateOf("") }
 
+    val habitRepo: HabitRepo = koinInject()
     val scope = rememberCoroutineScope()
     val vibrator: VibratorUtil = koinInject()
+    val pomodoroAlarm: PomodoroAlarm = koinInject()
 
     fun formatMinutes(mins: Float): String =
         if (mins == mins.toInt().toFloat()) mins.toInt().toString() else mins.toString()
@@ -152,9 +142,11 @@ fun PomodoroPage(onDismiss: () -> Unit) {
         secondsRemaining = (settings.focusMinutes * 60).toInt()
         phase = PomodoroPhase.FOCUS
         isRunning = true
+        pomodoroAlarm.schedule(LocalDateTime.now().toInstant(TimeZone.currentSystemDefault()).toEpochMilliseconds() + secondsRemaining * 1000L)
     }
 
     fun resetTimer() {
+        pomodoroAlarm.cancel()
         savePartialSession()
         isRunning = false
         when (phase) {
@@ -165,6 +157,7 @@ fun PomodoroPage(onDismiss: () -> Unit) {
     }
 
     fun onPhaseComplete() {
+        pomodoroAlarm.cancel()
         isRunning = false
         when (phase) {
             PomodoroPhase.FOCUS -> {
@@ -180,16 +173,20 @@ fun PomodoroPage(onDismiss: () -> Unit) {
                 scope.launch {
                     id?.let { repo.finishSession(it, nw, true, elapsed) }
                     todayStats = repo.getTodayStats()
+                    val linkedHabits = habitRepo.observePomodoroLinkedHabits().first()
+                    linkedHabits.forEach { habit ->
+                        habitRepo.incrementHabitProgress(habit.id, LocalDate.now(), habit.incrementBy)
+                    }
                 }
                 cyclesCompleted++
-                val useLong = settings.longBreakInterval > 0 &&
-                    cyclesCompleted % settings.longBreakInterval == 0
-                val next = if (useLong) PomodoroPhase.LONG_BREAK else PomodoroPhase.SHORT_BREAK
-                phase = next
-                secondsRemaining = when (next) {
-                    PomodoroPhase.SHORT_BREAK -> (settings.shortBreakMinutes * 60).toInt()
-                    PomodoroPhase.LONG_BREAK -> (settings.longBreakMinutes * 60).toInt()
-                    else -> 0
+                if (settings.longBreakInterval > 0 && currentSessionInBatch >= settings.longBreakInterval) {
+                    currentSessionInBatch = 1
+                    phase = PomodoroPhase.LONG_BREAK
+                    secondsRemaining = (settings.longBreakMinutes * 60).toInt()
+                } else {
+                    currentSessionInBatch++
+                    phase = PomodoroPhase.SHORT_BREAK
+                    secondsRemaining = (settings.shortBreakMinutes * 60).toInt()
                 }
                 currentSessionId = null
                 sessionStartTime = null
@@ -216,6 +213,7 @@ fun PomodoroPage(onDismiss: () -> Unit) {
                             PomodoroSession(goalDurationMinutes = settings.focusMinutes.toInt(), timeStarted = nw2)
                         )
                         isRunning = true
+                        pomodoroAlarm.schedule(LocalDateTime.now().toInstant(TimeZone.currentSystemDefault()).toEpochMilliseconds() + secondsRemaining * 1000L)
                     }
                 }
             }
@@ -223,6 +221,7 @@ fun PomodoroPage(onDismiss: () -> Unit) {
     }
 
     fun skipBreak() {
+        pomodoroAlarm.cancel()
         isRunning = false
         phase = PomodoroPhase.FOCUS
         secondsRemaining = (settings.focusMinutes * 60).toInt()
@@ -411,10 +410,10 @@ fun PomodoroPage(onDismiss: () -> Unit) {
                 }
             }
 
-            // cycle counter
-            if (phase == PomodoroPhase.FOCUS && cyclesCompleted > 0) {
+            // cycle counter — shows current session number (1 to interval)
+            if (settings.longBreakInterval > 0) {
                 Text(
-                    text = "$cyclesCompleted / ${settings.longBreakInterval} cycles",
+                    text = "$currentSessionInBatch / ${settings.longBreakInterval} cycles",
                     fontFamily = flexFontRounded(),
                     style = MaterialTheme.typography.bodyMedium,
                     color = onSurfaceVariant,
@@ -456,11 +455,13 @@ fun PomodoroPage(onDismiss: () -> Unit) {
                             indication = null,
                         ) {
                             if (isRunning) {
+                                pomodoroAlarm.cancel()
                                 isRunning = false
                             } else if (currentSessionId == null && phase == PomodoroPhase.FOCUS) {
                                 startSession()
                             } else {
                                 isRunning = true
+                                pomodoroAlarm.schedule(LocalDateTime.now().toInstant(TimeZone.currentSystemDefault()).toEpochMilliseconds() + secondsRemaining * 1000L)
                             }
                         },
                     contentAlignment = Alignment.Center,
