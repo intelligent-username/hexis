@@ -45,6 +45,7 @@ fun PomodoroSessionEntity.toPomodoroSession(): PomodoroSession {
         timeFinished = timeFinished,
         completed = completed,
         timeCompletedMinutes = timeCompletedMinutes,
+        linkedHabitId = linkedHabitId,
     )
 }
 
@@ -56,5 +57,6 @@ fun PomodoroSession.toPomodoroSessionEntity(): PomodoroSessionEntity {
         timeFinished = timeFinished,
         completed = completed,
         timeCompletedMinutes = timeCompletedMinutes,
+        linkedHabitId = linkedHabitId,
     )
 }

@@ -24,6 +24,7 @@ import com.shub39.grit.shared.ui.setting.ui.section.BackupPage
 import com.shub39.grit.shared.ui.setting.ui.section.Changelog
 import com.shub39.grit.shared.ui.setting.ui.section.LookAndFeelPage
 import com.shub39.grit.shared.ui.setting.ui.section.RootPage
+import com.shub39.grit.shared.ui.setting.ui.section.UXPage
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
@@ -31,6 +32,8 @@ import kotlinx.serialization.modules.polymorphic
 @Serializable
 private sealed interface SettingsRoutes : NavKey {
     @Serializable data object Root : SettingsRoutes
+
+    @Serializable data object UX : SettingsRoutes
 
     @Serializable data object LookAndFeel : SettingsRoutes
 
@@ -45,6 +48,7 @@ private val configuration = SavedStateConfiguration {
     serializersModule = SerializersModule {
         polymorphic(NavKey::class) {
             subclass(SettingsRoutes.Root::class, SettingsRoutes.Root.serializer())
+            subclass(SettingsRoutes.UX::class, SettingsRoutes.UX.serializer())
             subclass(SettingsRoutes.LookAndFeel::class, SettingsRoutes.LookAndFeel.serializer())
             subclass(SettingsRoutes.Backup::class, SettingsRoutes.Backup.serializer())
             subclass(SettingsRoutes.Changelog::class, SettingsRoutes.Changelog.serializer())
@@ -71,10 +75,21 @@ fun SettingsGraph(
                         RootPage(
                             state = state,
                             onAction = onAction,
+                            onNavigateToUX = { backStack.add(SettingsRoutes.UX) },
                             onNavigateToLookAndFeel = { backStack.add(SettingsRoutes.LookAndFeel) },
                             onNavigateToBackup = { backStack.add(SettingsRoutes.Backup) },
                             onNavigateToChangelog = { backStack.add(SettingsRoutes.Changelog) },
                             onNavigateToAppInfo = { backStack.add(SettingsRoutes.About) },
+                        )
+                    }
+
+                    entry<SettingsRoutes.UX>(metadata = horizontalTransitionMetadata()) {
+                        UXPage(
+                            state = state,
+                            onAction = onAction,
+                            onNavigateBack = {
+                                if (backStack.size != 1) backStack.removeLastOrNull()
+                            },
                         )
                     }
 

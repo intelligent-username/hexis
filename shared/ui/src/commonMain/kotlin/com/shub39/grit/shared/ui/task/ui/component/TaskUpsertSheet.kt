@@ -1,6 +1,7 @@
 package com.shub39.grit.shared.ui.task.ui.component
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -43,6 +44,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.ImeAction
@@ -111,8 +114,15 @@ fun TaskUpsertSheetContent(
             newTask.reminder!! > LocalDateTime.now()
         } else true
 
+    val focusManager = LocalFocusManager.current
+
     HexisBottomSheet(
-        modifier = modifier.imePadding(),
+        modifier =
+            modifier
+                .imePadding()
+                .pointerInput(Unit) {
+                    detectTapGestures(onTap = { focusManager.clearFocus() })
+                },
         padding = 0.dp,
         onDismissRequest = onDismissRequest,
     ) {

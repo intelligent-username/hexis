@@ -2,6 +2,11 @@ package com.shub39.grit.shared.ui.setting.ui.section
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.text.ClickableText
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -44,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import com.shub39.grit.shared.ui.components.detachedItemShape
 import com.shub39.grit.shared.ui.components.endItemShape
 import com.shub39.grit.shared.ui.components.leadingItemShape
+import com.shub39.grit.shared.ui.components.middleItemShape
 import com.shub39.grit.shared.ui.components.listItemColors
 import com.shub39.grit.shared.ui.setting.ui.component.LicenseBottomSheet
 import com.shub39.grit.shared.ui.theme.flexFontEmphasis
@@ -136,7 +142,7 @@ private fun LazyListScope.aboutApp(versionName: String, uriHandler: UriHandler) 
                         contentAlignment = Alignment.Center,
                     ) {
                         Icon(
-                            imageVector = vectorResource(Res.drawable.hexis_logo),
+                            painter = painterResource(Res.drawable.hexis_logo),
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.onPrimaryContainer,
                             modifier = Modifier.size(32.dp),
@@ -165,7 +171,7 @@ private fun LazyListScope.aboutApp(versionName: String, uriHandler: UriHandler) 
                     Row {
 
                         FilledTonalIconButton(
-                            onClick = { uriHandler.openUri("https://github.com/shub39/Hexis") }
+                            onClick = { uriHandler.openUri("https://github.com/intelligent-username/hexis") }
                         ) {
                             Icon(
                                 imageVector = vectorResource(Res.drawable.github),
@@ -174,6 +180,72 @@ private fun LazyListScope.aboutApp(versionName: String, uriHandler: UriHandler) 
                             )
                         }
                     }
+                }
+            }
+
+            // Abstract card
+            Card(shape = middleItemShape()) {
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "The name Hexis is inspired by Aristotle's quote:",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "\"We are what we repeatedly do. Excellence, then, is not an act, but a habit.\"",
+                        style = MaterialTheme.typography.titleMedium.copy(fontFamily = flexFontEmphasis()),
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        text = "The word for excellence is Ἀρετή (arete), and the word for habitual practice of excellence is Ἕξις (Hexis). The intention of this app is to cultivate excellence in the user.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            // Open source card
+            Card(shape = middleItemShape()) {
+                Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+                    val annotatedString = buildAnnotatedString {
+                        append("This app is ")
+                        
+                        pushStringAnnotation(tag = "open_source", annotation = "https://github.com/intelligent-username/Hexis")
+                        withStyle(style = SpanStyle(
+                            color = MaterialTheme.colorScheme.primary,
+                            textDecoration = TextDecoration.Underline
+                        )) {
+                            append("open source")
+                        }
+                        pop()
+                        
+                        append(". You can view the source code, ")
+                        
+                        pushStringAnnotation(tag = "issues", annotation = "https://github.com/intelligent-username/Hexis/issues")
+                        withStyle(style = SpanStyle(
+                            color = MaterialTheme.colorScheme.primary,
+                            textDecoration = TextDecoration.Underline
+                        )) {
+                            append("report bugs or request features")
+                        }
+                        pop()
+                        
+                        append(", and contribute by modifying the app and creating pull requests at our GitHub repository.")
+                    }
+                    
+                    ClickableText(
+                        text = annotatedString,
+                        style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
+                        onClick = { offset ->
+                            annotatedString.getStringAnnotations(tag = "open_source", start = offset, end = offset)
+                                .firstOrNull()?.let { uriHandler.openUri(it.item) }
+                            annotatedString.getStringAnnotations(tag = "issues", start = offset, end = offset)
+                                .firstOrNull()?.let { uriHandler.openUri(it.item) }
+                        }
+                    )
                 }
             }
 
@@ -202,7 +274,7 @@ private fun LazyListScope.aboutApp(versionName: String, uriHandler: UriHandler) 
 
                         Column {
                             Text(
-                                text = "Shubham Gorai",
+                                text = "intelligent-username",
                                 style =
                                     MaterialTheme.typography.headlineSmall.copy(
                                         fontFamily = flexFontRounded()
@@ -223,8 +295,8 @@ private fun LazyListScope.aboutApp(versionName: String, uriHandler: UriHandler) 
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         listOf(
-                                "https://github.com/shub39" to Res.drawable.github,
-                                "https://shub39.github.io/" to Res.drawable.language,
+                                "https://github.com/intelligent-username" to Res.drawable.github,
+                                "https://varak.dev/" to Res.drawable.language,
 
                             )
                             .forEach { pair ->

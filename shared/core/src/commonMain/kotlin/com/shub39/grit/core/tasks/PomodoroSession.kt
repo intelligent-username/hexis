@@ -11,4 +11,5 @@ data class PomodoroSession(
     val timeFinished: LocalDateTime? = null,
     val completed: Boolean = false,
     val timeCompletedMinutes: Float? = null,
+    val linkedHabitId: Long? = null,
 )

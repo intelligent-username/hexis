@@ -210,38 +210,29 @@ fun WeeklyBooleanHeatMap(
                                             .background(color = MaterialTheme.colorScheme.primary),
                                     contentAlignment = Alignment.Center,
                                 ) {
-                                    val isStreakEnd =
-                                        streakPosition == StreakPosition.START ||
-                                            streakPosition == StreakPosition.END
-                                    if (isStreakEnd) {
-                                        Box(
-                                            modifier =
-                                                Modifier.size(30.dp)
-                                                    .background(
-                                                        color = MaterialTheme.colorScheme.onPrimary,
-                                                        shape = MaterialShapes.Circle.toShape(),
-                                                    ),
-                                            contentAlignment = Alignment.Center,
-                                        ) {
-                                            Text(
-                                                text = day.date.day.toString(),
-                                                style =
-                                                    MaterialTheme.typography.bodyMedium.copy(
-                                                        fontFamily = flexFontRounded()
-                                                    ),
-                                                color = MaterialTheme.colorScheme.primary,
-                                            )
-                                        }
-                                    } else {
-                                        Text(
-                                            text = day.date.day.toString(),
-                                            style =
-                                                MaterialTheme.typography.bodyMedium.copy(
-                                                    fontFamily = flexFontRounded()
-                                                ),
-                                            color = MaterialTheme.colorScheme.onPrimary,
-                                        )
-                                    }
+                        val isStreakEnd =
+                            streakPosition == StreakPosition.START ||
+                                streakPosition == StreakPosition.END
+                            val innerMod = if (day.date == startDate)
+                                Modifier.border(1.dp, Color(0xFFFFD700), MaterialShapes.Circle.toShape()) else Modifier
+                            if (isStreakEnd) {
+                                Box(
+                                    modifier =
+                                        Modifier.size(30.dp)
+                                            .background(
+                                                color = MaterialTheme.colorScheme.onPrimary,
+                                                shape = MaterialShapes.Circle.toShape(),
+                                            ).then(innerMod),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Text(
+                                        text = day.date.day.toString(),
+                                        style =
+                                            MaterialTheme.typography.bodyMedium.copy(
+                                                fontFamily = flexFontRounded()
+                                            ),
+                                        color = MaterialTheme.colorScheme.primary,
+                                    )
                                 }
                             } else {
                                 Text(
@@ -250,24 +241,27 @@ fun WeeklyBooleanHeatMap(
                                         MaterialTheme.typography.bodyMedium.copy(
                                             fontFamily = flexFontRounded()
                                         ),
-                                    color =
-                                        if (!validDay)
-                                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-                                        else MaterialTheme.colorScheme.onSurface,
+                                    color = MaterialTheme.colorScheme.onPrimary,
                                 )
                             }
-
-                            if (day.date == startDate) {
-                                Box(
-                                    modifier =
-                                        Modifier.matchParentSize()
-                                            .border(
-                                                width = 1.dp,
-                                                color = Color(0xFFFFD700),
-                                                shape = MaterialShapes.Circle.toShape(),
-                                            )
-                                )
-                            }
+                        }
+                    } else {
+                        val textMod = if (day.date == startDate)
+                            Modifier.border(1.dp, Color(0xFFFFD700), MaterialShapes.Circle.toShape()).padding(4.dp)
+                            else Modifier.padding(4.dp)
+                        Text(
+                            text = day.date.day.toString(),
+                            style =
+                                MaterialTheme.typography.bodyMedium.copy(
+                                    fontFamily = flexFontRounded()
+                                ),
+                            color =
+                                if (!validDay)
+                                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                                else MaterialTheme.colorScheme.onSurface,
+                            modifier = textMod,
+                        )
+                    }
                         }
                     },
                 )
@@ -291,6 +285,12 @@ private fun HeatMapProgressCell(
     val onPrimary = MaterialTheme.colorScheme.onPrimary
     val onSurface = MaterialTheme.colorScheme.onSurface
     val surfaceLow = MaterialTheme.colorScheme.surfaceContainerLow
+    val isStart = day.date == startDate
+    val circleShape = MaterialShapes.Circle.toShape()
+
+    val borderMod: (Modifier) -> Modifier = { m ->
+        if (isStart) m.border(width = 1.dp, color = Color(0xFFFFD700), shape = circleShape) else m
+    }
 
     Box(
         modifier = Modifier
@@ -301,9 +301,7 @@ private fun HeatMapProgressCell(
     ) {
         if (completed) {
             Box(
-                modifier = Modifier
-                    .size(cellSize)
-                    .background(color = primary, shape = MaterialShapes.Circle.toShape()),
+                modifier = borderMod(Modifier.size(cellSize).background(color = primary, shape = MaterialShapes.Circle.toShape())),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
@@ -316,9 +314,7 @@ private fun HeatMapProgressCell(
             }
         } else if (progress > 0f) {
             Box(
-                modifier = Modifier
-                    .size(cellSize)
-                    .background(color = surfaceLow, shape = MaterialShapes.Circle.toShape()),
+                modifier = borderMod(Modifier.size(cellSize).background(color = surfaceLow, shape = MaterialShapes.Circle.toShape())),
                 contentAlignment = Alignment.Center,
             ) {
                 Canvas(modifier = Modifier.fillMaxSize()) {
@@ -343,20 +339,15 @@ private fun HeatMapProgressCell(
                 )
             }
         } else {
+            val textMod = if (isStart) Modifier.border(width = 1.dp, color = Color(0xFFFFD700), shape = MaterialShapes.Circle.toShape())
+                .padding(4.dp) else Modifier.padding(4.dp)
             Text(
                 text = day.date.day.toString(),
                 style = MaterialTheme.typography.bodyMedium.copy(
                     fontFamily = flexFontRounded(),
                     color = if (!validDay) onSurface.copy(alpha = 0.5f) else onSurface,
                 ),
-            )
-        }
-
-        if (day.date == startDate) {
-            Box(
-                modifier = Modifier
-                    .matchParentSize()
-                    .border(width = 1.dp, color = Color(0xFFFFD700), shape = MaterialShapes.Circle.toShape())
+                modifier = textMod,
             )
         }
     }

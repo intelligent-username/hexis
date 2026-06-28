@@ -10,7 +10,6 @@ import com.shub39.grit.core.data.Converters
     entities = [TaskEntity::class, CategoryEntity::class, PomodoroSessionEntity::class],
     version = TaskDatabase.SCHEMA_VERSION,
     exportSchema = true,
-    autoMigrations = [AutoMigration(from = 4, to = 5), AutoMigration(from = 5, to = 6)],
 )
 @ColumnTypeConverters(Converters::class)
 abstract class TaskDatabase : RoomDatabase() {
@@ -22,6 +21,6 @@ abstract class TaskDatabase : RoomDatabase() {
 
     companion object {
         const val DB_NAME = "task_database"
-        const val SCHEMA_VERSION = 6
+        const val SCHEMA_VERSION = 1
     }
 }

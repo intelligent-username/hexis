@@ -86,6 +86,13 @@ fun MainApp(state: MainAppState) {
         }
     }
 
+    SystemBackHandler(enabled = true) {
+        val current = pagerState.currentPage
+        if (current > 0) {
+            coroutineScope.launch { pagerState.animateScrollToPage(current - 1) }
+        }
+    }
+
     when (windowSizeClass.widthSizeClass) {
         Compact -> {
             Scaffold(

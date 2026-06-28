@@ -63,4 +63,10 @@ class PomodoroRepository(
             }
         }.flowOn(Dispatchers.IO)
     }
+
+    override suspend fun getSessionCountsByHabit(): List<Pair<Long?, Int>> {
+        return withContext(Dispatchers.IO) {
+            pomodoroDao.getSessionCountsByHabit().map { it.linkedHabitId to it.count }
+        }
+    }
 }

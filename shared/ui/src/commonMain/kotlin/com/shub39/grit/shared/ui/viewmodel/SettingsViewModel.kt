@@ -121,14 +121,17 @@ class SettingsViewModel(
         }
     }
 
-    private suspend fun getChangeLogs() {
-        val currentChangelog = changelogManager.changelogs.first()
-        _state.update {
-            it.copy(
-                changelog = currentChangelog,
-                currentVersion = currentChangelog.firstOrNull()?.version,
-            )
-        }
+    private fun getChangeLogs() {
+        changelogManager.changelogs
+            .onEach { logs ->
+                _state.update {
+                    it.copy(
+                        changelog = logs,
+                        currentVersion = logs.firstOrNull()?.version,
+                    )
+                }
+            }
+            .launchIn(viewModelScope)
     }
 
     private fun observeJob() =

@@ -209,7 +209,7 @@ val generateChangelogJson by
             for (line in lines) {
                 when {
                     line.startsWith("## ") -> {
-                        currentVersion = line.removePrefix("## ").trim()
+                        currentVersion = line.removePrefix("## ").substringBefore(":").trim()
                         map[currentVersion] = mutableListOf()
                     }
 
@@ -222,7 +222,8 @@ val generateChangelogJson by
             val json = buildString {
                 append("[\n")
 
-                map.entries.take(10).forEachIndexed { index, entry ->
+                val entriesToKeep = map.entries.take(10)
+                entriesToKeep.forEachIndexed { index, entry ->
                     append("  {\n")
                     append("    \"version\": \"${entry.key}\",\n")
                     append("    \"changes\": [\n")
@@ -236,7 +237,7 @@ val generateChangelogJson by
                     append("    ]\n")
                     append("  }")
 
-                    if (index != 9) append(",")
+                    if (index != entriesToKeep.lastIndex) append(",")
                     append("\n")
                 }
 

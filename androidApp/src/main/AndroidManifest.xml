@@ -9,6 +9,9 @@
     <uses-permission android:name="android.permission.USE_EXACT_ALARM"
         tools:ignore="ExactAlarmPolicy" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
 
     <uses-permission android:name="android.permission.READ_PHONE_STATE" tools:node="remove"/>
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" tools:node="remove" tools:ignore="ScopedStorage"/>
@@ -41,6 +44,11 @@
         <receiver android:name=".core.data.HexisIntentReceiver" />
 
         <receiver android:name=".core.data.pomodoroalarm.PomodoroAlarmReceiver" android:exported="false" />
+
+        <service
+            android:name=".core.data.notification.SilentHapticService"
+            android:foregroundServiceType="specialUse"
+            android:exported="false" />
 
         <receiver android:name=".core.data.BootReceiver"
             android:exported="true">

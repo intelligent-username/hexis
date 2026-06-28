@@ -37,4 +37,17 @@ interface PomodoroDao {
 
     @Query("SELECT MIN(timeStarted) FROM pomodoro_sessions")
     suspend fun getEarliestSessionDate(): LocalDateTime?
+
+    @Query("""
+        SELECT linkedHabitId, CAST(COUNT(*) AS INTEGER) AS count
+        FROM pomodoro_sessions
+        WHERE completed = 1
+        GROUP BY linkedHabitId
+    """)
+    suspend fun getSessionCountsByHabit(): List<HabitSessionCount>
 }
+
+data class HabitSessionCount(
+    val linkedHabitId: Long?,
+    val count: Int,
+)

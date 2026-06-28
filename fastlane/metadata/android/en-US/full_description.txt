@@ -1,1 +1,3 @@
-Grit is a ToDo List and Daily habit tracker app that lets you visualize your progress.
+Hexis is your personal habit and to-do list tracker that is designed
+to help you progress, become consistent, and cultivate a habit of
+excellence.

@@ -16,4 +16,6 @@ interface PomodoroRepo {
     suspend fun getEarliestSessionDate(): LocalDate?
 
     fun getSessionCountsByDay(): Flow<List<PomodoroDayCount>>
+
+    suspend fun getSessionCountsByHabit(): List<Pair<Long?, Int>>
 }

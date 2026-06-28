@@ -1,1 +1,1 @@
-A Simple ToDo List and Habit Tracker
+Build your hexis through habits.

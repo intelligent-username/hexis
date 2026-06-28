@@ -76,16 +76,14 @@
     <string name="invalid_date_time">Time selected is in the past :\u0027)</string>
     <string name="reorder_tasks">Reorder tasks</string>
     <string name="reorder_tasks_desc">Reorder tasks when marked as completed</string>
-    <string name="translate">Translate</string>
-    <string name="translate_desc">Translate Hexis in your language</string>
     <string name="changelog">Changelog</string>
     <string name="whats_changed">What\u0027s Changed</string>
     <string name="select_days">Select Days</string>
-    <string name="system_default">System Default</string>
-    <string name="language">Language</string>
     <string name="about">About</string>
     <string name="consistency">Consistency</string>
     <string name="calendar">Calendar</string>
     <string name="monthly">Monthly</string>
     <string name="yearly" >Yearly</string>
+    <string name="ux">UX</string>
+    <string name="ux_desc">General app behaviour and preferences</string>
 </resources>

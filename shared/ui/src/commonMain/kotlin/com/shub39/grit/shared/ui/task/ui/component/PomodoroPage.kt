@@ -8,6 +8,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import com.shub39.grit.shared.ui.app.SystemBackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -148,7 +149,7 @@ fun PomodoroPage(linkedHabitId: Long? = null, onDismiss: () -> Unit) {
         sessionStartTime = nw
         scope.launch {
             currentSessionId = repo.insertSession(
-                PomodoroSession(goalDurationMinutes = settings.focusMinutes.toInt(), timeStarted = nw)
+                PomodoroSession(goalDurationMinutes = settings.focusMinutes.toInt(), timeStarted = nw, linkedHabitId = linkedHabitId)
             )
         }
         secondsRemaining = (settings.focusMinutes * 60).toInt()
@@ -225,7 +226,7 @@ fun PomodoroPage(linkedHabitId: Long? = null, onDismiss: () -> Unit) {
                         val nw2 = LocalDateTime.now()
                         sessionStartTime = nw2
                         currentSessionId = repo.insertSession(
-                            PomodoroSession(goalDurationMinutes = settings.focusMinutes.toInt(), timeStarted = nw2)
+                            PomodoroSession(goalDurationMinutes = settings.focusMinutes.toInt(), timeStarted = nw2, linkedHabitId = linkedHabitId)
                         )
                         isRunning = true
                         pomodoroAlarm.schedule(LocalDateTime.now().toInstant(TimeZone.currentSystemDefault()).toEpochMilliseconds() + secondsRemaining * 1000L)
@@ -260,6 +261,14 @@ fun PomodoroPage(linkedHabitId: Long? = null, onDismiss: () -> Unit) {
     fun handleDismiss() {
         savePartialSession()
         onDismiss()
+    }
+
+    SystemBackHandler(enabled = true) {
+        if (showAnalytics) {
+            showAnalytics = false
+        } else {
+            handleDismiss()
+        }
     }
 
     // --- LaunchedEffects ---

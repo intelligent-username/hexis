@@ -348,6 +348,11 @@ private fun ProgressDayCell(
     style: TextStyle,
 ) {
     val strokeWidth = 2.dp
+    val isStart = day.date == startDate
+
+    val borderMod: (Modifier) -> Modifier = { m ->
+        if (isStart) m.border(width = 1.dp, color = Color(0xFFFFD700), shape = CircleShape) else m
+    }
 
     Box(
         modifier = modifier
@@ -360,12 +365,10 @@ private fun ProgressDayCell(
 
         if (isCompleted) {
             Box(
-                modifier = Modifier
-                    .size(arcSize)
-                    .background(
-                        color = MaterialTheme.colorScheme.primary,
-                        shape = CircleShape,
-                    ),
+                modifier = borderMod(Modifier.size(arcSize).background(
+                    color = MaterialTheme.colorScheme.primary,
+                    shape = CircleShape,
+                )),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
@@ -378,9 +381,7 @@ private fun ProgressDayCell(
             val bgColor = MaterialTheme.colorScheme.surfaceContainerLow
 
             Box(
-                modifier = Modifier
-                    .size(arcSize)
-                    .background(color = bgColor, shape = CircleShape),
+                modifier = borderMod(Modifier.size(arcSize).background(color = bgColor, shape = CircleShape)),
                 contentAlignment = Alignment.Center,
             ) {
                 Canvas(modifier = Modifier.fillMaxSize()) {
@@ -402,25 +403,24 @@ private fun ProgressDayCell(
             }
         } else if (validDate) {
             Box(
-                modifier = Modifier
-                    .size(arcSize)
-                    .background(
-                        color = MaterialTheme.colorScheme.surfaceContainerLow,
-                        shape = CircleShape,
-                    )
-            )
+                modifier = borderMod(Modifier.size(arcSize).background(
+                    color = MaterialTheme.colorScheme.surfaceContainerLow,
+                    shape = CircleShape,
+                )),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = day.date.day.toString(),
+                    style = style.copy(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)),
+                )
+            }
         } else {
+            val textMod = if (isStart) Modifier.border(width = 1.dp, color = Color(0xFFFFD700), shape = CircleShape)
+                .padding(4.dp) else Modifier.padding(4.dp)
             Text(
                 text = day.date.day.toString(),
                 style = style.copy(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)),
-            )
-        }
-
-        if (day.date == startDate) {
-            Box(
-                modifier = Modifier
-                    .matchParentSize()
-                    .border(width = 1.dp, color = Color(0xFFFFD700), shape = CircleShape)
+                modifier = textMod,
             )
         }
     }

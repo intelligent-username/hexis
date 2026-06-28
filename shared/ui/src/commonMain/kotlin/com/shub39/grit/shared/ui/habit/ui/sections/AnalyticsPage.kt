@@ -2,6 +2,7 @@ package com.shub39.grit.shared.ui.habit.ui.sections
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -44,6 +45,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import com.kizitonwose.calendar.compose.heatmapcalendar.rememberHeatMapCalendarState
 import com.kizitonwose.calendar.compose.rememberCalendarState
@@ -229,13 +231,24 @@ fun AnalyticsPage(
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         Text(
-                            text = "Progress",
+                            text = "Today's Progress",
                             style = MaterialTheme.typography.titleSmall,
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(0.dp),
+                            modifier = Modifier.pointerInput(Unit) {
+                                detectVerticalDragGestures { _, dragDistance ->
+                                    if (dragDistance > 30f && currentValue > 0.0) {
+                                        onAction(HabitsAction.DecrementHabitProgress(currentHabit.habit, today))
+                                        undoBudget++
+                                    } else if (dragDistance < -30f && undoBudget > 0 && currentValue + incrementBy <= targetValue) {
+                                        onAction(HabitsAction.IncrementHabitProgress(currentHabit.habit, today))
+                                        undoBudget--
+                                    }
+                                }
+                            },
                         ) {
                             IconButton(
                                 onClick = {

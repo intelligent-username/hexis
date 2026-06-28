@@ -1,5 +1,6 @@
 package com.shub39.grit.shared.ui.task.ui.component
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -13,8 +14,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -34,7 +35,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -44,6 +48,7 @@ import com.kizitonwose.calendar.compose.heatmapcalendar.rememberHeatMapCalendarS
 import com.kizitonwose.calendar.core.CalendarDay
 import com.kizitonwose.calendar.core.minusMonths
 import com.kizitonwose.calendar.core.now
+import com.shub39.grit.core.habits.HabitRepo
 import com.shub39.grit.core.tasks.PomodoroDayCount
 import com.shub39.grit.core.tasks.PomodoroRepo
 import com.shub39.grit.shared.ui.components.HexisBottomSheet
@@ -125,6 +130,8 @@ fun PomodoroAnalytics(onDismiss: () -> Unit) {
                 )
 
                 ThisWeekRow(dayCounts = dayCounts)
+
+                HabitBreakdownChart()
 
                 SessionHeatMap(
                     heatMapState = heatMapState,
@@ -335,4 +342,97 @@ private fun computeStreaks(dates: List<LocalDate>): Pair<Int, Int> {
     best = maxOf(best, streak)
 
     return current to best
+}
+
+@Composable
+private fun HabitBreakdownChart() {
+    val repo: PomodoroRepo = koinInject()
+    val habitRepo: HabitRepo = koinInject()
+
+    data class HabitCount(val id: Long?, val count: Int, val title: String)
+
+    var displayData by remember { mutableStateOf<List<HabitCount>>(emptyList()) }
+
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        val counts = repo.getSessionCountsByHabit()
+        displayData = counts.map { (id, c) ->
+            val title = if (id != null) {
+                (habitRepo.getHabitById(id))?.title ?: "Unknown"
+            } else "Misc"
+            HabitCount(id, c, title)
+        }
+    }
+
+    if (displayData.isEmpty()) return
+
+    val total = displayData.sumOf { it.count }.toFloat()
+
+    val colors = listOf(
+        MaterialTheme.colorScheme.primary,
+        MaterialTheme.colorScheme.tertiary,
+        MaterialTheme.colorScheme.secondary,
+        MaterialTheme.colorScheme.error,
+        MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
+        MaterialTheme.colorScheme.tertiary.copy(alpha = 0.7f),
+    )
+
+    Surface(
+        shape = MaterialTheme.shapes.medium,
+        color = MaterialTheme.colorScheme.surfaceContainer,
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                text = "Session Source",
+                style = MaterialTheme.typography.titleSmall,
+                fontFamily = flexFontRounded(),
+            )
+            Spacer(Modifier.height(12.dp))
+
+            val sweepAngles = displayData.map { (it.count.toFloat() / total) * 360f }
+            val donutSize = 120.dp
+
+            Canvas(modifier = Modifier.size(donutSize)) {
+                var startAngle = -90f
+                displayData.forEachIndexed { i, _ ->
+                    val sweep = sweepAngles[i]
+                    drawArc(
+                        color = colors[i % colors.size],
+                        startAngle = startAngle,
+                        sweepAngle = sweep,
+                        useCenter = false,
+                        topLeft = Offset.Zero,
+                        size = Size(size.width, size.height),
+                        style = Stroke(width = 28f),
+                    )
+                    startAngle += sweep
+                }
+            }
+
+            Spacer(Modifier.height(12.dp))
+
+            displayData.forEachIndexed { i, entry ->
+                val pct = ((sweepAngles[i] / 360f) * 100f).toInt()
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Box(
+                        modifier = Modifier.size(10.dp).background(
+                            color = colors[i % colors.size],
+                            shape = CircleShape,
+                        )
+                    )
+                    Text(
+                        text = "${entry.title} — $pct%",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontFamily = flexFontRounded(),
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                }
+            }
+        }
+    }
 }
