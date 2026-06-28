@@ -32,20 +32,20 @@ Navigate to the [release page](https://github.com/intelligent-username/hexis/rel
 
 ```shell
 # FOSS variant (no Google Play dependencies)
-./gradlew assembleFossRelease
+./gradlew assembleRelease
 ```
 
 On Windows:
 
 ```bat
-gradlew.bat assembleFossRelease
+gradlew.bat assembleRelease
 ```
 
-The APK will be at `androidApp/build/outputs/apk/foss/release/`.
+The APK will be at `androidApp/build/outputs/apk/release/`.
 
 ## Signing & Updates
 
-By default, running `./gradlew assembleFossRelease` will compile the app and sign it with a default debug key. 
+By default, running `./gradlew assembleRelease` will compile the app and sign it with a default debug key. 
 
 **Important Note on Updating:** Android requires that any app update is signed with the exact same cryptographic key as the currently installed version. Because the official keystore is kept private, any version you build locally will have a different signature than the official releases downloaded from GitHub. 
 
@@ -54,7 +54,7 @@ If you want to install your custom-built version on a device that already has th
 For **custom** signing, Hexis's CI signs builds via injected Gradle properties. If you wish to sign your own builds with your own keystore locally, you can create one and pass the properties like so:
 
 ```shell
-./gradlew assembleFossRelease \
+./gradlew assembleRelease \
   -Pandroid.injected.signing.store.file=/path/to/keystore.jks \
   -Pandroid.injected.signing.store.password=storepass \
   -Pandroid.injected.signing.key.alias=key0 \

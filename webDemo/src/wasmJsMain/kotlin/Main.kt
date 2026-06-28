@@ -4,11 +4,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.window.ComposeViewport
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.shub39.grit.shared.ui.LocalWindowSizeClass
-import com.shub39.grit.shared.ui.app.MainApp
-import com.shub39.grit.shared.ui.theme.HexisTheme
-import com.shub39.grit.shared.ui.viewmodel.MainViewModel
-import com.shub39.grit.web_demo.di.AppModule
+import com.loc.hexis.shared.ui.LocalWindowSizeClass
+import com.loc.hexis.shared.ui.app.MainApp
+import com.loc.hexis.shared.ui.theme.HexisTheme
+import com.loc.hexis.shared.ui.viewmodel.MainViewModel
+import com.loc.hexis.web_demo.di.AppModule
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.plugin.module.dsl.startKoin
 

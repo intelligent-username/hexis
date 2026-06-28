@@ -26,7 +26,7 @@ kotlin {
     jvm()
 
     android {
-        namespace = "com.shub39.grit.shared.ui"
+        namespace = "com.loc.hexis.shared.ui"
         compileSdk = libs.versions.compileSdk.get().toInt()
         minSdk = libs.versions.minSdk.get().toInt()
 

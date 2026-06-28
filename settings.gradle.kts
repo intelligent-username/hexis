@@ -1,4 +1,4 @@
-rootProject.name = "Grit"
+rootProject.name = "Hexis"
 
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 

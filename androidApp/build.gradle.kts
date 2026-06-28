@@ -23,7 +23,7 @@ if (localPropertiesFile.exists()) {
 }
 
 android {
-    namespace = "com.shub39.grit"
+    namespace = "com.loc.hexis"
     compileSdk = libs.versions.compileSdk.get().toInt()
 
     signingConfigs {
@@ -38,7 +38,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.shub39.grit"
+        applicationId = "com.loc.hexis"
         minSdk = libs.versions.minSdk.get().toInt()
         targetSdk = libs.versions.targetSdk.get().toInt()
         versionCode = appVersionCode
@@ -48,6 +48,7 @@ android {
 
         vectorDrawables { useSupportLibrary = true }
         androidResources { generateLocaleConfig = true }
+        resConfigs("en")
     }
 
     buildTypes {
@@ -82,15 +83,7 @@ android {
         }
     }
 
-    flavorDimensions += "version"
 
-    productFlavors {
-        create("play") {
-            dimension = "version"
-            versionNameSuffix = "-play"
-        }
-        create("foss") { dimension = "version" }
-    }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_21

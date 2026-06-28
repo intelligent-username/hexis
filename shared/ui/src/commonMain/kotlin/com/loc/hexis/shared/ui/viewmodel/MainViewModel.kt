@@ -1,0 +1,121 @@
+package com.loc.hexis.shared.ui.viewmodel
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.loc.hexis.core.interfaces.ChangelogManager
+import com.loc.hexis.core.interfaces.SettingsDatastore
+import com.loc.hexis.core.interfaces.ThemeDatastore
+import com.loc.hexis.shared.ui.app.MainAppState
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import org.koin.core.annotation.KoinViewModel
+import org.koin.core.annotation.Provided
+
+@KoinViewModel
+class MainViewModel(
+    @Provided private val themeDatastore: ThemeDatastore,
+    @Provided private val settingsDatastore: SettingsDatastore,
+    @Provided private val changelogManager: ChangelogManager,
+) : ViewModel() {
+    var observerJob: Job? = null
+
+    private val _state = MutableStateFlow(MainAppState())
+
+    val state =
+        _state
+            .asStateFlow()
+            .onStart {
+                checkChangelog()
+                observeDatastore()
+            }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.Eagerly,
+                initialValue = MainAppState(),
+            )
+
+    fun setAppUnlocked(value: Boolean) {
+        _state.update { it.copy(isAppUnlocked = value) }
+    }
+
+    fun setBiometricLock(value: Boolean) {
+        viewModelScope.launch { settingsDatastore.setBiometricPref(value) }
+    }
+
+    private fun observeDatastore() {
+        observerJob?.cancel()
+        observerJob =
+            viewModelScope.launch {
+                combine(
+                        themeDatastore.getPaletteStyle(),
+                        themeDatastore.getSeedColorFlow(),
+                        themeDatastore.getFontPrefFlow(),
+                        themeDatastore.getMaterialYouFlow(),
+                        themeDatastore.getAppThemeFlow(),
+                    ) { palette, seedColor, font, materialYou, appTheme ->
+                        _state.update {
+                            it.copy(
+                                theme =
+                                    it.theme.copy(
+                                        paletteStyle = palette,
+                                        seedColor = seedColor,
+                                        font = font,
+                                        isMaterialYou = materialYou,
+                                        appTheme = appTheme,
+                                    )
+                            )
+                        }
+                    }
+                    .launchIn(this)
+
+                themeDatastore
+                    .getAmoledPref()
+                    .onEach { pref ->
+                        _state.update { it.copy(theme = it.theme.copy(isAmoled = pref)) }
+                    }
+                    .launchIn(this)
+
+                settingsDatastore
+                    .getStartingSectionPref()
+                    .onEach { pref -> _state.update { it.copy(startingSection = pref) } }
+                    .launchIn(this)
+
+                settingsDatastore
+                    .getBiometricLockPref()
+                    .onEach { pref -> _state.update { it.copy(isBiometricLockOn = pref, isAppUnlocked = false) } }
+                    .launchIn(this)
+            }
+    }
+
+    private fun checkChangelog() {
+        viewModelScope.launch {
+            val changeLogs = changelogManager.changelogs.first()
+            val lastShownChangelog = settingsDatastore.getLastChangelogShown().first()
+
+            if (lastShownChangelog != changeLogs.firstOrNull()?.version) {
+                _state.update { it.copy(currentChangelog = changeLogs.firstOrNull()) }
+            }
+        }
+    }
+
+    fun dismissChangelog() {
+        _state.value.currentChangelog?.version?.let {
+            viewModelScope.launch { settingsDatastore.updateLastChangelogShown(it) }
+        }
+        _state.update { it.copy(currentChangelog = null) }
+    }
+
+    fun setShortcutAction(action: String?) {
+        _state.update { it.copy(shortcutAction = action) }
+    }
+}

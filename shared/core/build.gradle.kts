@@ -17,7 +17,7 @@ kotlin {
     jvm()
 
     android {
-        namespace = "com.shub39.grit.shared.core"
+        namespace = "com.loc.hexis.shared.core"
         compileSdk = libs.versions.compileSdk.get().toInt()
         minSdk = libs.versions.minSdk.get().toInt()
 

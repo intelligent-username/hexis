@@ -60,17 +60,10 @@
     <string name="font">Font</string>
     <string name="biometric_lock">Biometric Lock</string>
     <string name="biometric_lock_desc">Use biometric authentication to unlock app</string>
-    <string name="bmc">Buy me a coffee</string>
-    <string name="bmc_desc">Support me by making a small donation</string>
     <string name="weekly_progress">Weekly Progress</string>
     <string name="overall_analytics">Overall Analytics</string>
-    <string name="unlock_more_plus">Unlock more with plus</string>
-    <string name="unlock_plus">Unlock with plus</string>
-    <string name="grit_plus">Hexis Plus</string>
     <string name="monthly_progress">Monthly Progress</string>
     <string name="week_breakdown">Week Day Breakdown</string>
-    <string name="foss">You are using the FOSS variant</string>
-    <string name="foss_desc">All features are unlocked. This variant of the app does not support In-App Purchases. If this app added value to your life, Support me by donating on</string>
     <string name="add_reminder">Add Reminder</string>
     <string name="add_reminder_desc">Receive a notification reminder on selected days</string>
     <string name="invalid_date_time">Time selected is in the past :\u0027)</string>

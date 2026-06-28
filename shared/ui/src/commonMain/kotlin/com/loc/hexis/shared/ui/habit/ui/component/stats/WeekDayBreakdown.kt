@@ -1,0 +1,146 @@
+package com.loc.hexis.shared.ui.habit.ui.component.stats
+
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.MaterialShapes
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.toShape
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewWrapper
+import androidx.compose.ui.unit.dp
+import com.loc.hexis.core.habits.WeekDayFrequencyData
+import com.loc.hexis.shared.ui.HexisPreviewWrapper
+import com.loc.hexis.shared.ui.habit.ui.component.AnalyticsCard
+import com.loc.hexis.shared.ui.habit.ui.component.NotEnoughData
+import hexis.shared.ui.generated.resources.*
+import kotlin.random.Random
+import kotlin.random.nextInt
+import kotlinx.datetime.format.DayOfWeekNames
+import org.jetbrains.compose.resources.stringResource
+
+@Composable
+fun WeekDayBreakdown(
+    weekDayData: WeekDayFrequencyData,
+    modifier: Modifier = Modifier,
+) {
+    val max = weekDayData.values.takeIf { it.any { value -> value != 0 } }?.maxOrNull()
+
+    AnalyticsCard(
+        title = stringResource(Res.string.week_breakdown),
+        icon = Res.drawable.view_day,
+        modifier = modifier.heightIn(min = 200.dp),
+    ) {
+        if (max != null) {
+            Row(
+                modifier =
+                    Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
+                verticalAlignment = Alignment.Bottom,
+                horizontalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                weekDayData.forEach { (day, data) ->
+                    val height by
+                        animateDpAsState(
+                            targetValue = ((data.toFloat() / max.toFloat()) * 200).dp,
+                            animationSpec = MaterialTheme.motionScheme.slowSpatialSpec(),
+                        )
+
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Column(
+                            modifier =
+                                Modifier.height(height)
+                                    .fillMaxWidth()
+                                    .background(
+                                        color =
+                                            if (data == max) MaterialTheme.colorScheme.primary
+                                            else MaterialTheme.colorScheme.secondary,
+                                        shape = CircleShape,
+                                    )
+                        ) {
+                            AnimatedVisibility(
+                                visible = data == max || data > (max / 2),
+                                enter = fadeIn(),
+                                exit = fadeOut(),
+                            ) {
+                                if (data == max) {
+                                    Box(
+                                        modifier =
+                                            Modifier.fillMaxWidth()
+                                                .aspectRatio(1f)
+                                                .padding(4.dp)
+                                                .background(
+                                                    color = MaterialTheme.colorScheme.onPrimary,
+                                                    shape = MaterialShapes.SoftBurst.toShape(),
+                                                ),
+                                        contentAlignment = Alignment.Center,
+                                    ) {
+                                        Text(
+                                            text = data.toString(),
+                                            color = MaterialTheme.colorScheme.primary,
+                                            style = MaterialTheme.typography.labelMedium,
+                                        )
+                                    }
+                                } else {
+                                    Box(
+                                        modifier =
+                                            Modifier.fillMaxWidth()
+                                                .aspectRatio(1f)
+                                                .padding(4.dp)
+                                                .background(
+                                                    color = MaterialTheme.colorScheme.onSecondary,
+                                                    shape = MaterialShapes.Circle.toShape(),
+                                                ),
+                                        contentAlignment = Alignment.Center,
+                                    ) {
+                                        Text(
+                                            text = data.toString(),
+                                            color = MaterialTheme.colorScheme.secondary,
+                                            style = MaterialTheme.typography.labelMedium,
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                        Text(
+                            text = day,
+                            color = MaterialTheme.colorScheme.secondary,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
+                }
+            }
+        } else NotEnoughData()
+    }
+}
+
+@PreviewWrapper(HexisPreviewWrapper::class)
+@Preview
+@Composable
+private fun Preview() {
+    WeekDayBreakdown(
+        weekDayData =
+            DayOfWeekNames.ENGLISH_ABBREVIATED.names.associateWith { Random.nextInt(0..100) },
+    )
+}

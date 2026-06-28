@@ -5,7 +5,7 @@ import androidx.sqlite.execSQL
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.google.common.truth.Truth.assertThat
-import com.shub39.grit.tasks.data.database.TaskDatabase
+import com.loc.hexis.tasks.data.database.TaskDatabase
 import kotlinx.coroutines.runBlocking
 import org.junit.Before
 import org.junit.Rule
