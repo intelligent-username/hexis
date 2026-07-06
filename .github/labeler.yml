@@ -1,0 +1,44 @@
+domain:
+  - shared/core/src/commonMain/**/*
+  - androidApp/src/**/*
+
+ui:
+  - shared/ui/src/**/*
+
+habits:
+  - shared/core/src/commonMain/**/habits/**/*
+  - shared/ui/src/**/habit/**/*
+  - androidApp/src/**/habits/**/*
+
+tasks:
+  - shared/core/src/commonMain/**/tasks/**/*
+  - shared/ui/src/**/task/**/*
+  - androidApp/src/**/tasks/**/*
+
+pomodoro:
+  - shared/core/src/commonMain/**/tasks/Pomodoro*
+  - shared/ui/src/**/task/**/Pomodoro*
+  - androidApp/src/**/tasks/**/Pomodoro*
+  - androidApp/src/**/pomodoroalarm/**/*
+
+settings:
+  - shared/core/src/commonMain/**/settings/**/*
+  - shared/ui/src/**/setting/**/*
+  - androidApp/src/**/core/data/datastore/**/*
+
+theme:
+  - shared/core/src/commonMain/**/theme/**/*
+  - shared/ui/src/**/theme/**/*
+
+widgets:
+  - androidApp/src/**/widgets/**/*
+
+deps:
+  - gradle/**/*
+  - build.gradle.kts
+  - settings.gradle.kts
+  - gradle.properties
+  - libs.versions.toml
+
+ci:
+  - .github/**/*
