@@ -1,0 +1,49 @@
+name: Build and Release
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Compile release APK
+        run: ./gradlew assembleRelease
+
+      - name: Locate APK
+        id: apk
+        run: |
+          APK=$(find androidApp/build/outputs/apk -name '*release*.apk' -type f | head -1)
+          echo "path=$APK" >> "$GITHUB_OUTPUT"
+          echo "name=$(basename "$APK")" >> "$GITHUB_OUTPUT"
+
+      - name: Extract version name
+        id: version
+        run: |
+          VERSION=$(grep 'appVersionName' androidApp/build.gradle.kts | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+          echo "name=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Rename APK
+        run: |
+          cp "${{ steps.apk.outputs.path }}" "Hexis.apk"
+
+      - name: Create Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create \
+            "v${{ steps.version.outputs.name }}-build-${{ github.run_number }}" \
+            "Hexis.apk" \
+            --title "${{ steps.version.outputs.name }}" \
+            --generate-notes || true

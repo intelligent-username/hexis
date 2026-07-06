@@ -4,31 +4,27 @@
 
 ## Features
 
-- Robust multi-kind habit tracking
-- Tasks and pomodoro features
-- Analytics
-- Reminders
-- Widgets
-
-## Contributing
-
-Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull requests.
+- Habit tracking: binary and quantity-based, pomodoro-linked, with reminders
+- Tasks with categories, pomodoro timer, and filtering
+- Analytics: streaks, weekly charts, heat maps, consistency scores
+- Widgets: habit overview, streak display, week chart, all tasks
+- Backup and restore, Material You theming, 8 font options
 
 ## Usage
 
-### By Downloading
+### Download
 
-Navigate to the [release page](https://github.com/intelligent-username/hexis/releases) and download the latest APK.
+Grab the latest APK from the [release page](https://github.com/intelligent-username/hexis/releases).
 
-### By Building
+### Build from source
 
 #### Prerequisites
 
 - JDK 21
 - Android SDK (compileSdk 37 / targetSdk 37)
-- Android Studio (recommended) or Gradle 9.5.1+
+- Android Studio or Gradle 9.5.1+
 
-##### Generating the APK
+#### Generate the APK
 
 ```shell
 ./gradlew assembleRelease
@@ -40,17 +36,15 @@ On Windows:
 gradlew.bat assembleRelease
 ```
 
-The APK will be at `androidApp/build/outputs/apk/release/`.
+The APK lands at `androidApp/build/outputs/apk/release/`.
 
-## Signing & Updates
+## Signing and updates
 
-By default, running `./gradlew assembleRelease` will compile the app and sign it with a default debug key. 
+Running `./gradlew assembleRelease` compiles the app and signs it with a debug key. Android requires that app updates use the same signing key as the installed version. The official keystore is private, so any build from source will have a different signature than the GitHub releases.
 
-**Important Note on Updating:** Android requires that any app update is signed with the exact same cryptographic key as the currently installed version. Because the official keystore is kept private, any version you build locally will have a different signature than the official releases downloaded from GitHub. 
+To sideload your own build on a device with the official app installed, uninstall the official version first. Use the in-app backup feature to save your data before uninstalling.
 
-If you want to install your custom-built version on a device that already has the official app installed, you must **uninstall the official version first** (make sure to use the in-app backup feature to save your data beforehand!) since the private keys will not match.
-
-For **custom** signing, Hexis's CI signs builds via injected Gradle properties. If you wish to sign your own builds with your own keystore locally, you can create one and pass the properties like so:
+Want your own signature? Create a keystore and pass it to Gradle:
 
 ```shell
 ./gradlew assembleRelease \
@@ -59,3 +53,7 @@ For **custom** signing, Hexis's CI signs builds via injected Gradle properties. 
   -Pandroid.injected.signing.key.alias=key0 \
   -Pandroid.injected.signing.key.password=keypass
 ```
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the code of conduct and pull request process.

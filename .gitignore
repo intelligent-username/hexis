@@ -21,4 +21,5 @@ notes/
 !*README.md*
 !CHANGELOG.md
 !LICENSE.md
+!docs/*.md
 *.lnk
