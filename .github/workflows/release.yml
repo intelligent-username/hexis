@@ -1,6 +1,12 @@
 name: Build and Release
 
-on: [push]
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -14,12 +20,13 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
+          cache: gradle
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
       - name: Compile release APK
-        run: ./gradlew assembleRelease
+        run: ./gradlew assembleFossRelease
 
       - name: Locate APK
         id: apk
@@ -32,11 +39,14 @@ jobs:
         id: version
         run: |
           VERSION=$(grep 'appVersionName' androidApp/build.gradle.kts | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+          if [ -z "$VERSION" ]; then
+            echo "Could not extract version from build.gradle.kts" >&2
+            exit 1
+          fi
           echo "name=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Rename APK
-        run: |
-          cp "${{ steps.apk.outputs.path }}" "Hexis.apk"
+        run: cp "${{ steps.apk.outputs.path }}" "Hexis.apk"
 
       - name: Create Release
         env:
@@ -46,4 +56,4 @@ jobs:
             "v${{ steps.version.outputs.name }}-build-${{ github.run_number }}" \
             "Hexis.apk" \
             --title "${{ steps.version.outputs.name }}" \
-            --generate-notes || true
+            --generate-notes
