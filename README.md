@@ -31,7 +31,6 @@ Navigate to the [release page](https://github.com/intelligent-username/hexis/rel
 ##### Generating the APK
 
 ```shell
-# FOSS variant (no Google Play dependencies)
 ./gradlew assembleRelease
 ```
 
