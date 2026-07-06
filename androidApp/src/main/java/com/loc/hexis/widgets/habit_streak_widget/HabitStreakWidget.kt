@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 2025-2026 Hexis
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.loc.hexis.widgets.habit_streak_widget
 
 import android.content.Context
@@ -86,19 +103,26 @@ class HabitStreakWidget : GlanceAppWidget(), KoinComponent {
             val currentData = sortedData.find { it.habit.id == habitId } ?: sortedData.firstOrNull()
             val currentIndex = if (currentData == null) 0 else sortedData.indexOf(currentData)
 
-            val appTheme by themeDatastore.getAppThemeFlow().collectAsState(com.loc.hexis.core.theme.AppTheme.SYSTEM)
+            val appTheme by
+                themeDatastore
+                    .getAppThemeFlow()
+                    .collectAsState(com.loc.hexis.core.theme.AppTheme.SYSTEM)
             val seedColor by themeDatastore.getSeedColorFlow().collectAsState(0xFFFFFF)
             val isAmoled by themeDatastore.getAmoledPref().collectAsState(false)
-            val paletteStyle by themeDatastore.getPaletteStyle().collectAsState(com.loc.hexis.core.theme.PaletteStyle.TONALSPOT)
+            val paletteStyle by
+                themeDatastore
+                    .getPaletteStyle()
+                    .collectAsState(com.loc.hexis.core.theme.PaletteStyle.TONALSPOT)
             val isMaterialYou by themeDatastore.getMaterialYouFlow().collectAsState(false)
 
-            val colors = rememberWidgetColorProviders(
-                appTheme = appTheme,
-                seedColor = seedColor,
-                isAmoled = isAmoled,
-                paletteStyle = paletteStyle,
-                isMaterialYou = isMaterialYou,
-            )
+            val colors =
+                rememberWidgetColorProviders(
+                    appTheme = appTheme,
+                    seedColor = seedColor,
+                    isAmoled = isAmoled,
+                    paletteStyle = paletteStyle,
+                    isMaterialYou = isMaterialYou,
+                )
 
             key(size) {
                 GlanceTheme(colors = colors) {

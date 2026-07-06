@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 2025-2026 Hexis
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.loc.hexis.web_demo.stubs
 
 import com.loc.hexis.core.habits.Habit
@@ -395,12 +412,18 @@ class HabitRepoStub(private val datastore: SettingsDatastore) : HabitRepo {
         return _habits.value.filter { it.id in completedIds }
     }
 
-    override suspend fun incrementHabitProgress(habitId: Long, date: LocalDate, incrementBy: Double): Double {
+    override suspend fun incrementHabitProgress(
+        habitId: Long,
+        date: LocalDate,
+        incrementBy: Double,
+    ): Double {
         val existing = _statuses.value.find { it.habitId == habitId && it.date == date }
         val newValue = (existing?.value ?: 0.0) + incrementBy
         if (existing != null) {
             _statuses.update { list ->
-                list.map { if (it.habitId == habitId && it.date == date) it.copy(value = newValue) else it }
+                list.map {
+                    if (it.habitId == habitId && it.date == date) it.copy(value = newValue) else it
+                }
             }
         } else {
             val newId = (_statuses.value.maxOfOrNull { it.id } ?: 0L) + 1
@@ -411,7 +434,11 @@ class HabitRepoStub(private val datastore: SettingsDatastore) : HabitRepo {
         return newValue
     }
 
-    override suspend fun decrementHabitProgress(habitId: Long, date: LocalDate, decrementBy: Double): Double {
+    override suspend fun decrementHabitProgress(
+        habitId: Long,
+        date: LocalDate,
+        decrementBy: Double,
+    ): Double {
         val index = _statuses.value.indexOfFirst { it.habitId == habitId && it.date == date }
         if (index == -1) return 0.0
         val existing = _statuses.value[index]
@@ -419,7 +446,9 @@ class HabitRepoStub(private val datastore: SettingsDatastore) : HabitRepo {
         if (newValue <= 0.0) {
             _statuses.update { list -> list.toMutableList().also { it.removeAt(index) } }
         } else {
-            _statuses.update { list -> list.toMutableList().also { it[index] = existing.copy(value = newValue) } }
+            _statuses.update { list ->
+                list.toMutableList().also { it[index] = existing.copy(value = newValue) }
+            }
         }
         return newValue.coerceAtLeast(0.0)
     }
@@ -507,7 +536,10 @@ private fun prepareLineChartData(
     val totalWeeks = 52
 
     val startDateOfTodayWeek =
-        today.minus((today.dayOfWeek.isoDayNumber - firstDay.isoDayNumber + 7) % 7, DateTimeUnit.DAY)
+        today.minus(
+            (today.dayOfWeek.isoDayNumber - firstDay.isoDayNumber + 7) % 7,
+            DateTimeUnit.DAY,
+        )
     val startDateOfPeriod = startDateOfTodayWeek.minus(totalWeeks, DateTimeUnit.WEEK)
 
     val habitCompletionByWeek =

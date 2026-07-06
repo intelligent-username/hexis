@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 2025-2026 Hexis
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.loc.hexis.shared.ui.task.ui.section
 
 import androidx.compose.animation.AnimatedContent
@@ -95,165 +112,161 @@ import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 
 @Composable
-fun TaskList(state: TaskState, onAction: (TaskAction) -> Unit, onEditCategories: () -> Unit, onPomodoroClick: () -> Unit) =
-    PageFill {
-        val windowSizeClass = LocalWindowSizeClass.current
+fun TaskList(
+    state: TaskState,
+    onAction: (TaskAction) -> Unit,
+    onEditCategories: () -> Unit,
+    onPomodoroClick: () -> Unit,
+) = PageFill {
+    val windowSizeClass = LocalWindowSizeClass.current
 
-        var showTaskAddSheet by remember { mutableStateOf(false) }
-        var showCategoryAddSheet by remember { mutableStateOf(false) }
-        var showDeleteDialog by remember { mutableStateOf(false) }
-        var editState by remember { mutableStateOf(false) }
-        var editTask: Task? by remember { mutableStateOf(null) }
+    var showTaskAddSheet by remember { mutableStateOf(false) }
+    var showCategoryAddSheet by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var editState by remember { mutableStateOf(false) }
+    var editTask: Task? by remember { mutableStateOf(null) }
 
-        androidx.compose.runtime.LaunchedEffect(state.showAddTaskSheet) {
-            if (state.showAddTaskSheet) {
-                showTaskAddSheet = true
-                onAction(TaskAction.ToggleAddTaskSheet(false))
-            }
+    androidx.compose.runtime.LaunchedEffect(state.showAddTaskSheet) {
+        if (state.showAddTaskSheet) {
+            showTaskAddSheet = true
+            onAction(TaskAction.ToggleAddTaskSheet(false))
         }
+    }
 
-        val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 
-        Column(
-            modifier =
-                Modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
-                    .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.background)
-        ) {
-            TaskListTopBar(
-                state = state,
-                scrollBehavior = scrollBehavior,
-                isReorderMode = editState,
-                onReorderToggle = { editState = it },
-                onDeleteClick = { showDeleteDialog = true },
-                isExpanded = windowSizeClass.widthSizeClass == WindowWidthSizeClass.Expanded,
-            )
+    Column(
+        modifier =
+            Modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+    ) {
+        TaskListTopBar(
+            state = state,
+            scrollBehavior = scrollBehavior,
+            isReorderMode = editState,
+            onReorderToggle = { editState = it },
+            onDeleteClick = { showDeleteDialog = true },
+            isExpanded = windowSizeClass.widthSizeClass == WindowWidthSizeClass.Expanded,
+        )
 
-            CategorySelector(
+        CategorySelector(
+            state = state,
+            isReorderMode = editState,
+            onAction = onAction,
+            onAddCategoryClick = { showCategoryAddSheet = true },
+            onEditCategoriesClick = onEditCategories,
+            onPomodoroClick = onPomodoroClick,
+            isExpanded = windowSizeClass.widthSizeClass == WindowWidthSizeClass.Expanded,
+            onReorderModeChange = { editState = it },
+        )
+
+        if (windowSizeClass.widthSizeClass != WindowWidthSizeClass.Expanded) {
+            CompactTasksView(
                 state = state,
                 isReorderMode = editState,
                 onAction = onAction,
-                onAddCategoryClick = { showCategoryAddSheet = true },
-                onEditCategoriesClick = onEditCategories,
-                onPomodoroClick = onPomodoroClick,
-                isExpanded = windowSizeClass.widthSizeClass == WindowWidthSizeClass.Expanded,
-                onReorderModeChange = { editState = it },
+                onEditTask = { editTask = it },
+                isCompact = windowSizeClass.widthSizeClass == WindowWidthSizeClass.Compact,
             )
-
-            if (windowSizeClass.widthSizeClass != WindowWidthSizeClass.Expanded) {
-                CompactTasksView(
-                    state = state,
-                    isReorderMode = editState,
-                    onAction = onAction,
-                    onEditTask = { editTask = it },
-                    isCompact = windowSizeClass.widthSizeClass == WindowWidthSizeClass.Compact,
-                )
-            } else {
-                ExpandedTasksView(
-                    state = state,
-                    onAction = onAction,
-                    onEditTask = { editTask = it },
-                )
-            }
-        }
-
-        MediumFloatingActionButton(
-            onClick = { showTaskAddSheet = true },
-            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-            contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
-            modifier =
-                Modifier.align(Alignment.BottomEnd)
-                    .padding(16.dp)
-                    .then(
-                        if (windowSizeClass.widthSizeClass != WindowWidthSizeClass.Expanded)
-                            Modifier
-                        else Modifier.navigationBarsPadding()
-                    )
-                    .animateFloatingActionButton(
-                        visible = state.currentCategory != null,
-                        alignment = Alignment.BottomEnd,
-                        scaleAnimationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
-                        alphaAnimationSpec = MaterialTheme.motionScheme.fastEffectsSpec(),
-                    ),
-        ) {
-            Row(
-                modifier = Modifier.padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Icon(
-                    imageVector = vectorResource(Res.drawable.add),
-                    contentDescription = null,
-                    modifier = Modifier.size(FloatingActionButtonDefaults.MediumIconSize),
-                )
-                AnimatedVisibility(
-                    visible =
-                        state.tasks[state.currentCategory].isNullOrEmpty() ||
-                            windowSizeClass.widthSizeClass == WindowWidthSizeClass.Expanded,
-                    enter = fadeIn(MaterialTheme.motionScheme.fastEffectsSpec()),
-                    exit = fadeOut(MaterialTheme.motionScheme.fastEffectsSpec()),
-                ) {
-                    Text(
-                        text = stringResource(Res.string.add_task),
-                        modifier = Modifier.padding(start = 8.dp),
-                    )
-                }
-            }
-        }
-
-        if (showDeleteDialog) {
-            DeleteTasksDialog(
-                onDismiss = { showDeleteDialog = false },
-                onConfirm = {
-                    onAction(TaskAction.DeleteTasks)
-                    showDeleteDialog = false
-                },
-            )
-        }
-
-        if (showCategoryAddSheet) {
-            CategoryUpsertSheet(
-                onDismiss = { showCategoryAddSheet = false },
-                category = Category(name = "", color = CategoryColors.GRAY.color),
-                onUpsertCategory = {
-                    onAction(TaskAction.AddCategory(it))
-                    showCategoryAddSheet = false
-                },
-            )
-        }
-
-        if (editTask != null) {
-            TaskUpsertSheet(
-                task = editTask!!,
-                categories = state.tasks.keys.toList(),
-                onDismissRequest = { editTask = null },
-                isEditSheet = true,
-                is24Hr = state.is24Hour,
-                onUpsert = { onAction(TaskAction.UpsertTask(it)) },
-                onDelete = {
-                    editTask?.let { onAction(TaskAction.DeleteTask(it)) }
-                    editTask = null
-                },
-            )
-        }
-
-        if (showTaskAddSheet && state.currentCategory != null) {
-            TaskUpsertSheet(
-                task =
-                    Task(
-                        categoryId = state.currentCategory.id,
-                        title = "",
-                        index = state.tasks[state.currentCategory]?.size ?: 0,
-                        status = false,
-                        reminder = null,
-                    ),
-                is24Hr = state.is24Hour,
-                categories = state.tasks.keys.toList(),
-                onDismissRequest = { showTaskAddSheet = false },
-                onUpsert = { onAction(TaskAction.UpsertTask(it)) },
-                onDelete = {},
-            )
+        } else {
+            ExpandedTasksView(state = state, onAction = onAction, onEditTask = { editTask = it })
         }
     }
+
+    MediumFloatingActionButton(
+        onClick = { showTaskAddSheet = true },
+        containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+        contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+        modifier =
+            Modifier.align(Alignment.BottomEnd)
+                .padding(16.dp)
+                .then(
+                    if (windowSizeClass.widthSizeClass != WindowWidthSizeClass.Expanded) Modifier
+                    else Modifier.navigationBarsPadding()
+                )
+                .animateFloatingActionButton(
+                    visible = state.currentCategory != null,
+                    alignment = Alignment.BottomEnd,
+                    scaleAnimationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
+                    alphaAnimationSpec = MaterialTheme.motionScheme.fastEffectsSpec(),
+                ),
+    ) {
+        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                imageVector = vectorResource(Res.drawable.add),
+                contentDescription = null,
+                modifier = Modifier.size(FloatingActionButtonDefaults.MediumIconSize),
+            )
+            AnimatedVisibility(
+                visible =
+                    state.tasks[state.currentCategory].isNullOrEmpty() ||
+                        windowSizeClass.widthSizeClass == WindowWidthSizeClass.Expanded,
+                enter = fadeIn(MaterialTheme.motionScheme.fastEffectsSpec()),
+                exit = fadeOut(MaterialTheme.motionScheme.fastEffectsSpec()),
+            ) {
+                Text(
+                    text = stringResource(Res.string.add_task),
+                    modifier = Modifier.padding(start = 8.dp),
+                )
+            }
+        }
+    }
+
+    if (showDeleteDialog) {
+        DeleteTasksDialog(
+            onDismiss = { showDeleteDialog = false },
+            onConfirm = {
+                onAction(TaskAction.DeleteTasks)
+                showDeleteDialog = false
+            },
+        )
+    }
+
+    if (showCategoryAddSheet) {
+        CategoryUpsertSheet(
+            onDismiss = { showCategoryAddSheet = false },
+            category = Category(name = "", color = CategoryColors.GRAY.color),
+            onUpsertCategory = {
+                onAction(TaskAction.AddCategory(it))
+                showCategoryAddSheet = false
+            },
+        )
+    }
+
+    if (editTask != null) {
+        TaskUpsertSheet(
+            task = editTask!!,
+            categories = state.tasks.keys.toList(),
+            onDismissRequest = { editTask = null },
+            isEditSheet = true,
+            is24Hr = state.is24Hour,
+            onUpsert = { onAction(TaskAction.UpsertTask(it)) },
+            onDelete = {
+                editTask?.let { onAction(TaskAction.DeleteTask(it)) }
+                editTask = null
+            },
+        )
+    }
+
+    if (showTaskAddSheet && state.currentCategory != null) {
+        TaskUpsertSheet(
+            task =
+                Task(
+                    categoryId = state.currentCategory.id,
+                    title = "",
+                    index = state.tasks[state.currentCategory]?.size ?: 0,
+                    status = false,
+                    reminder = null,
+                ),
+            is24Hr = state.is24Hour,
+            categories = state.tasks.keys.toList(),
+            onDismissRequest = { showTaskAddSheet = false },
+            onUpsert = { onAction(TaskAction.UpsertTask(it)) },
+            onDelete = {},
+        )
+    }
+}
 
 @Composable
 private fun TaskListTopBar(

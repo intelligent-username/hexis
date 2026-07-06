@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 2025-2026 Hexis
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.loc.hexis.shared.ui.habit.ui.component
 
 import androidx.compose.animation.AnimatedContent
@@ -113,23 +130,28 @@ fun HabitCard(
             firstDayOfWeek = startingDay,
         )
 
-    val interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+    val interactionSource = remember {
+        androidx.compose.foundation.interaction.MutableInteractionSource()
+    }
     val isPressed by interactionSource.collectIsPressedAsState()
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) 1.05f else 1f,
-        animationSpec = if (isPressed) {
-            androidx.compose.animation.core.spring(
-                dampingRatio = androidx.compose.animation.core.Spring.DampingRatioLowBouncy,
-                stiffness = androidx.compose.animation.core.Spring.StiffnessHigh
-            )
-        } else {
-            androidx.compose.animation.core.spring(
-                dampingRatio = androidx.compose.animation.core.Spring.DampingRatioMediumBouncy,
-                stiffness = androidx.compose.animation.core.Spring.StiffnessLow
-            )
-        },
-        label = "scale"
-    )
+    val scale by
+        animateFloatAsState(
+            targetValue = if (isPressed) 1.05f else 1f,
+            animationSpec =
+                if (isPressed) {
+                    androidx.compose.animation.core.spring(
+                        dampingRatio = androidx.compose.animation.core.Spring.DampingRatioLowBouncy,
+                        stiffness = androidx.compose.animation.core.Spring.StiffnessHigh,
+                    )
+                } else {
+                    androidx.compose.animation.core.spring(
+                        dampingRatio =
+                            androidx.compose.animation.core.Spring.DampingRatioMediumBouncy,
+                        stiffness = androidx.compose.animation.core.Spring.StiffnessLow,
+                    )
+                },
+            label = "scale",
+        )
 
     Card(
         colors =
@@ -150,9 +172,7 @@ fun HabitCard(
                     scaleX = scale
                     scaleY = scale
                 }
-                .animateContentSize(
-                    animationSpec = MaterialTheme.motionScheme.fastSpatialSpec()
-                ),
+                .animateContentSize(animationSpec = MaterialTheme.motionScheme.fastSpatialSpec()),
     ) {
         ListItem(
             modifier = Modifier.fillMaxWidth().clip(MaterialTheme.shapes.large),
@@ -167,26 +187,28 @@ fun HabitCard(
             leadingContent = {
                 val displayMode = habitWithAnalytics.habit.displayMode
                 if (displayMode == com.loc.hexis.core.habits.DisplayMode.PROGRESS) {
-                    val currentValue = habitWithAnalytics.habit.targetValue?.let { target ->
-                        val status = habitWithAnalytics.statuses.find { it.date == today }
-                        (status?.value ?: 0.0).coerceAtMost(target)
-                    } ?: 0.0
+                    val currentValue =
+                        habitWithAnalytics.habit.targetValue?.let { target ->
+                            val status = habitWithAnalytics.statuses.find { it.date == today }
+                            (status?.value ?: 0.0).coerceAtMost(target)
+                        } ?: 0.0
                     val targetValue = habitWithAnalytics.habit.targetValue ?: 1.0
-                    Box(
-                        modifier = Modifier.size(24.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
+                    Box(modifier = Modifier.size(24.dp), contentAlignment = Alignment.Center) {
                         androidx.compose.material3.CircularProgressIndicator(
                             progress = { (currentValue / targetValue).toFloat() },
                             modifier = Modifier.fillMaxSize(),
                             strokeWidth = 2.dp,
                             trackColor = MaterialTheme.colorScheme.surfaceVariant,
-                            color = if (completed) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                            color =
+                                if (completed) MaterialTheme.colorScheme.primary
+                                else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                         )
                         Text(
                             text = "${currentValue.toInt()}",
                             style = MaterialTheme.typography.labelSmall,
-                            color = if (completed) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                            color =
+                                if (completed) MaterialTheme.colorScheme.primary
+                                else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                         )
                     }
                 } else {
@@ -194,7 +216,8 @@ fun HabitCard(
                         Icon(
                             imageVector =
                                 vectorResource(
-                                    if (!it) Res.drawable.circle_border else Res.drawable.check_circle
+                                    if (!it) Res.drawable.circle_border
+                                    else Res.drawable.check_circle
                                 ),
                             contentDescription = null,
                         )
@@ -223,7 +246,7 @@ fun HabitCard(
                             style = MaterialTheme.typography.bodyMedium,
                             maxLines = 2,
                             modifier = Modifier.padding(bottom = 2.dp),
-                            color = cardContent.copy(alpha = 0.8f)
+                            color = cardContent.copy(alpha = 0.8f),
                         )
                     }
                     if (habitWithAnalytics.habit.reminder) {

@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 2025-2026 Hexis
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.loc.hexis.shared.ui.habit.ui.component
 
 import androidx.compose.animation.animateContentSize
@@ -34,7 +51,6 @@ import androidx.compose.material3.ToggleButton
 import androidx.compose.material3.ToggleButtonDefaults
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.material3.toShape
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -52,6 +68,7 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.loc.hexis.core.habits.DisplayMode
@@ -135,9 +152,8 @@ fun HabitUpsertSheetContent(
     HexisBottomSheet(
         onDismissRequest = onDismissRequest,
         padding = 0.dp,
-        modifier = modifier
-            .imePadding()
-            .pointerInput(Unit) {
+        modifier =
+            modifier.imePadding().pointerInput(Unit) {
                 detectTapGestures(onTap = { focusManager.clearFocus() })
             },
     ) {
@@ -357,16 +373,14 @@ fun HabitUpsertSheetContent(
                     colors =
                         CardDefaults.cardColors(
                             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                        ),
+                        )
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            text = "Display Mode",
-                            style = MaterialTheme.typography.titleSmall,
-                        )
+                        Text(text = "Display Mode", style = MaterialTheme.typography.titleSmall)
                         Spacer(modifier = Modifier.height(8.dp))
                         Row(
-                            horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween)
+                            horizontalArrangement =
+                                Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween)
                         ) {
                             ToggleButton(
                                 checked = newHabit.displayMode == DisplayMode.CHECKBOX,
@@ -391,9 +405,10 @@ fun HabitUpsertSheetContent(
                         }
                         if (newHabit.displayMode == DisplayMode.PROGRESS) {
                             Spacer(modifier = Modifier.height(8.dp))
-                            var targetValueText by remember(newHabit.targetValue) {
-                                mutableStateOf(newHabit.targetValue?.toInt()?.toString() ?: "")
-                            }
+                            var targetValueText by
+                                remember(newHabit.targetValue) {
+                                    mutableStateOf(newHabit.targetValue?.toInt()?.toString() ?: "")
+                                }
                             OutlinedTextField(
                                 value = targetValueText,
                                 onValueChange = { value ->
@@ -407,19 +422,18 @@ fun HabitUpsertSheetContent(
                                 },
                                 singleLine = true,
                                 shape = MaterialTheme.shapes.medium,
-                                keyboardOptions = KeyboardOptions(
-                                    keyboardType = KeyboardType.Number,
-                                    imeAction = ImeAction.Done,
-                                ),
+                                keyboardOptions =
+                                    KeyboardOptions(
+                                        keyboardType = KeyboardType.Number,
+                                        imeAction = ImeAction.Done,
+                                    ),
                                 modifier = Modifier.fillMaxWidth(),
                                 label = { Text("Target Value") },
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             ListItem(
                                 colors = listItemColors(),
-                                headlineContent = {
-                                    Text(text = "Pomodoro Linked")
-                                },
+                                headlineContent = { Text(text = "Pomodoro Linked") },
                                 supportingContent = {
                                     Text(
                                         text = "Auto-increment on focus complete",
@@ -452,7 +466,7 @@ fun HabitUpsertSheetContent(
                     colors =
                         CardDefaults.cardColors(
                             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                        ),
+                        )
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Row(
@@ -474,10 +488,7 @@ fun HabitUpsertSheetContent(
 
                         if (timeDivisions.isNotEmpty()) {
                             Spacer(modifier = Modifier.height(8.dp))
-                            Row(
-                                horizontalArrangement =
-                                    Arrangement.spacedBy(8.dp),
-                            ) {
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 ToggleButton(
                                     checked = localSelectedDivisionId == null,
                                     onCheckedChange = { localSelectedDivisionId = null },

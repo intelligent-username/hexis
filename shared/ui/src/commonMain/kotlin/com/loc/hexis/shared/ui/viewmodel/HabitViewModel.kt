@@ -1,12 +1,29 @@
+/*
+ * Copyright (C) 2025-2026 Hexis
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.loc.hexis.shared.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.loc.hexis.core.now
 import com.loc.hexis.core.habits.Habit
 import com.loc.hexis.core.habits.HabitRepo
 import com.loc.hexis.core.interfaces.AlarmScheduler
 import com.loc.hexis.core.interfaces.SettingsDatastore
+import com.loc.hexis.core.now
 import com.loc.hexis.shared.ui.habit.HabitState
 import com.loc.hexis.shared.ui.habit.HabitsAction
 import com.loc.hexis.shared.ui.habit.HabitsAction.*
@@ -63,11 +80,14 @@ class HabitViewModel(
 
                 is InsertStatus -> toggleHabitProgress(action.habit, action.date)
 
-                is HabitsAction.ToggleHabitProgress -> toggleHabitProgress(action.habit, action.date)
+                is HabitsAction.ToggleHabitProgress ->
+                    toggleHabitProgress(action.habit, action.date)
 
-                is HabitsAction.DecrementHabitProgress -> decrementHabitProgress(action.habit, action.date)
+                is HabitsAction.DecrementHabitProgress ->
+                    decrementHabitProgress(action.habit, action.date)
 
-                is HabitsAction.IncrementHabitProgress -> incrementHabitProgress(action.habit, action.date)
+                is HabitsAction.IncrementHabitProgress ->
+                    incrementHabitProgress(action.habit, action.date)
 
                 is UpdateHabit -> upsertHabit(action.habit)
 
@@ -104,9 +124,11 @@ class HabitViewModel(
                 is OnTransientHabitReorder -> {
                     if (action.from == action.to) return@launch
                     val currentState = _state.value
-                    val filteredList = currentState.habitsWithAnalytics.filter {
-                        (it.habit.id in currentState.archivedHabitIds) == currentState.showArchivedHabits
-                    }
+                    val filteredList =
+                        currentState.habitsWithAnalytics.filter {
+                            (it.habit.id in currentState.archivedHabitIds) ==
+                                currentState.showArchivedHabits
+                        }
                     if (action.from in filteredList.indices && action.to in filteredList.indices) {
                         val fromItem = filteredList[action.from]
                         val toItem = filteredList[action.to]
@@ -116,7 +138,9 @@ class HabitViewModel(
                         currentList.removeAt(fromIndexUnfiltered)
 
                         val toIndexUnfiltered = currentList.indexOf(toItem)
-                        val insertIndex = if (action.from < action.to) toIndexUnfiltered + 1 else toIndexUnfiltered
+                        val insertIndex =
+                            if (action.from < action.to) toIndexUnfiltered + 1
+                            else toIndexUnfiltered
 
                         currentList.add(insertIndex, fromItem)
                         _state.update { it.copy(habitsWithAnalytics = currentList) }
@@ -129,7 +153,8 @@ class HabitViewModel(
                         if (action.date == null) {
                             _state.update {
                                 it.copy(
-                                    overallAnalytics = it.overallAnalytics.copy(completedHabits = null)
+                                    overallAnalytics =
+                                        it.overallAnalytics.copy(completedHabits = null)
                                 )
                             }
                             return@launch
@@ -169,7 +194,13 @@ class HabitViewModel(
 
                 is AddTimeDivision -> {
                     val currentList = _state.value.timeDivisions.toMutableList()
-                    val newDivision = action.division.copy(id = LocalDateTime.now().toInstant(TimeZone.currentSystemDefault()).toEpochMilliseconds())
+                    val newDivision =
+                        action.division.copy(
+                            id =
+                                LocalDateTime.now()
+                                    .toInstant(TimeZone.currentSystemDefault())
+                                    .toEpochMilliseconds()
+                        )
                     currentList.add(newDivision)
                     datastore.setTimeDivisions(currentList)
                 }
@@ -187,7 +218,7 @@ class HabitViewModel(
                     val currentList = _state.value.timeDivisions.toMutableList()
                     currentList.removeAll { it.id == action.id }
                     datastore.setTimeDivisions(currentList)
-                    
+
                     val map = _state.value.habitTimeDivisionMap
                     val affectedHabits = map.filterValues { it == action.id }.keys
                     affectedHabits.forEach { habitId ->
@@ -220,15 +251,18 @@ class HabitViewModel(
         habitStatusJob?.cancel()
         habitStatusJob =
             viewModelScope.launch {
-                combine(repo.getHabitsWithAnalytics(), repo.getCompletedHabitIds()) { habits,
-                                                                                      completedHabits ->
-                    _state.update {
-                        if (it.isReordering) it else it.copy(
-                            habitsWithAnalytics = habits,
-                            completedHabitIds = completedHabits,
-                        )
+                combine(repo.getHabitsWithAnalytics(), repo.getCompletedHabitIds()) {
+                        habits,
+                        completedHabits ->
+                        _state.update {
+                            if (it.isReordering) it
+                            else
+                                it.copy(
+                                    habitsWithAnalytics = habits,
+                                    completedHabitIds = completedHabits,
+                                )
+                        }
                     }
-                }
                     .launchIn(this)
             }
     }
@@ -267,7 +301,7 @@ class HabitViewModel(
                     .getArchivedHabitIds()
                     .onEach { pref -> _state.update { it.copy(archivedHabitIds = pref) } }
                     .launchIn(this)
-                    
+
                 datastore
                     .getTimeDivisions()
                     .onEach { list -> _state.update { it.copy(timeDivisions = list) } }

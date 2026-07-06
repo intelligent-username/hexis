@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 2025-2026 Hexis
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.loc.hexis.shared.ui.habit.ui.component
 
 import androidx.compose.animation.AnimatedVisibility
@@ -59,29 +76,34 @@ fun TimeDivisionEditDialog(
     HexisDialog(onDismissRequest = onDismiss, padding = 0.dp) {
         var showAddSheet by remember { mutableStateOf(false) }
         val divisions = state.timeDivisions
-        
+
         val listState = rememberLazyListState()
-        val reorderableListState = rememberReorderableLazyListState(listState) { from, to ->
-            val mutableList = divisions.toMutableList()
-            mutableList.add(to.index, mutableList.removeAt(from.index))
-            onAction(HabitsAction.ReorderTimeDivisions(mutableList.mapIndexed { index, div -> index to div }))
-        }
+        val reorderableListState =
+            rememberReorderableLazyListState(listState) { from, to ->
+                val mutableList = divisions.toMutableList()
+                mutableList.add(to.index, mutableList.removeAt(from.index))
+                onAction(
+                    HabitsAction.ReorderTimeDivisions(
+                        mutableList.mapIndexed { index, div -> index to div }
+                    )
+                )
+            }
 
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(max = 600.dp)
-                .padding(top = 16.dp, start = 16.dp, end = 16.dp),
+            modifier =
+                Modifier.fillMaxWidth()
+                    .heightIn(max = 600.dp)
+                    .padding(top = 16.dp, start = 16.dp, end = 16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Box(
                 contentAlignment = Alignment.Center,
-                modifier = Modifier
-                    .size(48.dp)
-                    .background(
-                        color = MaterialTheme.colorScheme.primaryContainer,
-                        shape = MaterialShapes.Pill.toShape(),
-                    ),
+                modifier =
+                    Modifier.size(48.dp)
+                        .background(
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                            shape = MaterialShapes.Pill.toShape(),
+                        ),
             ) {
                 Icon(
                     imageVector = vectorResource(Res.drawable.edit),
@@ -104,7 +126,7 @@ fun TimeDivisionEditDialog(
                     item {
                         Empty(
                             modifier = Modifier.padding(vertical = 32.dp),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 } else {
@@ -113,19 +135,23 @@ fun TimeDivisionEditDialog(
                         var showDeleteDialog by remember { mutableStateOf(false) }
 
                         ReorderableItem(reorderableListState, key = division.id) {
-                            val shape = when {
-                                divisions.size == 1 -> detachedItemShape()
-                                index == 0 -> leadingItemShape()
-                                index == divisions.size - 1 -> endItemShape()
-                                else -> middleItemShape()
-                            }
+                            val shape =
+                                when {
+                                    divisions.size == 1 -> detachedItemShape()
+                                    index == 0 -> leadingItemShape()
+                                    index == divisions.size - 1 -> endItemShape()
+                                    else -> middleItemShape()
+                                }
 
                             ListItem(
                                 modifier = Modifier.clip(shape),
                                 colors = listItemColors(),
                                 headlineContent = { Text(text = division.name, maxLines = 1) },
                                 supportingContent = {
-                                    val count = state.habitTimeDivisionMap.values.count { it == division.id }
+                                    val count =
+                                        state.habitTimeDivisionMap.values.count {
+                                            it == division.id
+                                        }
                                     Text(text = "$count ${stringResource(Res.string.habits)}")
                                 },
                                 trailingContent = {
@@ -137,9 +163,7 @@ fun TimeDivisionEditDialog(
                                             )
                                         }
 
-                                        IconButton(
-                                            onClick = { showDeleteDialog = true },
-                                        ) {
+                                        IconButton(onClick = { showDeleteDialog = true }) {
                                             Icon(
                                                 imageVector = vectorResource(Res.drawable.delete),
                                                 contentDescription = "Delete",
@@ -149,9 +173,12 @@ fun TimeDivisionEditDialog(
 
                                         AnimatedVisibility(visible = divisions.size > 1) {
                                             Icon(
-                                                imageVector = vectorResource(Res.drawable.drag_indicator),
+                                                imageVector =
+                                                    vectorResource(Res.drawable.drag_indicator),
                                                 contentDescription = null,
-                                                modifier = Modifier.padding(horizontal = 8.dp).draggableHandle(),
+                                                modifier =
+                                                    Modifier.padding(horizontal = 8.dp)
+                                                        .draggableHandle(),
                                             )
                                         }
                                     }
@@ -183,10 +210,11 @@ fun TimeDivisionEditDialog(
                                 ) {
                                     TextButton(
                                         onClick = { showDeleteDialog = false },
-                                        shapes = ButtonShapes(
-                                            shape = MaterialTheme.shapes.extraLarge,
-                                            pressedShape = MaterialTheme.shapes.small,
-                                        ),
+                                        shapes =
+                                            ButtonShapes(
+                                                shape = MaterialTheme.shapes.extraLarge,
+                                                pressedShape = MaterialTheme.shapes.small,
+                                            ),
                                     ) {
                                         Text(stringResource(Res.string.cancel))
                                     }
@@ -196,10 +224,11 @@ fun TimeDivisionEditDialog(
                                             onAction(HabitsAction.DeleteTimeDivision(division.id))
                                             showDeleteDialog = false
                                         },
-                                        shapes = ButtonShapes(
-                                            shape = MaterialTheme.shapes.extraLarge,
-                                            pressedShape = MaterialTheme.shapes.small,
-                                        ),
+                                        shapes =
+                                            ButtonShapes(
+                                                shape = MaterialTheme.shapes.extraLarge,
+                                                pressedShape = MaterialTheme.shapes.small,
+                                            ),
                                     ) {
                                         Text(stringResource(Res.string.delete))
                                     }
@@ -225,15 +254,16 @@ fun TimeDivisionEditDialog(
             Button(
                 onClick = { showAddSheet = true },
                 modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
-                shapes = ButtonShapes(
-                    shape = MaterialTheme.shapes.extraLarge,
-                    pressedShape = MaterialTheme.shapes.small,
-                )
+                shapes =
+                    ButtonShapes(
+                        shape = MaterialTheme.shapes.extraLarge,
+                        pressedShape = MaterialTheme.shapes.small,
+                    ),
             ) {
                 Text(text = stringResource(Res.string.add))
             }
         }
-        
+
         if (showAddSheet) {
             TimeDivisionUpsertSheet(
                 isEditSheet = false,

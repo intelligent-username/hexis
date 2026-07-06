@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 2025-2026 Hexis
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.loc.hexis.shared.ui.habit.ui.sections
 
 import androidx.compose.foundation.background
@@ -139,7 +156,11 @@ fun AnalyticsPage(
             actions = {
                 val isArchived = currentHabit.habit.id in state.archivedHabitIds
                 OutlinedIconButton(
-                    onClick = { onAction(HabitsAction.ToggleArchiveHabit(currentHabit.habit.id, !isArchived)) },
+                    onClick = {
+                        onAction(
+                            HabitsAction.ToggleArchiveHabit(currentHabit.habit.id, !isArchived)
+                        )
+                    },
                     shapes =
                         IconButtonShapes(
                             shape = CircleShape,
@@ -147,7 +168,11 @@ fun AnalyticsPage(
                         ),
                 ) {
                     Icon(
-                        imageVector = vectorResource(if (isArchived) Res.drawable.drive_folder_upload else Res.drawable.download),
+                        imageVector =
+                            vectorResource(
+                                if (isArchived) Res.drawable.drive_folder_upload
+                                else Res.drawable.download
+                            ),
                         contentDescription = if (isArchived) "Unarchive Habit" else "Archive Habit",
                     )
                 }
@@ -166,10 +191,18 @@ fun AnalyticsPage(
                     )
                 }
 
-                if (currentHabit.habit.pomodoroLinked && currentHabit.habit.displayMode == com.loc.hexis.core.habits.DisplayMode.PROGRESS) {
+                if (
+                    currentHabit.habit.pomodoroLinked &&
+                        currentHabit.habit.displayMode ==
+                            com.loc.hexis.core.habits.DisplayMode.PROGRESS
+                ) {
                     FilledTonalIconButton(
                         onClick = { onPomodoroClick(currentHabit.habit.id) },
-                        shapes = IconButtonShapes(shape = CircleShape, pressedShape = MaterialTheme.shapes.small),
+                        shapes =
+                            IconButtonShapes(
+                                shape = CircleShape,
+                                pressedShape = MaterialTheme.shapes.small,
+                            ),
                     ) {
                         Icon(
                             imageVector = vectorResource(Res.drawable.schedule),
@@ -224,39 +257,59 @@ fun AnalyticsPage(
                     var undoBudget by remember { mutableStateOf(0) }
 
                     Column(
-                        modifier = Modifier.fillMaxWidth().background(
-                            MaterialTheme.colorScheme.surfaceContainerHigh,
-                            shape = MaterialTheme.shapes.large
-                        ).padding(16.dp),
+                        modifier =
+                            Modifier.fillMaxWidth()
+                                .background(
+                                    MaterialTheme.colorScheme.surfaceContainerHigh,
+                                    shape = MaterialTheme.shapes.large,
+                                )
+                                .padding(16.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
-                        Text(
-                            text = "Today's Progress",
-                            style = MaterialTheme.typography.titleSmall,
-                        )
+                        Text(text = "Today's Progress", style = MaterialTheme.typography.titleSmall)
                         Spacer(modifier = Modifier.height(8.dp))
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(0.dp),
-                            modifier = Modifier.pointerInput(Unit) {
-                                detectVerticalDragGestures { _, dragDistance ->
-                                    if (dragDistance > 30f && currentValue > 0.0) {
-                                        onAction(HabitsAction.DecrementHabitProgress(currentHabit.habit, today))
-                                        undoBudget++
-                                    } else if (dragDistance < -30f && undoBudget > 0 && currentValue + incrementBy <= targetValue) {
-                                        onAction(HabitsAction.IncrementHabitProgress(currentHabit.habit, today))
-                                        undoBudget--
+                            modifier =
+                                Modifier.pointerInput(Unit) {
+                                    detectVerticalDragGestures { _, dragDistance ->
+                                        if (dragDistance > 30f && currentValue > 0.0) {
+                                            onAction(
+                                                HabitsAction.DecrementHabitProgress(
+                                                    currentHabit.habit,
+                                                    today,
+                                                )
+                                            )
+                                            undoBudget++
+                                        } else if (
+                                            dragDistance < -30f &&
+                                                undoBudget > 0 &&
+                                                currentValue + incrementBy <= targetValue
+                                        ) {
+                                            onAction(
+                                                HabitsAction.IncrementHabitProgress(
+                                                    currentHabit.habit,
+                                                    today,
+                                                )
+                                            )
+                                            undoBudget--
+                                        }
                                     }
-                                }
-                            },
+                                },
                         ) {
                             IconButton(
                                 onClick = {
                                     if (currentValue > 0.0) {
-                                        onAction(HabitsAction.DecrementHabitProgress(currentHabit.habit, today))
+                                        onAction(
+                                            HabitsAction.DecrementHabitProgress(
+                                                currentHabit.habit,
+                                                today,
+                                            )
+                                        )
                                         undoBudget++
                                     }
-                                },
+                                }
                             ) {
                                 Icon(
                                     imageVector = vectorResource(Res.drawable.arrow_back),
@@ -266,19 +319,31 @@ fun AnalyticsPage(
 
                             Text(
                                 text = "${currentValue.toInt()}",
-                                style = MaterialTheme.typography.displaySmall.copy(fontFamily = flexFontRounded()),
+                                style =
+                                    MaterialTheme.typography.displaySmall.copy(
+                                        fontFamily = flexFontRounded()
+                                    ),
                                 color = MaterialTheme.colorScheme.primary,
                             )
                             Text(
                                 text = "/${targetValue.toInt()}",
-                                style = MaterialTheme.typography.headlineSmall.copy(fontFamily = flexFontRounded()),
+                                style =
+                                    MaterialTheme.typography.headlineSmall.copy(
+                                        fontFamily = flexFontRounded()
+                                    ),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
 
-                            val canUndo = undoBudget > 0 && currentValue + incrementBy <= targetValue
+                            val canUndo =
+                                undoBudget > 0 && currentValue + incrementBy <= targetValue
                             IconButton(
                                 onClick = {
-                                    onAction(HabitsAction.IncrementHabitProgress(currentHabit.habit, today))
+                                    onAction(
+                                        HabitsAction.IncrementHabitProgress(
+                                            currentHabit.habit,
+                                            today,
+                                        )
+                                    )
                                     undoBudget--
                                 },
                                 enabled = canUndo,
@@ -301,7 +366,9 @@ fun AnalyticsPage(
                     displayMode = currentHabit.habit.displayMode,
                     days = currentHabit.habit.days,
                     startDate = currentHabit.habit.time.date,
-                    onDateClick = { onAction(HabitsAction.ToggleHabitProgress(currentHabit.habit, it)) },
+                    onDateClick = {
+                        onAction(HabitsAction.ToggleHabitProgress(currentHabit.habit, it))
+                    },
                 )
             }
 
@@ -315,7 +382,9 @@ fun AnalyticsPage(
                     startDate = currentHabit.habit.time.date,
                     onNavigateToCalendar = onNavigateToCalendar,
                     onDateClick = {
-                        onAction(HabitsAction.ToggleHabitProgress(habit = currentHabit.habit, date = it))
+                        onAction(
+                            HabitsAction.ToggleHabitProgress(habit = currentHabit.habit, date = it)
+                        )
                     },
                 )
             }
@@ -399,12 +468,12 @@ fun AnalyticsPage(
     }
 
     val showTimeDivisionEditDialog = remember { mutableStateOf(false) }
-    
+
     if (showTimeDivisionEditDialog.value) {
         TimeDivisionEditDialog(
             state = state,
             onAction = onAction,
-            onDismiss = { showTimeDivisionEditDialog.value = false }
+            onDismiss = { showTimeDivisionEditDialog.value = false },
         )
     }
 
@@ -414,7 +483,7 @@ fun AnalyticsPage(
             timeDivisions = state.timeDivisions,
             selectedDivisionId = state.habitTimeDivisionMap[currentHabit.habit.id],
             onDismissRequest = { editDialog = false },
-            onUpsertHabit = { habit, divId -> 
+            onUpsertHabit = { habit, divId ->
                 onAction(HabitsAction.UpdateHabit(habit))
                 onAction(HabitsAction.SetHabitTimeDivision(habit.id, divId))
             },

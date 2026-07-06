@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 2025-2026 Hexis
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.loc.hexis.shared.ui.habit.ui.component
 
 import androidx.compose.foundation.Canvas
@@ -113,7 +130,10 @@ fun YearlyCalendarDayContent(
         return
     }
 
-    val doneDates = remember(statuses, targetValue) { statuses.filter { it.value >= targetValue }.map { it.date }.toSet() }
+    val doneDates =
+        remember(statuses, targetValue) {
+            statuses.filter { it.value >= targetValue }.map { it.date }.toSet()
+        }
     val done = day.date in doneDates
 
     val donePrevious = day.date.minusDays(1) in doneDates
@@ -192,11 +212,7 @@ fun YearlyCalendarDayContent(
             Box(
                 modifier =
                     Modifier.matchParentSize()
-                        .border(
-                            width = 1.dp,
-                            color = Color(0xFFFFD700),
-                            shape = CircleShape,
-                        )
+                        .border(width = 1.dp, color = Color(0xFFFFD700), shape = CircleShape)
             )
         }
     }
@@ -243,7 +259,10 @@ fun MonthlyCalendarDayContent(
         return
     }
 
-    val doneDates = remember(statuses, targetValue) { statuses.filter { it.value >= targetValue }.map { it.date }.toSet() }
+    val doneDates =
+        remember(statuses, targetValue) {
+            statuses.filter { it.value >= targetValue }.map { it.date }.toSet()
+        }
     val done = day.date in doneDates
     val donePrevious = day.date.minusDays(1) in doneDates
     val doneAfter = day.date.plusDays(1) in doneDates
@@ -325,11 +344,7 @@ fun MonthlyCalendarDayContent(
             Box(
                 modifier =
                     Modifier.matchParentSize()
-                        .border(
-                            width = 1.dp,
-                            color = Color(0xFFFFD700),
-                            shape = CircleShape,
-                        )
+                        .border(width = 1.dp, color = Color(0xFFFFD700), shape = CircleShape)
             )
         }
     }
@@ -355,20 +370,24 @@ private fun ProgressDayCell(
     }
 
     Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(height)
-            .clickable(enabled = validDate) { onDateClick(day.date) },
+        modifier =
+            modifier.fillMaxWidth().height(height).clickable(enabled = validDate) {
+                onDateClick(day.date)
+            },
         contentAlignment = Alignment.Center,
     ) {
         val arcSize = height * 0.8f
 
         if (isCompleted) {
             Box(
-                modifier = borderMod(Modifier.size(arcSize).background(
-                    color = MaterialTheme.colorScheme.primary,
-                    shape = CircleShape,
-                )),
+                modifier =
+                    borderMod(
+                        Modifier.size(arcSize)
+                            .background(
+                                color = MaterialTheme.colorScheme.primary,
+                                shape = CircleShape,
+                            )
+                    ),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
@@ -381,7 +400,10 @@ private fun ProgressDayCell(
             val bgColor = MaterialTheme.colorScheme.surfaceContainerLow
 
             Box(
-                modifier = borderMod(Modifier.size(arcSize).background(color = bgColor, shape = CircleShape)),
+                modifier =
+                    borderMod(
+                        Modifier.size(arcSize).background(color = bgColor, shape = CircleShape)
+                    ),
                 contentAlignment = Alignment.Center,
             ) {
                 Canvas(modifier = Modifier.fillMaxSize()) {
@@ -403,20 +425,28 @@ private fun ProgressDayCell(
             }
         } else if (validDate) {
             Box(
-                modifier = borderMod(Modifier.size(arcSize).background(
-                    color = MaterialTheme.colorScheme.surfaceContainerLow,
-                    shape = CircleShape,
-                )),
+                modifier =
+                    borderMod(
+                        Modifier.size(arcSize)
+                            .background(
+                                color = MaterialTheme.colorScheme.surfaceContainerLow,
+                                shape = CircleShape,
+                            )
+                    ),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
                     text = day.date.day.toString(),
-                    style = style.copy(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)),
+                    style =
+                        style.copy(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)),
                 )
             }
         } else {
-            val textMod = if (isStart) Modifier.border(width = 1.dp, color = Color(0xFFFFD700), shape = CircleShape)
-                .padding(4.dp) else Modifier.padding(4.dp)
+            val textMod =
+                if (isStart)
+                    Modifier.border(width = 1.dp, color = Color(0xFFFFD700), shape = CircleShape)
+                        .padding(4.dp)
+                else Modifier.padding(4.dp)
             Text(
                 text = day.date.day.toString(),
                 style = style.copy(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)),

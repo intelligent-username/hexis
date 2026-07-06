@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 2025-2026 Hexis
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.loc.hexis.shared.ui.task.ui.component
 
 import androidx.compose.animation.AnimatedVisibility
@@ -7,7 +24,6 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import com.loc.hexis.shared.ui.app.SystemBackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -48,19 +64,20 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
-import com.loc.hexis.core.interfaces.PomodoroAlarm
-import com.loc.hexis.core.interfaces.VibratorUtil
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.loc.hexis.core.now
 import com.loc.hexis.core.habits.HabitRepo
+import com.loc.hexis.core.interfaces.PomodoroAlarm
+import com.loc.hexis.core.interfaces.VibratorUtil
+import com.loc.hexis.core.now
 import com.loc.hexis.core.tasks.PomodoroRepo
 import com.loc.hexis.core.tasks.PomodoroSession
 import com.loc.hexis.core.tasks.PomodoroSettings
 import com.loc.hexis.core.tasks.PomodoroStats
+import com.loc.hexis.shared.ui.app.SystemBackHandler
 import com.loc.hexis.shared.ui.components.HexisBottomSheet
 import com.loc.hexis.shared.ui.theme.flexFontRounded
 import hexis.shared.ui.generated.resources.Res
@@ -81,7 +98,11 @@ import kotlinx.datetime.toInstant
 import org.jetbrains.compose.resources.vectorResource
 import org.koin.compose.koinInject
 
-private enum class PomodoroPhase { FOCUS, SHORT_BREAK, LONG_BREAK }
+private enum class PomodoroPhase {
+    FOCUS,
+    SHORT_BREAK,
+    LONG_BREAK,
+}
 
 @Composable
 fun PomodoroPage(linkedHabitId: Long? = null, onDismiss: () -> Unit) {
@@ -112,7 +133,8 @@ fun PomodoroPage(linkedHabitId: Long? = null, onDismiss: () -> Unit) {
     LaunchedEffect(linkedHabitId) {
         habitTitle = ""
         if (linkedHabitId != null) {
-            val h = habitRepo.getHabitById(linkedHabitId); if (h != null) habitTitle = h.title
+            val h = habitRepo.getHabitById(linkedHabitId)
+            if (h != null) habitTitle = h.title
         }
     }
 
@@ -130,8 +152,9 @@ fun PomodoroPage(linkedHabitId: Long? = null, onDismiss: () -> Unit) {
         val id = currentSessionId
         val start = sessionStartTime
         if (id != null && start != null) {
-            val elapsed = (nw.toInstant(TimeZone.currentSystemDefault()).epochSeconds -
-                start.toInstant(TimeZone.currentSystemDefault()).epochSeconds) / 60f
+            val elapsed =
+                (nw.toInstant(TimeZone.currentSystemDefault()).epochSeconds -
+                    start.toInstant(TimeZone.currentSystemDefault()).epochSeconds) / 60f
             scope.launch {
                 repo.finishSession(id, nw, false, elapsed)
                 todayStats = repo.getTodayStats()
@@ -146,14 +169,22 @@ fun PomodoroPage(linkedHabitId: Long? = null, onDismiss: () -> Unit) {
         val nw = LocalDateTime.now()
         sessionStartTime = nw
         scope.launch {
-            currentSessionId = repo.insertSession(
-                PomodoroSession(goalDurationMinutes = settings.focusMinutes.toInt(), timeStarted = nw, linkedHabitId = linkedHabitId)
-            )
+            currentSessionId =
+                repo.insertSession(
+                    PomodoroSession(
+                        goalDurationMinutes = settings.focusMinutes.toInt(),
+                        timeStarted = nw,
+                        linkedHabitId = linkedHabitId,
+                    )
+                )
         }
         secondsRemaining = (settings.focusMinutes * 60).toInt()
         phase = PomodoroPhase.FOCUS
         isRunning = true
-        pomodoroAlarm.schedule(LocalDateTime.now().toInstant(TimeZone.currentSystemDefault()).toEpochMilliseconds() + secondsRemaining * 1000L)
+        pomodoroAlarm.schedule(
+            LocalDateTime.now().toInstant(TimeZone.currentSystemDefault()).toEpochMilliseconds() +
+                secondsRemaining * 1000L
+        )
     }
 
     fun resetTimer() {
@@ -162,7 +193,8 @@ fun PomodoroPage(linkedHabitId: Long? = null, onDismiss: () -> Unit) {
         isRunning = false
         when (phase) {
             PomodoroPhase.FOCUS -> secondsRemaining = (settings.focusMinutes * 60).toInt()
-            PomodoroPhase.SHORT_BREAK -> secondsRemaining = (settings.shortBreakMinutes * 60).toInt()
+            PomodoroPhase.SHORT_BREAK ->
+                secondsRemaining = (settings.shortBreakMinutes * 60).toInt()
             PomodoroPhase.LONG_BREAK -> secondsRemaining = (settings.longBreakMinutes * 60).toInt()
         }
     }
@@ -176,11 +208,13 @@ fun PomodoroPage(linkedHabitId: Long? = null, onDismiss: () -> Unit) {
                 val nw = LocalDateTime.now()
                 val id = currentSessionId
                 val start = sessionStartTime
-                val elapsed = start?.let { s ->
-                    val diff = nw.toInstant(TimeZone.currentSystemDefault()).epochSeconds -
-                        s.toInstant(TimeZone.currentSystemDefault()).epochSeconds
-                    (diff / 60f).coerceAtMost(settings.focusMinutes)
-                } ?: settings.focusMinutes
+                val elapsed =
+                    start?.let { s ->
+                        val diff =
+                            nw.toInstant(TimeZone.currentSystemDefault()).epochSeconds -
+                                s.toInstant(TimeZone.currentSystemDefault()).epochSeconds
+                        (diff / 60f).coerceAtMost(settings.focusMinutes)
+                    } ?: settings.focusMinutes
                 scope.launch {
                     id?.let { repo.finishSession(it, nw, true, elapsed) }
                     todayStats = repo.getTodayStats()
@@ -188,12 +222,19 @@ fun PomodoroPage(linkedHabitId: Long? = null, onDismiss: () -> Unit) {
                     if (hId != null) {
                         val habit = habitRepo.getHabitById(hId)
                         if (habit != null) {
-                            habitRepo.incrementHabitProgress(hId, LocalDate.now(), habit.incrementBy)
+                            habitRepo.incrementHabitProgress(
+                                hId,
+                                LocalDate.now(),
+                                habit.incrementBy,
+                            )
                         }
                     }
                 }
                 cyclesCompleted++
-                if (settings.longBreakInterval > 0 && currentSessionInBatch >= settings.longBreakInterval) {
+                if (
+                    settings.longBreakInterval > 0 &&
+                        currentSessionInBatch >= settings.longBreakInterval
+                ) {
                     currentSessionInBatch = 1
                     phase = PomodoroPhase.LONG_BREAK
                     secondsRemaining = (settings.longBreakMinutes * 60).toInt()
@@ -210,7 +251,8 @@ fun PomodoroPage(linkedHabitId: Long? = null, onDismiss: () -> Unit) {
                     if (!isRunning && phase != PomodoroPhase.FOCUS) isRunning = true
                 }
             }
-            PomodoroPhase.SHORT_BREAK, PomodoroPhase.LONG_BREAK -> {
+            PomodoroPhase.SHORT_BREAK,
+            PomodoroPhase.LONG_BREAK -> {
                 vibrator.buzz()
                 if (phase == PomodoroPhase.LONG_BREAK) cyclesCompleted = 0
                 phase = PomodoroPhase.FOCUS
@@ -223,11 +265,20 @@ fun PomodoroPage(linkedHabitId: Long? = null, onDismiss: () -> Unit) {
                     if (!isRunning && phase == PomodoroPhase.FOCUS) {
                         val nw2 = LocalDateTime.now()
                         sessionStartTime = nw2
-                        currentSessionId = repo.insertSession(
-                            PomodoroSession(goalDurationMinutes = settings.focusMinutes.toInt(), timeStarted = nw2, linkedHabitId = linkedHabitId)
-                        )
+                        currentSessionId =
+                            repo.insertSession(
+                                PomodoroSession(
+                                    goalDurationMinutes = settings.focusMinutes.toInt(),
+                                    timeStarted = nw2,
+                                    linkedHabitId = linkedHabitId,
+                                )
+                            )
                         isRunning = true
-                        pomodoroAlarm.schedule(LocalDateTime.now().toInstant(TimeZone.currentSystemDefault()).toEpochMilliseconds() + secondsRemaining * 1000L)
+                        pomodoroAlarm.schedule(
+                            LocalDateTime.now()
+                                .toInstant(TimeZone.currentSystemDefault())
+                                .toEpochMilliseconds() + secondsRemaining * 1000L
+                        )
                     }
                 }
             }
@@ -242,12 +293,13 @@ fun PomodoroPage(linkedHabitId: Long? = null, onDismiss: () -> Unit) {
     }
 
     fun applyPomodoroSettings() {
-        val ns = PomodoroSettings(
-            focusMinutes = focusText.toFloatOrNull() ?: settings.focusMinutes,
-            shortBreakMinutes = shortBreakText.toFloatOrNull() ?: settings.shortBreakMinutes,
-            longBreakMinutes = longBreakText.toFloatOrNull() ?: settings.longBreakMinutes,
-            longBreakInterval = intervalText.toIntOrNull() ?: settings.longBreakInterval,
-        )
+        val ns =
+            PomodoroSettings(
+                focusMinutes = focusText.toFloatOrNull() ?: settings.focusMinutes,
+                shortBreakMinutes = shortBreakText.toFloatOrNull() ?: settings.shortBreakMinutes,
+                longBreakMinutes = longBreakText.toFloatOrNull() ?: settings.longBreakMinutes,
+                longBreakInterval = intervalText.toIntOrNull() ?: settings.longBreakInterval,
+            )
         scope.launch { settingsDatastore.setPomodoroSettings(ns) }
         settings = ns
         if (!isRunning && phase == PomodoroPhase.FOCUS) {
@@ -310,17 +362,20 @@ fun PomodoroPage(linkedHabitId: Long? = null, onDismiss: () -> Unit) {
         }
     }
 
-    val totalSeconds = when (phase) {
-        PomodoroPhase.FOCUS -> (settings.focusMinutes * 60).toInt()
-        PomodoroPhase.SHORT_BREAK -> (settings.shortBreakMinutes * 60).toInt()
-        PomodoroPhase.LONG_BREAK -> (settings.longBreakMinutes * 60).toInt()
-    }
+    val totalSeconds =
+        when (phase) {
+            PomodoroPhase.FOCUS -> (settings.focusMinutes * 60).toInt()
+            PomodoroPhase.SHORT_BREAK -> (settings.shortBreakMinutes * 60).toInt()
+            PomodoroPhase.LONG_BREAK -> (settings.longBreakMinutes * 60).toInt()
+        }
 
-    val progress by animateFloatAsState(
-        targetValue = if (totalSeconds > 0) 1f - secondsRemaining.toFloat() / totalSeconds else 0f,
-        animationSpec = tween(durationMillis = 300),
-        label = "progress",
-    )
+    val progress by
+        animateFloatAsState(
+            targetValue =
+                if (totalSeconds > 0) 1f - secondsRemaining.toFloat() / totalSeconds else 0f,
+            animationSpec = tween(durationMillis = 300),
+            label = "progress",
+        )
 
     // --- colors ---
 
@@ -347,7 +402,11 @@ fun PomodoroPage(linkedHabitId: Long? = null, onDismiss: () -> Unit) {
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 IconButton(onClick = { handleDismiss() }) {
-                    Icon(vectorResource(Res.drawable.close), contentDescription = "Close", tint = onSurfaceVariant)
+                    Icon(
+                        vectorResource(Res.drawable.close),
+                        contentDescription = "Close",
+                        tint = onSurfaceVariant,
+                    )
                 }
 
                 if (habitTitle.isNotEmpty()) {
@@ -361,13 +420,19 @@ fun PomodoroPage(linkedHabitId: Long? = null, onDismiss: () -> Unit) {
                     )
                 }
 
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
                     todayStats?.let { stats ->
                         val tenths = (stats.totalMinutes * 10).toInt()
                         val whole = tenths / 10
                         val frac = tenths % 10
                         val display = if (frac == 0) "${whole}m" else "$whole.${frac}m"
-                        Surface(shape = RoundedCornerShape(20.dp), color = breakColor.copy(alpha = 0.12f)) {
+                        Surface(
+                            shape = RoundedCornerShape(20.dp),
+                            color = breakColor.copy(alpha = 0.12f),
+                        ) {
                             Text(
                                 text = "${stats.sessionCount}  \u00B7  $display",
                                 fontFamily = flexFontRounded(),
@@ -381,11 +446,16 @@ fun PomodoroPage(linkedHabitId: Long? = null, onDismiss: () -> Unit) {
                     FilledTonalIconButton(
                         onClick = { showAnalytics = true },
                         modifier = Modifier.size(36.dp),
-                        colors = IconButtonDefaults.filledTonalIconButtonColors(
-                            containerColor = surfaceContainerHigh,
-                            contentColor = onSurfaceVariant,
-                        ),
-                        shapes = IconButtonShapes(shape = CircleShape, pressedShape = MaterialTheme.shapes.small),
+                        colors =
+                            IconButtonDefaults.filledTonalIconButtonColors(
+                                containerColor = surfaceContainerHigh,
+                                contentColor = onSurfaceVariant,
+                            ),
+                        shapes =
+                            IconButtonShapes(
+                                shape = CircleShape,
+                                pressedShape = MaterialTheme.shapes.small,
+                            ),
                     ) {
                         Icon(
                             imageVector = vectorResource(Res.drawable.chart_data),
@@ -399,10 +469,7 @@ fun PomodoroPage(linkedHabitId: Long? = null, onDismiss: () -> Unit) {
             Spacer(Modifier.weight(0.4f))
 
             // timer arc
-            Box(
-                modifier = Modifier.size(336.dp),
-                contentAlignment = Alignment.Center,
-            ) {
+            Box(modifier = Modifier.size(336.dp), contentAlignment = Alignment.Center) {
                 Canvas(modifier = Modifier.size(336.dp)) {
                     val sw = 8.dp.toPx()
                     val arcS = Size(size.width - sw, size.height - sw)
@@ -441,7 +508,8 @@ fun PomodoroPage(linkedHabitId: Long? = null, onDismiss: () -> Unit) {
 
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        text = "${secondsRemaining / 60}:${(secondsRemaining % 60).toString().padStart(2, '0')}",
+                        text =
+                            "${secondsRemaining / 60}:${(secondsRemaining % 60).toString().padStart(2, '0')}",
                         fontFamily = flexFontRounded(),
                         fontSize = 96.sp,
                         fontWeight = FontWeight.Bold,
@@ -483,11 +551,16 @@ fun PomodoroPage(linkedHabitId: Long? = null, onDismiss: () -> Unit) {
                 FilledTonalIconButton(
                     onClick = { resetTimer() },
                     modifier = Modifier.size(48.dp),
-                    colors = IconButtonDefaults.filledTonalIconButtonColors(
-                        containerColor = surfaceContainerHigh,
-                        contentColor = onSurfaceVariant,
-                    ),
-                    shapes = IconButtonShapes(shape = CircleShape, pressedShape = MaterialTheme.shapes.small),
+                    colors =
+                        IconButtonDefaults.filledTonalIconButtonColors(
+                            containerColor = surfaceContainerHigh,
+                            contentColor = onSurfaceVariant,
+                        ),
+                    shapes =
+                        IconButtonShapes(
+                            shape = CircleShape,
+                            pressedShape = MaterialTheme.shapes.small,
+                        ),
                 ) {
                     Icon(
                         imageVector = vectorResource(Res.drawable.restart),
@@ -498,10 +571,8 @@ fun PomodoroPage(linkedHabitId: Long? = null, onDismiss: () -> Unit) {
 
                 // start / pause
                 Box(
-                    modifier = Modifier
-                        .size(80.dp)
-                        .background(breakColor, CircleShape)
-                        .clickable(
+                    modifier =
+                        Modifier.size(80.dp).background(breakColor, CircleShape).clickable(
                             interactionSource = remember { MutableInteractionSource() },
                             indication = null,
                         ) {
@@ -512,13 +583,20 @@ fun PomodoroPage(linkedHabitId: Long? = null, onDismiss: () -> Unit) {
                                 startSession()
                             } else {
                                 isRunning = true
-                                pomodoroAlarm.schedule(LocalDateTime.now().toInstant(TimeZone.currentSystemDefault()).toEpochMilliseconds() + secondsRemaining * 1000L)
+                                pomodoroAlarm.schedule(
+                                    LocalDateTime.now()
+                                        .toInstant(TimeZone.currentSystemDefault())
+                                        .toEpochMilliseconds() + secondsRemaining * 1000L
+                                )
                             }
                         },
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(
-                        imageVector = vectorResource(if (isRunning) Res.drawable.pause else Res.drawable.play_arrow),
+                        imageVector =
+                            vectorResource(
+                                if (isRunning) Res.drawable.pause else Res.drawable.play_arrow
+                            ),
                         contentDescription = if (isRunning) "Pause" else "Start",
                         tint = MaterialTheme.colorScheme.onPrimary,
                         modifier = Modifier.size(36.dp),
@@ -530,11 +608,16 @@ fun PomodoroPage(linkedHabitId: Long? = null, onDismiss: () -> Unit) {
                     FilledTonalIconButton(
                         onClick = { skipBreak() },
                         modifier = Modifier.size(48.dp),
-                        colors = IconButtonDefaults.filledTonalIconButtonColors(
-                            containerColor = surfaceContainerHigh,
-                            contentColor = onSurfaceVariant,
-                        ),
-                        shapes = IconButtonShapes(shape = CircleShape, pressedShape = MaterialTheme.shapes.small),
+                        colors =
+                            IconButtonDefaults.filledTonalIconButtonColors(
+                                containerColor = surfaceContainerHigh,
+                                contentColor = onSurfaceVariant,
+                            ),
+                        shapes =
+                            IconButtonShapes(
+                                shape = CircleShape,
+                                pressedShape = MaterialTheme.shapes.small,
+                            ),
                     ) {
                         Icon(
                             imageVector = vectorResource(Res.drawable.skip),
@@ -546,11 +629,16 @@ fun PomodoroPage(linkedHabitId: Long? = null, onDismiss: () -> Unit) {
                     FilledTonalIconButton(
                         onClick = { showSettings = true },
                         modifier = Modifier.size(48.dp),
-                        colors = IconButtonDefaults.filledTonalIconButtonColors(
-                            containerColor = surfaceContainerHigh,
-                            contentColor = onSurfaceVariant,
-                        ),
-                        shapes = IconButtonShapes(shape = CircleShape, pressedShape = MaterialTheme.shapes.small),
+                        colors =
+                            IconButtonDefaults.filledTonalIconButtonColors(
+                                containerColor = surfaceContainerHigh,
+                                contentColor = onSurfaceVariant,
+                            ),
+                        shapes =
+                            IconButtonShapes(
+                                shape = CircleShape,
+                                pressedShape = MaterialTheme.shapes.small,
+                            ),
                     ) {
                         Icon(
                             imageVector = vectorResource(Res.drawable.edit),
@@ -568,19 +656,25 @@ fun PomodoroPage(linkedHabitId: Long? = null, onDismiss: () -> Unit) {
     // --- settings bottom sheet ---
 
     if (showSettings) {
-        HexisBottomSheet(
-            onDismissRequest = { showSettings = false },
-            padding = 0.dp,
-        ) {
+        HexisBottomSheet(onDismissRequest = { showSettings = false }, padding = 0.dp) {
             LazyColumn(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 contentPadding = PaddingValues(horizontal = 16.dp),
             ) {
                 item { SettingsField("Work", focusText, { focusText = it }, "min") }
-                item { SettingsField("Short break", shortBreakText, { shortBreakText = it }, "min") }
+                item {
+                    SettingsField("Short break", shortBreakText, { shortBreakText = it }, "min")
+                }
                 item { SettingsField("Long break", longBreakText, { longBreakText = it }, "min") }
-                item { SettingsField("Long break every", intervalText, { intervalText = it }, "focuses") }
+                item {
+                    SettingsField(
+                        "Long break every",
+                        intervalText,
+                        { intervalText = it },
+                        "focuses",
+                    )
+                }
 
                 item {
                     Column(
@@ -590,11 +684,16 @@ fun PomodoroPage(linkedHabitId: Long? = null, onDismiss: () -> Unit) {
                         Button(
                             onClick = { applyPomodoroSettings() },
                             modifier = Modifier.fillMaxWidth().padding(bottom = 32.dp),
-                            shapes = ButtonShapes(shape = MaterialTheme.shapes.extraLarge, pressedShape = MaterialTheme.shapes.small),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                            ),
+                            shapes =
+                                ButtonShapes(
+                                    shape = MaterialTheme.shapes.extraLarge,
+                                    pressedShape = MaterialTheme.shapes.small,
+                                ),
+                            colors =
+                                ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                                ),
                         ) {
                             Text("Save", fontFamily = flexFontRounded())
                         }
@@ -610,7 +709,12 @@ fun PomodoroPage(linkedHabitId: Long? = null, onDismiss: () -> Unit) {
 }
 
 @Composable
-private fun SettingsField(label: String, value: String, onValueChange: (String) -> Unit, suffix: String) {
+private fun SettingsField(
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+    suffix: String,
+) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,

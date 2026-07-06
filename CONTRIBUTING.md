@@ -11,6 +11,7 @@ Thanks for your interest in contributing to Hexis!
 ## Code Guidelines
 
 - **Style:** Run `./gradlew spotlessApply` to format your code before committing.
+
 - **Compose:** 
   - Always expose a `modifier: Modifier = Modifier` parameter for your composables.
   - Write `@Preview` functions for significant components (keep them private in the same file).

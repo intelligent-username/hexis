@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 2025-2026 Hexis
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.loc.hexis.shared.ui.habit.ui.component.stats
 
 import androidx.compose.animation.AnimatedVisibility
@@ -38,10 +55,7 @@ import kotlinx.datetime.format.DayOfWeekNames
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
-fun WeekDayBreakdown(
-    weekDayData: WeekDayFrequencyData,
-    modifier: Modifier = Modifier,
-) {
+fun WeekDayBreakdown(weekDayData: WeekDayFrequencyData, modifier: Modifier = Modifier) {
     val max = weekDayData.values.takeIf { it.any { value -> value != 0 } }?.maxOrNull()
 
     AnalyticsCard(
@@ -141,6 +155,6 @@ fun WeekDayBreakdown(
 private fun Preview() {
     WeekDayBreakdown(
         weekDayData =
-            DayOfWeekNames.ENGLISH_ABBREVIATED.names.associateWith { Random.nextInt(0..100) },
+            DayOfWeekNames.ENGLISH_ABBREVIATED.names.associateWith { Random.nextInt(0..100) }
     )
 }

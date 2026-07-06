@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 2025-2026 Hexis
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.loc.hexis.widgets
 
 import android.os.Build
@@ -8,18 +25,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.glance.LocalContext
 import androidx.glance.color.ColorProviders
 import androidx.glance.material3.ColorProviders as Material3ColorProviders
-import com.materialkolor.dynamicColorScheme
 import com.loc.hexis.core.theme.AppTheme
 import com.loc.hexis.core.theme.PaletteStyle
 import com.loc.hexis.shared.ui.toMPaletteStyle
+import com.materialkolor.dynamicColorScheme
 
 /**
- * Builds [ColorProviders] that mirror the app's user-selected theme so that
- * every [androidx.glance.GlanceTheme] call inside a widget reflects the same
- * color palette the user configured in Settings.
+ * Builds [ColorProviders] that mirror the app's user-selected theme so that every
+ * [androidx.glance.GlanceTheme] call inside a widget reflects the same color palette the user
+ * configured in Settings.
  *
- * The logic follows [com.loc.hexis.shared.ui.theme.HexisTheme] (Android
- * target) exactly:
+ * The logic follows [com.loc.hexis.shared.ui.theme.HexisTheme] (Android target) exactly:
  * - If Material You is enabled on Android 12+, use the system dynamic scheme.
  * - Otherwise derive a dynamic scheme from the stored seed color + palette style.
  * - Respect the light/dark/system preference for both light and dark slots.

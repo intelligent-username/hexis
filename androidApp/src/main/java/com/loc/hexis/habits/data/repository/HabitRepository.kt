@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 2025-2026 Hexis
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.loc.hexis.habits.data.repository
 
 import com.loc.hexis.core.data.notification.HexisNotificationManager
@@ -82,7 +99,10 @@ class HabitRepository(
     }
 
     override fun getHabitsWithAnalytics(): Flow<List<HabitWithAnalytics>> {
-        return combine(habits, habitStatuses, firstDayOfWeek) { habitsFlow, habitStatusesFlow, firstDay ->
+        return combine(habits, habitStatuses, firstDayOfWeek) {
+                habitsFlow,
+                habitStatusesFlow,
+                firstDay ->
                 habitsFlow.map { habit ->
                     val habitStatusesForHabit = habitStatusesFlow.filter { it.habitId == habit.id }
                     val completedStatuses = filterCompletedStatuses(habit, habitStatusesForHabit)
@@ -92,15 +112,23 @@ class HabitRepository(
                         habit = habit,
                         statuses = habitStatusesForHabit,
                         currentStreak =
-                            countCurrentStreak(dates = completedDates, eligibleWeekdays = habit.days),
-                        bestStreak = countBestStreak(dates = completedDates, eligibleWeekdays = habit.days),
+                            countCurrentStreak(
+                                dates = completedDates,
+                                eligibleWeekdays = habit.days,
+                            ),
+                        bestStreak =
+                            countBestStreak(dates = completedDates, eligibleWeekdays = habit.days),
                         weeklyComparisonData =
                             prepareLineChartData(
                                 firstDay = firstDay,
                                 habitStatuses = habitStatusesForHabit,
                                 targetValue = habit.targetValue ?: 1.0,
                             ),
-                        weekDayFrequencyData = prepareWeekDayFrequencyData(dates = completedDates, firstDayOfWeek = firstDay),
+                        weekDayFrequencyData =
+                            prepareWeekDayFrequencyData(
+                                dates = completedDates,
+                                firstDayOfWeek = firstDay,
+                            ),
                         startedDaysAgo = habit.time.date.daysUntil(LocalDate.now()).toLong(),
                         consistency = calculateConsistency(completedDates, habit.days),
                     )
@@ -111,27 +139,40 @@ class HabitRepository(
 
     override fun getCompletedHabitIds(): Flow<List<Long>> {
         return combine(habits, habitStatuses) { habitsFlow, habitStatusesFlow ->
-            habitsFlow.mapNotNull { habit ->
-                val todayStatus = habitStatusesFlow.find {
-                    it.habitId == habit.id && it.date == LocalDate.now()
+                habitsFlow.mapNotNull { habit ->
+                    val todayStatus =
+                        habitStatusesFlow.find {
+                            it.habitId == habit.id && it.date == LocalDate.now()
+                        }
+                    if (todayStatus != null && todayStatus.value >= (habit.targetValue ?: 1.0)) {
+                        habit.id
+                    } else null
                 }
-                if (todayStatus != null && todayStatus.value >= (habit.targetValue ?: 1.0)) {
-                    habit.id
-                } else null
             }
-        }.flowOn(Dispatchers.Default)
+            .flowOn(Dispatchers.Default)
     }
 
     override fun getOverallAnalytics(): Flow<OverallAnalytics> {
-        return combine(habits, habitStatuses, firstDayOfWeek) { habitsFlow, habitStatusesFlow, firstDay ->
-                val allCompletedStatuses = habitsFlow.flatMap { habit ->
-                    filterCompletedStatuses(habit, habitStatusesFlow.filter { it.habitId == habit.id })
-                }
+        return combine(habits, habitStatuses, firstDayOfWeek) {
+                habitsFlow,
+                habitStatusesFlow,
+                firstDay ->
+                val allCompletedStatuses =
+                    habitsFlow.flatMap { habit ->
+                        filterCompletedStatuses(
+                            habit,
+                            habitStatusesFlow.filter { it.habitId == habit.id },
+                        )
+                    }
 
                 val habitConsistencies =
                     habitsFlow.map { habit ->
                         val dates =
-                            filterCompletedStatuses(habit, habitStatusesFlow.filter { it.habitId == habit.id }).map { it.date }
+                            filterCompletedStatuses(
+                                    habit,
+                                    habitStatusesFlow.filter { it.habitId == habit.id },
+                                )
+                                .map { it.date }
                         habit.title to calculateConsistency(dates, habit.days)
                     }
 
@@ -160,9 +201,8 @@ class HabitRepository(
     override fun getHabitsWithStatus(): Flow<List<Pair<Habit, Boolean>>> {
         return habits.combine(habitStatuses) { habitsFlow, statusFlow ->
             habitsFlow.map { habit ->
-                val todayStatus = statusFlow.find {
-                    it.habitId == habit.id && it.date == LocalDate.now()
-                }
+                val todayStatus =
+                    statusFlow.find { it.habitId == habit.id && it.date == LocalDate.now() }
                 habit to (todayStatus != null && todayStatus.value >= (habit.targetValue ?: 1.0))
             }
         }
@@ -189,7 +229,11 @@ class HabitRepository(
         return completedStatuses.mapNotNull { habitDao.getHabitById(it.habitId)?.toHabit() }
     }
 
-    override suspend fun incrementHabitProgress(habitId: Long, date: LocalDate, incrementBy: Double): Double {
+    override suspend fun incrementHabitProgress(
+        habitId: Long,
+        date: LocalDate,
+        incrementBy: Double,
+    ): Double {
         val currentValue = habitStatusDao.getProgressOrDefault(habitId, date)
         val newValue = currentValue + incrementBy
         habitStatusDao.deleteStatus(habitId, date)
@@ -208,7 +252,11 @@ class HabitRepository(
         return newValue
     }
 
-    override suspend fun decrementHabitProgress(habitId: Long, date: LocalDate, decrementBy: Double): Double {
+    override suspend fun decrementHabitProgress(
+        habitId: Long,
+        date: LocalDate,
+        decrementBy: Double,
+    ): Double {
         val existing = habitStatusDao.getStatus(habitId, date) ?: return 0.0
         val newValue = existing.value - decrementBy
         if (newValue <= 0.0) {
@@ -224,9 +272,10 @@ class HabitRepository(
     }
 
     override fun observePomodoroLinkedHabits(): Flow<List<Habit>> {
-        return habitDao.getPomodoroLinkedHabits().map { entities ->
-            entities.map { it.toHabit() }
-        }.flowOn(Dispatchers.IO)
+        return habitDao
+            .getPomodoroLinkedHabits()
+            .map { entities -> entities.map { it.toHabit() } }
+            .flowOn(Dispatchers.IO)
     }
 
     override suspend fun isHabitCompleted(habitId: Long, date: LocalDate): Boolean {

@@ -1,12 +1,24 @@
+/*
+ * Copyright (C) 2025-2026 Hexis
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.loc.hexis.shared.ui.setting.ui.section
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.text.ClickableText
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.withStyle
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,6 +33,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.text.ClickableText
 import androidx.compose.material3.Card
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
@@ -45,12 +58,16 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.UriHandler
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import com.loc.hexis.shared.ui.components.detachedItemShape
 import com.loc.hexis.shared.ui.components.endItemShape
 import com.loc.hexis.shared.ui.components.leadingItemShape
-import com.loc.hexis.shared.ui.components.middleItemShape
 import com.loc.hexis.shared.ui.components.listItemColors
+import com.loc.hexis.shared.ui.components.middleItemShape
 import com.loc.hexis.shared.ui.setting.ui.component.LicenseBottomSheet
 import com.loc.hexis.shared.ui.theme.flexFontEmphasis
 import com.loc.hexis.shared.ui.theme.flexFontRounded
@@ -169,9 +186,10 @@ private fun LazyListScope.aboutApp(versionName: String, uriHandler: UriHandler) 
                     }
 
                     Row {
-
                         FilledTonalIconButton(
-                            onClick = { uriHandler.openUri("https://github.com/intelligent-username/hexis") }
+                            onClick = {
+                                uriHandler.openUri("https://github.com/intelligent-username/hexis")
+                            }
                         ) {
                             Icon(
                                 imageVector = vectorResource(Res.drawable.github),
@@ -187,22 +205,27 @@ private fun LazyListScope.aboutApp(versionName: String, uriHandler: UriHandler) 
             Card(shape = middleItemShape()) {
                 Column(
                     modifier = Modifier.fillMaxWidth().padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     Text(
                         text = "The name Hexis is inspired by Aristotle's quote:",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Text(
-                        text = "\"We are what we repeatedly do. Excellence, then, is not an act, but a habit.\"",
-                        style = MaterialTheme.typography.titleMedium.copy(fontFamily = flexFontEmphasis()),
-                        color = MaterialTheme.colorScheme.primary
+                        text =
+                            "\"We are what we repeatedly do. Excellence, then, is not an act, but a habit.\"",
+                        style =
+                            MaterialTheme.typography.titleMedium.copy(
+                                fontFamily = flexFontEmphasis()
+                            ),
+                        color = MaterialTheme.colorScheme.primary,
                     )
                     Text(
-                        text = "The word for excellence is Ἀρετή (arete), and the word for habitual practice of excellence is Ἕξις (Hexis). The intention of this app is to cultivate excellence in the user.",
+                        text =
+                            "The word for excellence is Ἀρετή (arete), and the word for habitual practice of excellence is Ἕξις (Hexis). The intention of this app is to cultivate excellence in the user.",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
@@ -212,39 +235,64 @@ private fun LazyListScope.aboutApp(versionName: String, uriHandler: UriHandler) 
                 Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
                     val annotatedString = buildAnnotatedString {
                         append("This app is ")
-                        
-                        pushStringAnnotation(tag = "open_source", annotation = "https://github.com/intelligent-username/Hexis")
-                        withStyle(style = SpanStyle(
-                            color = MaterialTheme.colorScheme.primary,
-                            textDecoration = TextDecoration.Underline
-                        )) {
+
+                        pushStringAnnotation(
+                            tag = "open_source",
+                            annotation = "https://github.com/intelligent-username/Hexis",
+                        )
+                        withStyle(
+                            style =
+                                SpanStyle(
+                                    color = MaterialTheme.colorScheme.primary,
+                                    textDecoration = TextDecoration.Underline,
+                                )
+                        ) {
                             append("open source")
                         }
                         pop()
-                        
+
                         append(". You can view the source code, ")
-                        
-                        pushStringAnnotation(tag = "issues", annotation = "https://github.com/intelligent-username/Hexis/issues")
-                        withStyle(style = SpanStyle(
-                            color = MaterialTheme.colorScheme.primary,
-                            textDecoration = TextDecoration.Underline
-                        )) {
+
+                        pushStringAnnotation(
+                            tag = "issues",
+                            annotation = "https://github.com/intelligent-username/Hexis/issues",
+                        )
+                        withStyle(
+                            style =
+                                SpanStyle(
+                                    color = MaterialTheme.colorScheme.primary,
+                                    textDecoration = TextDecoration.Underline,
+                                )
+                        ) {
                             append("report bugs or request features")
                         }
                         pop()
-                        
-                        append(", and contribute by modifying the app and creating pull requests at our GitHub repository.")
+
+                        append(
+                            ", and contribute by modifying the app and creating pull requests at our GitHub repository."
+                        )
                     }
-                    
+
                     ClickableText(
                         text = annotatedString,
-                        style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
+                        style =
+                            MaterialTheme.typography.bodyMedium.copy(
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            ),
                         onClick = { offset ->
-                            annotatedString.getStringAnnotations(tag = "open_source", start = offset, end = offset)
-                                .firstOrNull()?.let { uriHandler.openUri(it.item) }
-                            annotatedString.getStringAnnotations(tag = "issues", start = offset, end = offset)
-                                .firstOrNull()?.let { uriHandler.openUri(it.item) }
-                        }
+                            annotatedString
+                                .getStringAnnotations(
+                                    tag = "open_source",
+                                    start = offset,
+                                    end = offset,
+                                )
+                                .firstOrNull()
+                                ?.let { uriHandler.openUri(it.item) }
+                            annotatedString
+                                .getStringAnnotations(tag = "issues", start = offset, end = offset)
+                                .firstOrNull()
+                                ?.let { uriHandler.openUri(it.item) }
+                        },
                     )
                 }
             }
@@ -297,7 +345,6 @@ private fun LazyListScope.aboutApp(versionName: String, uriHandler: UriHandler) 
                         listOf(
                                 "https://github.com/intelligent-username" to Res.drawable.github,
                                 "https://varak.dev/" to Res.drawable.language,
-
                             )
                             .forEach { pair ->
                                 FilledTonalIconButton(

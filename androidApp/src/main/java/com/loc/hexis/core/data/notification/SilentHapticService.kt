@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 2025-2026 Hexis
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.loc.hexis.core.data.notification
 
 import android.app.Notification
@@ -20,17 +37,20 @@ class SilentHapticService : Service() {
         val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
         if (manager.getNotificationChannel(channelId) == null) {
-            val channel = NotificationChannel(channelId, "System Sync", NotificationManager.IMPORTANCE_MIN).apply {
-                lockscreenVisibility = Notification.VISIBILITY_SECRET
-                setShowBadge(false)
-            }
+            val channel =
+                NotificationChannel(channelId, "System Sync", NotificationManager.IMPORTANCE_MIN)
+                    .apply {
+                        lockscreenVisibility = Notification.VISIBILITY_SECRET
+                        setShowBadge(false)
+                    }
             manager.createNotificationChannel(channel)
         }
 
-        val notification = NotificationCompat.Builder(this, channelId)
-            .setPriority(NotificationCompat.PRIORITY_MIN)
-            .setCategory(Notification.CATEGORY_SERVICE)
-            .build()
+        val notification =
+            NotificationCompat.Builder(this, channelId)
+                .setPriority(NotificationCompat.PRIORITY_MIN)
+                .setCategory(Notification.CATEGORY_SERVICE)
+                .build()
 
         startForeground(1001, notification)
         triggerSilentVibration()
@@ -47,7 +67,8 @@ class SilentHapticService : Service() {
         val vibratorManager = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
         val vibrator = vibratorManager.defaultVibrator
 
-        val wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "Hexis::HapticWakeLock")
+        val wakeLock =
+            powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "Hexis::HapticWakeLock")
         wakeLock.acquire(1000)
 
         try {

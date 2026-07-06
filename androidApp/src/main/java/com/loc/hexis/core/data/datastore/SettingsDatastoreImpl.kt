@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 2025-2026 Hexis
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.loc.hexis.core.data.datastore
 
 import androidx.datastore.core.DataStore
@@ -102,9 +119,7 @@ class SettingsDatastoreImpl(private val datastore: DataStore<Preferences>) : Set
         }
 
     override suspend fun setArchivedHabitIds(ids: Set<Long>) {
-        datastore.edit { prefs ->
-            prefs[archivedHabitIdsKey] = ids.map { it.toString() }.toSet()
-        }
+        datastore.edit { prefs -> prefs[archivedHabitIdsKey] = ids.map { it.toString() }.toSet() }
     }
 
     override fun getTimeDivisions(): Flow<List<TimeDivision>> =
@@ -118,14 +133,16 @@ class SettingsDatastoreImpl(private val datastore: DataStore<Preferences>) : Set
 
     override fun getHabitTimeDivisionMap(): Flow<Map<Long, Long>> =
         datastore.data.map { prefs ->
-            prefs[habitTimeDivisionMapKey]?.let { Json.decodeFromString<Map<String, Long>>(it) }
+            prefs[habitTimeDivisionMapKey]
+                ?.let { Json.decodeFromString<Map<String, Long>>(it) }
                 ?.mapKeys { it.key.toLong() } ?: emptyMap()
         }
 
     override suspend fun setHabitTimeDivision(habitId: Long, divisionId: Long?) {
         datastore.edit { prefs ->
             val current =
-                prefs[habitTimeDivisionMapKey]?.let { Json.decodeFromString<Map<String, Long>>(it) }
+                prefs[habitTimeDivisionMapKey]
+                    ?.let { Json.decodeFromString<Map<String, Long>>(it) }
                     ?.toMutableMap() ?: mutableMapOf()
             if (divisionId != null) current[habitId.toString()] = divisionId
             else current.remove(habitId.toString())

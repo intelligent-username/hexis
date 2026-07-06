@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 2025-2026 Hexis
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.loc.hexis.shared.ui.habit.ui
 
 import androidx.compose.animation.AnimatedVisibility
@@ -9,16 +26,16 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.height
-import androidx.compose.ui.graphics.Color
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.ui.Alignment
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -39,7 +56,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.NavKey
@@ -52,6 +71,7 @@ import com.loc.hexis.shared.ui.components.PageFill
 import com.loc.hexis.shared.ui.habit.HabitState
 import com.loc.hexis.shared.ui.habit.HabitsAction
 import com.loc.hexis.shared.ui.habit.ui.component.HabitListFABs
+import com.loc.hexis.shared.ui.habit.ui.component.TimeDivisionEditDialog
 import com.loc.hexis.shared.ui.habit.ui.sections.AnalyticsPage
 import com.loc.hexis.shared.ui.habit.ui.sections.Calendar
 import com.loc.hexis.shared.ui.habit.ui.sections.CalendarHeatMap
@@ -68,9 +88,6 @@ import kotlinx.serialization.modules.polymorphic
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.resources.vectorResource
-import com.loc.hexis.shared.ui.habit.ui.component.TimeDivisionEditDialog
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 
 @Serializable
 private sealed interface HabitRoutes : NavKey {
@@ -108,13 +125,18 @@ fun HabitsGraph(
 
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 
-    val filteredState = state.copy(
-        habitsWithAnalytics = state.habitsWithAnalytics.filter {
-            val matchesArchive = (it.habit.id in state.archivedHabitIds) == state.showArchivedHabits
-            val matchesDivision = state.selectedTimeDivisionId == null || state.habitTimeDivisionMap[it.habit.id] == state.selectedTimeDivisionId
-            matchesArchive && matchesDivision
-        }
-    )
+    val filteredState =
+        state.copy(
+            habitsWithAnalytics =
+                state.habitsWithAnalytics.filter {
+                    val matchesArchive =
+                        (it.habit.id in state.archivedHabitIds) == state.showArchivedHabits
+                    val matchesDivision =
+                        state.selectedTimeDivisionId == null ||
+                            state.habitTimeDivisionMap[it.habit.id] == state.selectedTimeDivisionId
+                    matchesArchive && matchesDivision
+                }
+        )
 
     if (windowSizeClass.widthSizeClass != WindowWidthSizeClass.Expanded) {
         val backstack = rememberNavBackStack(config, HabitRoutes.HabitList)
@@ -140,11 +162,8 @@ fun HabitsGraph(
                                 onAction = onAction,
                                 scrollBehavior = scrollBehavior,
                             )
-                            
-                            TimeDivisionSelector(
-                                state = state,
-                                onAction = onAction,
-                            )
+
+                            TimeDivisionSelector(state = state, onAction = onAction)
 
                             PageFill {
                                 val lazyListState = rememberLazyListState()
@@ -384,10 +403,7 @@ private fun ExpandedScreen(
 }
 
 @Composable
-private fun TimeDivisionSelector(
-    state: HabitState,
-    onAction: (HabitsAction) -> Unit,
-) {
+private fun TimeDivisionSelector(state: HabitState, onAction: (HabitsAction) -> Unit) {
     var showEditDialog by remember { mutableStateOf(false) }
 
     Row(
@@ -397,22 +413,26 @@ private fun TimeDivisionSelector(
         val isAllSelected = state.selectedTimeDivisionId == null
         Surface(
             shape = RoundedCornerShape(50),
-            color = if (isAllSelected) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainerHighest,
-            modifier = Modifier.height(40.dp)
+            color =
+                if (isAllSelected) MaterialTheme.colorScheme.secondaryContainer
+                else MaterialTheme.colorScheme.surfaceContainerHighest,
+            modifier = Modifier.height(40.dp),
         ) {
             Box(
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .clickable { onAction(HabitsAction.SelectTimeDivision(null)) }
-                    .padding(horizontal = 16.dp),
-                contentAlignment = Alignment.Center
+                modifier =
+                    Modifier.fillMaxHeight()
+                        .clickable { onAction(HabitsAction.SelectTimeDivision(null)) }
+                        .padding(horizontal = 16.dp),
+                contentAlignment = Alignment.Center,
             ) {
                 Text(
                     text = "All",
                     fontFamily = flexFontRounded(),
                     style = MaterialTheme.typography.labelLarge,
                     maxLines = 1,
-                    color = if (isAllSelected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurface
+                    color =
+                        if (isAllSelected) MaterialTheme.colorScheme.onSecondaryContainer
+                        else MaterialTheme.colorScheme.onSurface,
                 )
             }
         }
@@ -422,54 +442,61 @@ private fun TimeDivisionSelector(
         Surface(
             shape = RoundedCornerShape(50),
             color = MaterialTheme.colorScheme.surfaceContainerHighest,
-            modifier = Modifier.weight(1f).height(40.dp)
+            modifier = Modifier.weight(1f).height(40.dp),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxSize()) {
                 LazyRow(
                     modifier = Modifier.weight(1f).fillMaxHeight(),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     items(state.timeDivisions, key = { it.id }) { division ->
                         val selected = state.selectedTimeDivisionId == division.id
                         Box(
-                            modifier = Modifier
-                                .fillMaxHeight()
-                                .clickable { onAction(HabitsAction.SelectTimeDivision(division.id)) }
-                                .background(if (selected) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent)
-                                .padding(horizontal = 16.dp),
-                            contentAlignment = Alignment.Center
+                            modifier =
+                                Modifier.fillMaxHeight()
+                                    .clickable {
+                                        onAction(HabitsAction.SelectTimeDivision(division.id))
+                                    }
+                                    .background(
+                                        if (selected) MaterialTheme.colorScheme.secondaryContainer
+                                        else Color.Transparent
+                                    )
+                                    .padding(horizontal = 16.dp),
+                            contentAlignment = Alignment.Center,
                         ) {
                             Text(
                                 text = division.name,
                                 fontFamily = flexFontRounded(),
                                 style = MaterialTheme.typography.labelLarge,
                                 maxLines = 1,
-                                color = if (selected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurface
+                                color =
+                                    if (selected) MaterialTheme.colorScheme.onSecondaryContainer
+                                    else MaterialTheme.colorScheme.onSurface,
                             )
                         }
 
                         Box(
-                            modifier = Modifier
-                                .fillMaxHeight()
-                                .padding(vertical = 8.dp)
-                                .width(1.dp)
-                                .background(MaterialTheme.colorScheme.outlineVariant)
+                            modifier =
+                                Modifier.fillMaxHeight()
+                                    .padding(vertical = 8.dp)
+                                    .width(1.dp)
+                                    .background(MaterialTheme.colorScheme.outlineVariant)
                         )
                     }
                 }
 
                 Box(
-                    modifier = Modifier
-                        .fillMaxHeight()
-                        .clickable(enabled = !state.editState) { showEditDialog = true }
-                        .padding(horizontal = 16.dp),
-                    contentAlignment = Alignment.Center
+                    modifier =
+                        Modifier.fillMaxHeight()
+                            .clickable(enabled = !state.editState) { showEditDialog = true }
+                            .padding(horizontal = 16.dp),
+                    contentAlignment = Alignment.Center,
                 ) {
                     Icon(
                         imageVector = vectorResource(Res.drawable.edit),
                         contentDescription = "Edit Divisions",
                         modifier = Modifier.size(20.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
@@ -480,7 +507,7 @@ private fun TimeDivisionSelector(
         TimeDivisionEditDialog(
             state = state,
             onAction = onAction,
-            onDismiss = { showEditDialog = false }
+            onDismiss = { showEditDialog = false },
         )
     }
 }
@@ -512,7 +539,10 @@ private fun HabitsTopAppBar(
         },
         actions = {
             AnimatedVisibility(
-                visible = state.habitsWithAnalytics.isNotEmpty() || state.archivedHabitIds.isNotEmpty() || state.showArchivedHabits,
+                visible =
+                    state.habitsWithAnalytics.isNotEmpty() ||
+                        state.archivedHabitIds.isNotEmpty() ||
+                        state.showArchivedHabits,
                 enter = fadeIn(MaterialTheme.motionScheme.fastEffectsSpec()),
                 exit = fadeOut(MaterialTheme.motionScheme.fastEffectsSpec()),
             ) {

@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 2025-2026 Hexis
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.loc.hexis.shared.ui.app
 
 import androidx.compose.foundation.background
@@ -6,6 +23,8 @@ import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -15,8 +34,6 @@ import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass.Companion.Compact
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -36,9 +53,9 @@ import com.loc.hexis.shared.ui.setting.ui.SettingsGraph
 import com.loc.hexis.shared.ui.task.ui.TasksPage
 import com.loc.hexis.shared.ui.task.ui.component.PomodoroPage
 import com.loc.hexis.shared.ui.viewmodel.HabitViewModel
+import com.loc.hexis.shared.ui.viewmodel.MainViewModel
 import com.loc.hexis.shared.ui.viewmodel.SettingsViewModel
 import com.loc.hexis.shared.ui.viewmodel.TasksViewModel
-import com.loc.hexis.shared.ui.viewmodel.MainViewModel
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
@@ -48,13 +65,16 @@ import org.koin.compose.viewmodel.koinViewModel
 fun MainApp(state: MainAppState) {
     val windowSizeClass = LocalWindowSizeClass.current
 
-    val pagerState = rememberPagerState(
-        initialPage = when (state.startingSection) {
-            Tasks -> AppSections.mainRoutes.indexOf(AppSections.TaskPages).coerceAtLeast(0)
-            Habits -> AppSections.mainRoutes.indexOf(AppSections.HabitPages).coerceAtLeast(0)
-        },
-        pageCount = { AppSections.mainRoutes.size }
-    )
+    val pagerState =
+        rememberPagerState(
+            initialPage =
+                when (state.startingSection) {
+                    Tasks -> AppSections.mainRoutes.indexOf(AppSections.TaskPages).coerceAtLeast(0)
+                    Habits ->
+                        AppSections.mainRoutes.indexOf(AppSections.HabitPages).coerceAtLeast(0)
+                },
+            pageCount = { AppSections.mainRoutes.size },
+        )
     val coroutineScope = rememberCoroutineScope()
 
     val mvm: MainViewModel = koinViewModel()
@@ -69,17 +89,25 @@ fun MainApp(state: MainAppState) {
         state.shortcutAction?.let { action ->
             when (action) {
                 "add_habit" -> {
-                    pagerState.animateScrollToPage(AppSections.mainRoutes.indexOf(AppSections.HabitPages).coerceAtLeast(0))
+                    pagerState.animateScrollToPage(
+                        AppSections.mainRoutes.indexOf(AppSections.HabitPages).coerceAtLeast(0)
+                    )
                     hvm.onAction(com.loc.hexis.shared.ui.habit.HabitsAction.OnAddHabitClicked)
                 }
                 "add_task" -> {
-                    pagerState.animateScrollToPage(AppSections.mainRoutes.indexOf(AppSections.TaskPages).coerceAtLeast(0))
+                    pagerState.animateScrollToPage(
+                        AppSections.mainRoutes.indexOf(AppSections.TaskPages).coerceAtLeast(0)
+                    )
                     tvm.onAction(com.loc.hexis.shared.ui.task.TaskAction.ToggleAddTaskSheet(true))
                 }
                 "overall_analytics" -> {
-                    pagerState.animateScrollToPage(AppSections.mainRoutes.indexOf(AppSections.HabitPages).coerceAtLeast(0))
+                    pagerState.animateScrollToPage(
+                        AppSections.mainRoutes.indexOf(AppSections.HabitPages).coerceAtLeast(0)
+                    )
                     hvm.onAction(com.loc.hexis.shared.ui.habit.HabitsAction.PrepareAnalytics(null))
-                    hvm.onAction(com.loc.hexis.shared.ui.habit.HabitsAction.ToggleOverallAnalytics(true))
+                    hvm.onAction(
+                        com.loc.hexis.shared.ui.habit.HabitsAction.ToggleOverallAnalytics(true)
+                    )
                 }
             }
             mvm.setShortcutAction(null)
@@ -102,9 +130,7 @@ fun MainApp(state: MainAppState) {
                         onNavigate = { route ->
                             val index = AppSections.mainRoutes.indexOf(route)
                             if (index != -1) {
-                                coroutineScope.launch {
-                                    pagerState.animateScrollToPage(index)
-                                }
+                                coroutineScope.launch { pagerState.animateScrollToPage(index) }
                             }
                         },
                     )
@@ -119,7 +145,7 @@ fun MainApp(state: MainAppState) {
                                 bottom = padding.calculateBottomPadding(),
                             )
                             .background(MaterialTheme.colorScheme.background),
-                    ) { page ->
+                ) { page ->
                     when (val route = AppSections.mainRoutes[page]) {
                         is AppSections.TaskPages -> {
                             val taskPageState by tvm.state.collectAsStateWithLifecycle()
@@ -134,10 +160,7 @@ fun MainApp(state: MainAppState) {
                         is AppSections.SettingsPages -> {
                             val settingsState by svm.state.collectAsStateWithLifecycle()
 
-                            SettingsGraph(
-                                state = settingsState,
-                                onAction = svm::onAction,
-                            )
+                            SettingsGraph(state = settingsState, onAction = svm::onAction)
                         }
 
                         is AppSections.HabitPages -> {
@@ -161,9 +184,7 @@ fun MainApp(state: MainAppState) {
                     onNavigate = { route ->
                         val index = AppSections.mainRoutes.indexOf(route)
                         if (index != -1) {
-                            coroutineScope.launch {
-                                pagerState.animateScrollToPage(index)
-                            }
+                            coroutineScope.launch { pagerState.animateScrollToPage(index) }
                         }
                     },
                 )
@@ -188,10 +209,7 @@ fun MainApp(state: MainAppState) {
                         is AppSections.SettingsPages -> {
                             val settingsState by svm.state.collectAsStateWithLifecycle()
 
-                            SettingsGraph(
-                                state = settingsState,
-                                onAction = svm::onAction,
-                            )
+                            SettingsGraph(state = settingsState, onAction = svm::onAction)
                         }
 
                         is AppSections.HabitPages -> {
@@ -212,7 +230,10 @@ fun MainApp(state: MainAppState) {
     if (showPomodoro || pomodoroLinkedHabitId != null) {
         PomodoroPage(
             linkedHabitId = if (showPomodoro) null else pomodoroLinkedHabitId,
-            onDismiss = { showPomodoro = false; pomodoroLinkedHabitId = null }
+            onDismiss = {
+                showPomodoro = false
+                pomodoroLinkedHabitId = null
+            },
         )
     }
 }

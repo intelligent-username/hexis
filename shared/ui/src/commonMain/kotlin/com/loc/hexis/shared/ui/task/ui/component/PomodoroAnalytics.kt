@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 2025-2026 Hexis
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.loc.hexis.shared.ui.task.ui.component
 
 import androidx.compose.foundation.Canvas
@@ -91,12 +108,7 @@ fun PomodoroAnalytics(onDismiss: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = {
-                    Text(
-                        text = "Session History",
-                        fontFamily = flexFontEmphasis(),
-                    )
-                },
+                title = { Text(text = "Session History", fontFamily = flexFontEmphasis()) },
                 navigationIcon = {
                     FilledTonalIconButton(onClick = onDismiss) {
                         Icon(
@@ -105,19 +117,20 @@ fun PomodoroAnalytics(onDismiss: () -> Unit) {
                         )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    scrolledContainerColor = Color.Transparent,
-                    containerColor = Color.Transparent,
-                ),
+                colors =
+                    TopAppBarDefaults.topAppBarColors(
+                        scrolledContainerColor = Color.Transparent,
+                        containerColor = Color.Transparent,
+                    ),
             )
-        },
+        }
     ) { padding ->
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp),
+            modifier =
+                Modifier.fillMaxSize()
+                    .padding(padding)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             if (dayCounts.isNotEmpty()) {
@@ -138,10 +151,7 @@ fun PomodoroAnalytics(onDismiss: () -> Unit) {
                     onDayClick = { selectedDay = it },
                 )
             } else {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center,
-                ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text(
                         text = "Complete your first Pomodoro session to see history here.",
                         style = MaterialTheme.typography.bodyLarge,
@@ -169,10 +179,11 @@ fun PomodoroAnalytics(onDismiss: () -> Unit) {
                 Spacer(Modifier.height(8.dp))
                 Text(
                     text = "$count session${if (count != 1) "s" else ""} completed",
-                    style = MaterialTheme.typography.displayMedium.copy(
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = flexFontRounded(),
-                    ),
+                    style =
+                        MaterialTheme.typography.displayMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = flexFontRounded(),
+                        ),
                     color = MaterialTheme.colorScheme.primary,
                 )
             }
@@ -181,15 +192,8 @@ fun PomodoroAnalytics(onDismiss: () -> Unit) {
 }
 
 @Composable
-private fun StatsRow(
-    totalSessions: Int,
-    currentStreak: Int,
-    bestStreak: Int,
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
+private fun StatsRow(totalSessions: Int, currentStreak: Int, bestStreak: Int) {
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         StatPill(value = "$totalSessions", label = "total", modifier = Modifier.weight(1f))
         StatPill(value = "$currentStreak", label = "day streak", modifier = Modifier.weight(1f))
         StatPill(value = "$bestStreak", label = "best streak", modifier = Modifier.weight(1f))
@@ -197,11 +201,7 @@ private fun StatsRow(
 }
 
 @Composable
-private fun StatPill(
-    value: String,
-    label: String,
-    modifier: Modifier = Modifier,
-) {
+private fun StatPill(value: String, label: String, modifier: Modifier = Modifier) {
     Surface(
         modifier = modifier,
         shape = RoundedCornerShape(20.dp),
@@ -213,10 +213,11 @@ private fun StatPill(
         ) {
             Text(
                 text = value,
-                style = MaterialTheme.typography.titleLarge.copy(
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = flexFontRounded(),
-                ),
+                style =
+                    MaterialTheme.typography.titleLarge.copy(
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = flexFontRounded(),
+                    ),
                 color = MaterialTheme.colorScheme.onPrimaryContainer,
             )
             Text(
@@ -232,10 +233,9 @@ private fun StatPill(
 @Composable
 private fun ThisWeekRow(dayCounts: List<PomodoroDayCount>) {
     val today = LocalDate.now()
-    val startOfWeek = today.minus(today.dayOfWeek.isoDayNumber - DayOfWeek.MONDAY.isoDayNumber, DateTimeUnit.DAY)
-    val weekCount = dayCounts
-        .filter { it.date in startOfWeek..today }
-        .sumOf { it.count }
+    val startOfWeek =
+        today.minus(today.dayOfWeek.isoDayNumber - DayOfWeek.MONDAY.isoDayNumber, DateTimeUnit.DAY)
+    val weekCount = dayCounts.filter { it.date in startOfWeek..today }.sumOf { it.count }
 
     Text(
         text = "This week: $weekCount session${if (weekCount != 1) "s" else ""}",
@@ -263,7 +263,8 @@ private fun SessionHeatMap(
             contentPadding = PaddingValues(8.dp),
             monthHeader = { calendarMonth ->
                 Text(
-                    text = "${calendarMonth.yearMonth.month.name.take(3)} ${calendarMonth.yearMonth.year}",
+                    text =
+                        "${calendarMonth.yearMonth.month.name.take(3)} ${calendarMonth.yearMonth.year}",
                     style = MaterialTheme.typography.labelSmall,
                     fontFamily = flexFontRounded(),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -276,32 +277,35 @@ private fun SessionHeatMap(
                 val count = dayCountMap[day.date]?.count ?: 0
                 val alpha = if (maxCount > 0) (count.toFloat() / maxCount).coerceIn(0f, 1f) else 0f
 
-                val bgColor = when {
-                    day.date > today -> Color.Transparent
-                    count == 0 -> MaterialTheme.colorScheme.surfaceContainerHighest
-                    else -> MaterialTheme.colorScheme.primary.copy(alpha = alpha)
-                }
+                val bgColor =
+                    when {
+                        day.date > today -> Color.Transparent
+                        count == 0 -> MaterialTheme.colorScheme.surfaceContainerHighest
+                        else -> MaterialTheme.colorScheme.primary.copy(alpha = alpha)
+                    }
 
-                val textColor = when {
-                    count == 0 -> MaterialTheme.colorScheme.onSurface
-                    alpha > 0.5f -> MaterialTheme.colorScheme.onPrimary
-                    else -> MaterialTheme.colorScheme.primary
-                }
+                val textColor =
+                    when {
+                        count == 0 -> MaterialTheme.colorScheme.onSurface
+                        alpha > 0.5f -> MaterialTheme.colorScheme.onPrimary
+                        else -> MaterialTheme.colorScheme.primary
+                    }
 
                 Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .background(color = bgColor, shape = RoundedCornerShape(4.dp))
-                        .clickable { onDayClick(day.date) },
+                    modifier =
+                        Modifier.size(36.dp)
+                            .background(color = bgColor, shape = RoundedCornerShape(4.dp))
+                            .clickable { onDayClick(day.date) },
                     contentAlignment = Alignment.Center,
                 ) {
                     if (count > 0) {
                         Text(
                             text = count.toString(),
-                            style = MaterialTheme.typography.labelSmall.copy(
-                                fontSize = 10.sp,
-                                fontFamily = flexFontRounded(),
-                            ),
+                            style =
+                                MaterialTheme.typography.labelSmall.copy(
+                                    fontSize = 10.sp,
+                                    fontFamily = flexFontRounded(),
+                                ),
                             color = textColor,
                             fontWeight = FontWeight.Medium,
                         )
@@ -353,26 +357,29 @@ private fun HabitBreakdownChart() {
 
     androidx.compose.runtime.LaunchedEffect(Unit) {
         val counts = repo.getSessionCountsByHabit()
-        displayData = counts.map { (id, c) ->
-            val title = if (id != null) {
-                (habitRepo.getHabitById(id))?.title ?: "Unknown"
-            } else "Misc"
-            HabitCount(id, c, title)
-        }
+        displayData =
+            counts.map { (id, c) ->
+                val title =
+                    if (id != null) {
+                        (habitRepo.getHabitById(id))?.title ?: "Unknown"
+                    } else "Misc"
+                HabitCount(id, c, title)
+            }
     }
 
     if (displayData.isEmpty()) return
 
     val total = displayData.sumOf { it.count }.toFloat()
 
-    val colors = listOf(
-        MaterialTheme.colorScheme.primary,
-        MaterialTheme.colorScheme.tertiary,
-        MaterialTheme.colorScheme.secondary,
-        MaterialTheme.colorScheme.error,
-        MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
-        MaterialTheme.colorScheme.tertiary.copy(alpha = 0.7f),
-    )
+    val colors =
+        listOf(
+            MaterialTheme.colorScheme.primary,
+            MaterialTheme.colorScheme.tertiary,
+            MaterialTheme.colorScheme.secondary,
+            MaterialTheme.colorScheme.error,
+            MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
+            MaterialTheme.colorScheme.tertiary.copy(alpha = 0.7f),
+        )
 
     Surface(
         shape = MaterialTheme.shapes.medium,
@@ -418,10 +425,9 @@ private fun HabitBreakdownChart() {
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     Box(
-                        modifier = Modifier.size(10.dp).background(
-                            color = colors[i % colors.size],
-                            shape = CircleShape,
-                        )
+                        modifier =
+                            Modifier.size(10.dp)
+                                .background(color = colors[i % colors.size], shape = CircleShape)
                     )
                     Text(
                         text = "${entry.title} — $pct%",
