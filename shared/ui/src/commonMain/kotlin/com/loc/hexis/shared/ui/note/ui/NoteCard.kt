@@ -1,0 +1,187 @@
+/*
+ * Copyright (C) 2025-2026 Hexis
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+package com.loc.hexis.shared.ui.note.ui
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilledTonalIconButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.IconButtonShapes
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import com.loc.hexis.core.note.Note
+import com.loc.hexis.shared.ui.note.getContentPreview
+import com.loc.hexis.shared.ui.theme.flexFontEmphasis
+import com.loc.hexis.shared.ui.theme.flexFontRounded
+import hexis.shared.ui.generated.resources.Res
+import hexis.shared.ui.generated.resources.archive
+import hexis.shared.ui.generated.resources.unarchive
+import hexis.shared.ui.generated.resources.delete
+import hexis.shared.ui.generated.resources.flag
+import hexis.shared.ui.generated.resources.untitled
+import org.jetbrains.compose.resources.stringResource
+import org.jetbrains.compose.resources.vectorResource
+
+@Composable
+fun NoteCard(
+    note: Note,
+    showArchived: Boolean,
+    onClick: () -> Unit,
+    onTogglePin: () -> Unit = {},
+    onArchive: () -> Unit = {},
+    onUnarchive: () -> Unit = {},
+    onDelete: () -> Unit = {},
+    modifier: Modifier = Modifier,
+) {
+    Card(
+        onClick = onClick,
+        shape = RoundedCornerShape(20.dp),
+        colors =
+            CardDefaults.cardColors(
+                containerColor =
+                    if (showArchived) MaterialTheme.colorScheme.surfaceContainerLow
+                    else MaterialTheme.colorScheme.surfaceContainerHigh,
+            ),
+        modifier = modifier.fillMaxWidth(),
+    ) {
+        Column(modifier = Modifier.padding(16.dp).fillMaxWidth()) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Text(
+                    text = note.title.ifEmpty { stringResource(Res.string.untitled) },
+                    style =
+                        MaterialTheme.typography.titleMedium.copy(
+                            fontFamily = flexFontEmphasis()
+                        ),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
+
+                if (note.pinned && !showArchived) {
+                    Icon(
+                        imageVector = vectorResource(Res.drawable.flag),
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(18.dp).padding(start = 4.dp),
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            if (note.content.isNotEmpty()) {
+                Text(
+                    text = getContentPreview(note.content),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Text(
+                    text = formatNoteDate(note.updatedAt),
+                    style = MaterialTheme.typography.labelSmall.copy(fontFamily = flexFontRounded()),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                )
+
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    if (!showArchived) {
+                        FilledTonalIconButton(
+                            onClick = onTogglePin,
+                            modifier = Modifier.size(32.dp),
+                            colors =
+                                IconButtonDefaults.filledTonalIconButtonColors(
+                                    containerColor =
+                                        if (note.pinned) MaterialTheme.colorScheme.primaryContainer
+                                        else MaterialTheme.colorScheme.surfaceContainerHigh,
+                                    contentColor =
+                                        if (note.pinned) MaterialTheme.colorScheme.onPrimaryContainer
+                                        else MaterialTheme.colorScheme.onSurfaceVariant,
+                                ),
+                            shapes =
+                                IconButtonShapes(
+                                    shape = RoundedCornerShape(8.dp),
+                                    pressedShape = MaterialTheme.shapes.small,
+                                ),
+                        ) {
+                            Icon(
+                                imageVector = vectorResource(Res.drawable.flag),
+                                contentDescription = if (note.pinned) "Unpin" else "Pin",
+                                modifier = Modifier.size(16.dp),
+                            )
+                        }
+
+                        IconButton(onClick = onArchive, modifier = Modifier.size(32.dp)) {
+                            Icon(
+                                imageVector = vectorResource(Res.drawable.archive),
+                                contentDescription = "Archive",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(18.dp),
+                            )
+                        }
+                    } else {
+                        IconButton(onClick = onUnarchive, modifier = Modifier.size(32.dp)) {
+                            Icon(
+                                imageVector = vectorResource(Res.drawable.unarchive),
+                                contentDescription = "Unarchive",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(18.dp),
+                            )
+                        }
+
+                        IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
+                            Icon(
+                                imageVector = vectorResource(Res.drawable.delete),
+                                contentDescription = stringResource(Res.string.delete),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(18.dp),
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

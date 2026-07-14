@@ -32,6 +32,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -51,6 +52,7 @@ import com.loc.hexis.shared.ui.habit.daysStartingFrom
 import com.loc.hexis.shared.ui.habit.ui.component.AnalyticsCard
 import com.loc.hexis.shared.ui.habit.ui.component.CardArrows
 import com.loc.hexis.shared.ui.theme.flexFontRounded
+import com.loc.hexis.shared.ui.util.rememberToday
 import hexis.shared.ui.generated.resources.*
 import kotlin.collections.forEachIndexed
 import kotlin.random.Random
@@ -72,7 +74,7 @@ fun HabitHeatMap(
     modifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
-    val today = LocalDate.now()
+    val today by rememberToday()
 
     AnalyticsCard(
         title = stringResource(Res.string.habit_map),

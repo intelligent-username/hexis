@@ -117,6 +117,7 @@ fun TaskList(
     onAction: (TaskAction) -> Unit,
     onEditCategories: () -> Unit,
     onPomodoroClick: () -> Unit,
+    onNotesClick: () -> Unit,
 ) = PageFill {
     val windowSizeClass = LocalWindowSizeClass.current
 
@@ -147,6 +148,8 @@ fun TaskList(
             isReorderMode = editState,
             onReorderToggle = { editState = it },
             onDeleteClick = { showDeleteDialog = true },
+            onPomodoroClick = onPomodoroClick,
+            onNotesClick = onNotesClick,
             isExpanded = windowSizeClass.widthSizeClass == WindowWidthSizeClass.Expanded,
         )
 
@@ -156,7 +159,6 @@ fun TaskList(
             onAction = onAction,
             onAddCategoryClick = { showCategoryAddSheet = true },
             onEditCategoriesClick = onEditCategories,
-            onPomodoroClick = onPomodoroClick,
             isExpanded = windowSizeClass.widthSizeClass == WindowWidthSizeClass.Expanded,
             onReorderModeChange = { editState = it },
         )
@@ -275,6 +277,8 @@ private fun TaskListTopBar(
     isReorderMode: Boolean,
     onReorderToggle: (Boolean) -> Unit,
     onDeleteClick: () -> Unit,
+    onPomodoroClick: () -> Unit,
+    onNotesClick: () -> Unit,
     isExpanded: Boolean,
 ) {
     LargeFlexibleTopAppBar(
@@ -312,6 +316,20 @@ private fun TaskListTopBar(
                 }
             }
 
+            FilledTonalIconButton(onClick = onNotesClick) {
+                Icon(
+                    imageVector = vectorResource(Res.drawable.check_list),
+                    contentDescription = "Notes",
+                )
+            }
+
+            FilledTonalIconButton(onClick = onPomodoroClick) {
+                Icon(
+                    imageVector = vectorResource(Res.drawable.schedule),
+                    contentDescription = "Pomodoro",
+                )
+            }
+
             AnimatedVisibility(
                 visible = state.tasks.values.isNotEmpty() && !isExpanded,
                 enter = fadeIn(motionScheme.fastEffectsSpec()),
@@ -345,7 +363,6 @@ private fun CategorySelector(
     onAction: (TaskAction) -> Unit,
     onAddCategoryClick: () -> Unit,
     onEditCategoriesClick: () -> Unit,
-    onPomodoroClick: () -> Unit,
     isExpanded: Boolean,
     onReorderModeChange: (Boolean) -> Unit,
 ) {
@@ -380,12 +397,6 @@ private fun CategorySelector(
                         contentDescription = "Edit Categories",
                     )
                 }
-                FilledTonalIconButton(onClick = onPomodoroClick, enabled = !isReorderMode) {
-                    Icon(
-                        imageVector = vectorResource(Res.drawable.schedule),
-                        contentDescription = "Pomodoro",
-                    )
-                }
             }
         } else {
             item {
@@ -407,14 +418,6 @@ private fun CategorySelector(
                     Text(text = stringResource(Res.string.edit_categories))
                 }
                 Spacer(Modifier.width(8.dp))
-                FilledTonalButton(onClick = onPomodoroClick, enabled = !isReorderMode) {
-                    Icon(
-                        imageVector = vectorResource(Res.drawable.schedule),
-                        contentDescription = null,
-                    )
-                    Spacer(Modifier.width(ButtonDefaults.IconSpacing))
-                    Text(text = "Pomodoro")
-                }
             }
         }
     }

@@ -22,13 +22,16 @@ import com.loc.hexis.core.data.backup.ExportSchema
 import com.loc.hexis.core.data.backup.toCategory
 import com.loc.hexis.core.data.backup.toHabit
 import com.loc.hexis.core.data.backup.toHabitStatus
+import com.loc.hexis.core.data.backup.toPomodoroSession
 import com.loc.hexis.core.data.backup.toTask
 import com.loc.hexis.core.habits.HabitRepo
 import com.loc.hexis.core.interfaces.AlarmScheduler
+import com.loc.hexis.core.interfaces.SettingsDatastore
 import com.loc.hexis.core.settings.backup.RestoreFailedException
 import com.loc.hexis.core.settings.backup.RestoreRepo
 import com.loc.hexis.core.settings.backup.RestoreResult
 import com.loc.hexis.core.settings.backup.SchemaMismatchException
+import com.loc.hexis.core.tasks.PomodoroRepo
 import com.loc.hexis.core.tasks.TaskRepo
 import com.loc.hexis.habits.data.database.HabitDatabase
 import com.loc.hexis.tasks.data.database.TaskDatabase
@@ -50,6 +53,8 @@ class RestoreImpl(
     private val taskRepo: TaskRepo,
     private val habitRepo: HabitRepo,
     private val alarmScheduler: AlarmScheduler,
+    private val pomodoroRepo: PomodoroRepo,
+    private val settingsDatastore: SettingsDatastore,
 ) : RestoreRepo {
     override suspend fun restoreData(): RestoreResult {
         return try {
@@ -96,6 +101,23 @@ class RestoreImpl(
                         jsonDeserialized.tasks
                             .map { it.toTask() }
                             .forEach { taskRepo.upsertTask(it) }
+                    },
+                    async {
+                        jsonDeserialized.pomodoroSessions
+                            .map { it.toPomodoroSession() }
+                            .forEach { pomodoroRepo.insertSession(it) }
+
+                        settingsDatastore.setTimeDivisions(jsonDeserialized.timeDivisions)
+
+                        jsonDeserialized.pomodoroSettings?.let {
+                            settingsDatastore.setPomodoroSettings(it)
+                        }
+
+                        settingsDatastore.setHabitTimeDivisionMap(
+                            jsonDeserialized.habitTimeDivisionPairs.associate {
+                                it.habitId to it.divisionId
+                            }
+                        )
                     },
                 )
             }

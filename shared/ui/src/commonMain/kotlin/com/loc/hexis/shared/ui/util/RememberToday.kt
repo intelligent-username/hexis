@@ -15,31 +15,28 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.loc.hexis.core.tasks
+package com.loc.hexis.shared.ui.util
 
-import kotlinx.coroutines.flow.Flow
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import kotlinx.coroutines.delay
 import kotlinx.datetime.LocalDate
-import kotlinx.datetime.LocalDateTime
+import com.loc.hexis.core.now
 
-interface PomodoroRepo {
-    suspend fun insertSession(session: PomodoroSession): Long
-
-    suspend fun finishSession(
-        id: Long,
-        timeFinished: LocalDateTime,
-        completed: Boolean,
-        timeCompletedMinutes: Float,
-    )
-
-    suspend fun getTodayStats(): PomodoroStats
-
-    fun getCompletedDates(): Flow<List<LocalDate>>
-
-    suspend fun getEarliestSessionDate(): LocalDate?
-
-    fun getSessionCountsByDay(): Flow<List<PomodoroDayCount>>
-
-    suspend fun getSessionCountsByHabit(): List<Pair<Long?, Int>>
-
-    suspend fun getAllSessions(): List<PomodoroSession>
+@Composable
+fun rememberToday(): State<LocalDate> {
+    val dateState = remember { mutableStateOf(LocalDate.now()) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(60_000)
+            val newDate = LocalDate.now()
+            if (newDate != dateState.value) {
+                dateState.value = newDate
+            }
+        }
+    }
+    return dateState
 }

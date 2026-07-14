@@ -15,31 +15,27 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.loc.hexis.core.tasks
+package com.loc.hexis.note.data.database
 
+import androidx.room3.Dao
+import androidx.room3.Query
+import androidx.room3.Upsert
 import kotlinx.coroutines.flow.Flow
-import kotlinx.datetime.LocalDate
-import kotlinx.datetime.LocalDateTime
 
-interface PomodoroRepo {
-    suspend fun insertSession(session: PomodoroSession): Long
+@Dao
+interface NotesDao {
+    @Query("SELECT * FROM notes WHERE archived = 0 ORDER BY pinned DESC, updatedAt DESC")
+    fun getNotesFlow(): Flow<List<NoteEntity>>
 
-    suspend fun finishSession(
-        id: Long,
-        timeFinished: LocalDateTime,
-        completed: Boolean,
-        timeCompletedMinutes: Float,
-    )
+    @Query("SELECT * FROM notes WHERE archived = 1 ORDER BY updatedAt DESC")
+    fun getArchivedNotesFlow(): Flow<List<NoteEntity>>
 
-    suspend fun getTodayStats(): PomodoroStats
+    @Query("SELECT * FROM notes WHERE id = :id")
+    suspend fun getNoteById(id: Long): NoteEntity?
 
-    fun getCompletedDates(): Flow<List<LocalDate>>
+    @Upsert
+    suspend fun upsertNote(note: NoteEntity): Long
 
-    suspend fun getEarliestSessionDate(): LocalDate?
-
-    fun getSessionCountsByDay(): Flow<List<PomodoroDayCount>>
-
-    suspend fun getSessionCountsByHabit(): List<Pair<Long?, Int>>
-
-    suspend fun getAllSessions(): List<PomodoroSession>
+    @Query("DELETE FROM notes WHERE id = :id")
+    suspend fun deleteNote(id: Long)
 }

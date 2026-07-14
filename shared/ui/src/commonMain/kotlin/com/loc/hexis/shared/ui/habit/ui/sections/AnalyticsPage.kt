@@ -67,11 +67,11 @@ import androidx.compose.ui.unit.dp
 import com.kizitonwose.calendar.compose.heatmapcalendar.rememberHeatMapCalendarState
 import com.kizitonwose.calendar.compose.rememberCalendarState
 import com.kizitonwose.calendar.core.minusMonths
-import com.kizitonwose.calendar.core.now
 import com.loc.hexis.shared.ui.LocalWindowSizeClass
 import com.loc.hexis.shared.ui.components.HexisDialog
 import com.loc.hexis.shared.ui.habit.HabitState
 import com.loc.hexis.shared.ui.habit.HabitsAction
+import com.loc.hexis.shared.ui.util.rememberToday
 import com.loc.hexis.shared.ui.habit.ui.component.HabitUpsertSheet
 import com.loc.hexis.shared.ui.habit.ui.component.TimeDivisionEditDialog
 import com.loc.hexis.shared.ui.habit.ui.component.stats.CalendarMap
@@ -82,7 +82,8 @@ import com.loc.hexis.shared.ui.habit.ui.component.stats.WeeklyBooleanHeatMap
 import com.loc.hexis.shared.ui.theme.flexFontEmphasis
 import com.loc.hexis.shared.ui.theme.flexFontRounded
 import hexis.shared.ui.generated.resources.*
-import kotlinx.datetime.YearMonth
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.yearMonth
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.resources.vectorResource
 
@@ -97,7 +98,8 @@ fun AnalyticsPage(
 ) {
     val windowSizeClass = LocalWindowSizeClass.current
 
-    val currentMonth = remember { YearMonth.now() }
+    val today by rememberToday()
+    val currentMonth = today.yearMonth
     val currentHabit =
         state.habitsWithAnalytics.find { it.habit.id == state.analyticsHabitId } ?: return
 
@@ -170,8 +172,8 @@ fun AnalyticsPage(
                     Icon(
                         imageVector =
                             vectorResource(
-                                if (isArchived) Res.drawable.drive_folder_upload
-                                else Res.drawable.download
+                                if (isArchived) Res.drawable.unarchive
+                                else Res.drawable.archive
                             ),
                         contentDescription = if (isArchived) "Unarchive Habit" else "Archive Habit",
                     )
@@ -248,7 +250,6 @@ fun AnalyticsPage(
             }
 
             if (currentHabit.habit.displayMode == com.loc.hexis.core.habits.DisplayMode.PROGRESS) {
-                val today = kotlinx.datetime.LocalDate.now()
                 val currentValue = currentHabit.statuses.find { it.date == today }?.value ?: 0.0
                 val targetValue = currentHabit.habit.targetValue ?: 1.0
                 val incrementBy = currentHabit.habit.incrementBy

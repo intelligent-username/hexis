@@ -74,6 +74,9 @@ interface PomodoroDao {
     """
     )
     suspend fun getSessionCountsByHabit(): List<HabitSessionCount>
+
+    @Query("SELECT * FROM pomodoro_sessions ORDER BY timeStarted ASC")
+    suspend fun getAll(): List<PomodoroSessionEntity>
 }
 
 data class HabitSessionCount(val linkedHabitId: Long?, val count: Int)

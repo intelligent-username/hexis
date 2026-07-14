@@ -22,7 +22,7 @@
     <string name="edit_categories">Edit Categories</string>
     <string name="delete_category">Are you sure? All tasks in this category will be deleted</string>
     <string name="add_category">Add Category</string>
-    <string name="add">Add Something</string>
+    <string name="add">Add</string>
     <string name="habit_map">Habit Heat Map</string>
     <string name="look_and_feel">Look and Feel</string>
     <string name="use_amoled">Amoled palette</string>
@@ -79,4 +79,22 @@
     <string name="yearly" >Yearly</string>
     <string name="ux">UX</string>
     <string name="ux_desc">General app behaviour and preferences</string>
+    <string name="notes">Notes</string>
+    <string name="new_note">New Note</string>
+    <string name="edit_note">Edit Note</string>
+    <string name="untitled">Untitled</string>
+    <string name="search_notes">Search notes…</string>
+    <string name="no_notes_found">No notes found</string>
+    <string name="archive">Archive</string>
+    <string name="unarchive">Unarchive</string>
+    <string name="archived_notes">Archived</string>
+    <string name="note_archived">Note archived</string>
+    <string name="note_unarchived">Note restored</string>
+    <string name="note_deleted">Note deleted</string>
+    <string name="undo">Undo</string>
+    <string name="header_style">H1</string>
+    <string name="subheader_style">H2</string>
+    <string name="bullet_style">Bullet</string>
+    <string name="numbered_style">Numbered</string>
+    <string name="regular_style">Text</string>
 </resources>

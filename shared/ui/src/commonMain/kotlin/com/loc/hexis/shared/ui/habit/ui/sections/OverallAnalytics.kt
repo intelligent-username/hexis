@@ -38,7 +38,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -47,7 +47,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.kizitonwose.calendar.compose.heatmapcalendar.rememberHeatMapCalendarState
 import com.kizitonwose.calendar.core.minusMonths
-import com.kizitonwose.calendar.core.now
 import com.loc.hexis.shared.ui.LocalWindowSizeClass
 import com.loc.hexis.shared.ui.habit.HabitState
 import com.loc.hexis.shared.ui.habit.HabitsAction
@@ -55,9 +54,11 @@ import com.loc.hexis.shared.ui.habit.ui.component.stats.HabitHeatMap
 import com.loc.hexis.shared.ui.habit.ui.component.stats.WeekDayBreakdown
 import com.loc.hexis.shared.ui.theme.flexFontEmphasis
 import com.loc.hexis.shared.ui.theme.flexFontRounded
+import com.loc.hexis.shared.ui.util.rememberToday
 import hexis.shared.ui.generated.resources.*
 import kotlin.math.roundToInt
-import kotlinx.datetime.YearMonth
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.yearMonth
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.resources.vectorResource
 
@@ -72,7 +73,8 @@ fun OverallAnalytics(
 ) {
     val windowSizeClass = LocalWindowSizeClass.current
 
-    val currentMonth = remember { YearMonth.now() }
+    val today by rememberToday()
+    val currentMonth = today.yearMonth
     val heatMapState =
         rememberHeatMapCalendarState(
             startMonth = currentMonth.minusMonths(12),

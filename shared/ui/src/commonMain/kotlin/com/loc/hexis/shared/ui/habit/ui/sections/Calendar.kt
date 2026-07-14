@@ -49,7 +49,6 @@ import com.kizitonwose.calendar.compose.VerticalYearCalendar
 import com.kizitonwose.calendar.compose.rememberCalendarState
 import com.kizitonwose.calendar.compose.yearcalendar.rememberYearCalendarState
 import com.kizitonwose.calendar.core.Year
-import com.kizitonwose.calendar.core.now
 import com.loc.hexis.core.habits.CalendarType
 import com.loc.hexis.core.habits.DisplayMode
 import com.loc.hexis.core.habits.Habit
@@ -57,6 +56,7 @@ import com.loc.hexis.core.habits.HabitWithAnalytics
 import com.loc.hexis.shared.ui.LocalWindowSizeClass
 import com.loc.hexis.shared.ui.habit.HabitState
 import com.loc.hexis.shared.ui.habit.daysStartingFrom
+import com.loc.hexis.shared.ui.util.rememberToday
 import com.loc.hexis.shared.ui.habit.ui.component.CalendarMonthHeader
 import com.loc.hexis.shared.ui.habit.ui.component.MonthlyCalendarDayContent
 import com.loc.hexis.shared.ui.habit.ui.component.YearlyCalendarDayContent
@@ -84,7 +84,7 @@ fun Calendar(
     val currentHabit =
         state.habitsWithAnalytics.find { it.habit.id == state.analyticsHabitId } ?: return
     val windowSizeClass = LocalWindowSizeClass.current
-    val today = LocalDate.now()
+    val today by rememberToday()
     val targetValue = currentHabit.habit.targetValue ?: 1.0
     val displayMode = currentHabit.habit.displayMode
     val edgeWeeks = listOf(state.startingDay, daysStartingFrom(state.startingDay).last())
@@ -241,8 +241,8 @@ private fun MonthlyCalendar(
     val calendarState =
         rememberCalendarState(
             startMonth = YearMonth(year = 2024, month = Month.JANUARY),
-            endMonth = YearMonth.now(),
-            firstVisibleMonth = YearMonth.now(),
+            endMonth = today.yearMonth,
+            firstVisibleMonth = today.yearMonth,
             firstDayOfWeek = state.startingDay,
         )
 

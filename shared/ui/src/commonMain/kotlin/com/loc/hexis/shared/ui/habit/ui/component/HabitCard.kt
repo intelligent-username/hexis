@@ -65,9 +65,9 @@ import com.kizitonwose.calendar.compose.weekcalendar.rememberWeekCalendarState
 import com.kizitonwose.calendar.core.minusDays
 import com.kizitonwose.calendar.core.plusDays
 import com.loc.hexis.core.habits.HabitWithAnalytics
-import com.loc.hexis.core.now
 import com.loc.hexis.core.toFormattedString
 import com.loc.hexis.shared.ui.habit.HabitsAction
+import com.loc.hexis.shared.ui.util.rememberToday
 import hexis.shared.ui.generated.resources.*
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.DayOfWeek
@@ -91,7 +91,7 @@ fun HabitCard(
     shape: Shape,
     modifier: Modifier = Modifier,
 ) {
-    val today = LocalDate.now()
+    val today by rememberToday()
     val canCompleteToday = today.dayOfWeek in habitWithAnalytics.habit.days
 
     // animated colors
@@ -314,7 +314,8 @@ fun HabitCard(
                 state = weekState,
                 dayContent = { weekDay ->
                     val startDate = habitWithAnalytics.habit.time.date
-                    val done = habitWithAnalytics.statuses.any { it.date == weekDay.date }
+                    val target = habitWithAnalytics.habit.targetValue ?: 1.0
+                    val done = habitWithAnalytics.statuses.any { it.date == weekDay.date && it.value >= target }
                     val validDay =
                         weekDay.date <= today &&
                             weekDay.date >= startDate &&

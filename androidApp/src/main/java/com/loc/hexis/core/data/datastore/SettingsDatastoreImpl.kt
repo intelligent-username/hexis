@@ -158,4 +158,10 @@ class SettingsDatastoreImpl(private val datastore: DataStore<Preferences>) : Set
     override suspend fun setPomodoroSettings(settings: PomodoroSettings) {
         datastore.edit { prefs -> prefs[pomodoroSettingsKey] = Json.encodeToString(settings) }
     }
+
+    override suspend fun setHabitTimeDivisionMap(map: Map<Long, Long>) {
+        datastore.edit { prefs ->
+            prefs[habitTimeDivisionMapKey] = Json.encodeToString(map.mapKeys { it.key.toString() })
+        }
+    }
 }

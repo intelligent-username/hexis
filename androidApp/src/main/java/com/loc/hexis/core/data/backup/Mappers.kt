@@ -21,6 +21,7 @@ import com.loc.hexis.core.data.Converters
 import com.loc.hexis.core.habits.Habit
 import com.loc.hexis.core.habits.HabitStatus
 import com.loc.hexis.core.tasks.Category
+import com.loc.hexis.core.tasks.PomodoroSession
 import com.loc.hexis.core.tasks.Task
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
@@ -90,4 +91,28 @@ fun CategorySchema.toCategory(): Category {
 
 fun Category.toCategorySchema(): CategorySchema {
     return CategorySchema(id = id, name = name, index = index, color = color)
+}
+
+fun PomodoroSession.toPomodoroSessionSchema(): PomodoroSessionSchema {
+    return PomodoroSessionSchema(
+        id = id,
+        goalDurationMinutes = goalDurationMinutes,
+        timeStarted = Converters.dateToTimestamp(timeStarted)!!,
+        timeFinished = Converters.dateToTimestamp(timeFinished),
+        completed = completed,
+        timeCompletedMinutes = timeCompletedMinutes,
+        linkedHabitId = linkedHabitId,
+    )
+}
+
+fun PomodoroSessionSchema.toPomodoroSession(): PomodoroSession {
+    return PomodoroSession(
+        id = id,
+        goalDurationMinutes = goalDurationMinutes,
+        timeStarted = Converters.dateFromTimestamp(timeStarted)!!,
+        timeFinished = Converters.dateFromTimestamp(timeFinished),
+        completed = completed,
+        timeCompletedMinutes = timeCompletedMinutes,
+        linkedHabitId = linkedHabitId,
+    )
 }

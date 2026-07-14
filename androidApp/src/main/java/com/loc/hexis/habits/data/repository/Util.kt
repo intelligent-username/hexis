@@ -72,6 +72,9 @@ fun countCurrentStreak(
             break
         }
     }
+    if (today.dayOfWeek in eligibleWeekdays && today !in filteredDates) {
+        streak++
+    }
     return streak
 }
 

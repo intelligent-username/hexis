@@ -17,6 +17,8 @@
 
 package com.loc.hexis.core.data.backup
 
+import com.loc.hexis.core.habits.TimeDivision
+import com.loc.hexis.core.tasks.PomodoroSettings
 import com.loc.hexis.habits.data.database.HabitDatabase
 import com.loc.hexis.tasks.data.database.TaskDatabase
 import kotlinx.serialization.Serializable
@@ -29,6 +31,10 @@ data class ExportSchema(
     val habitStatus: List<HabitStatusSchema>,
     val tasks: List<TaskSchema>,
     val categories: List<CategorySchema>,
+    val pomodoroSessions: List<PomodoroSessionSchema> = emptyList(),
+    val timeDivisions: List<TimeDivision> = emptyList(),
+    val pomodoroSettings: PomodoroSettings? = null,
+    val habitTimeDivisionPairs: List<HabitTimeDivisionPairSchema> = emptyList(),
 )
 
 @Serializable
@@ -56,3 +62,16 @@ data class TaskSchema(
 
 @Serializable
 data class CategorySchema(val id: Long = 0, val name: String, val index: Int = 0, val color: String)
+
+@Serializable
+data class PomodoroSessionSchema(
+    val id: Long = 0,
+    val goalDurationMinutes: Int,
+    val timeStarted: Long,
+    val timeFinished: Long? = null,
+    val completed: Boolean = false,
+    val timeCompletedMinutes: Float? = null,
+    val linkedHabitId: Long? = null,
+)
+
+@Serializable data class HabitTimeDivisionPairSchema(val habitId: Long, val divisionId: Long)

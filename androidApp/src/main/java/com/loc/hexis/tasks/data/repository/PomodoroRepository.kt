@@ -23,6 +23,7 @@ import com.loc.hexis.core.tasks.PomodoroRepo
 import com.loc.hexis.core.tasks.PomodoroSession
 import com.loc.hexis.core.tasks.PomodoroStats
 import com.loc.hexis.tasks.data.database.PomodoroDao
+import com.loc.hexis.tasks.data.toPomodoroSession
 import com.loc.hexis.tasks.data.toPomodoroSessionEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -83,5 +84,9 @@ class PomodoroRepository(private val pomodoroDao: PomodoroDao) : PomodoroRepo {
         return withContext(Dispatchers.IO) {
             pomodoroDao.getSessionCountsByHabit().map { it.linkedHabitId to it.count }
         }
+    }
+
+    override suspend fun getAllSessions(): List<PomodoroSession> {
+        return withContext(Dispatchers.IO) { pomodoroDao.getAll().map { it.toPomodoroSession() } }
     }
 }

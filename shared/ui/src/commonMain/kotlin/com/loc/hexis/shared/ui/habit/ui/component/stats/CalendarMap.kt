@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
@@ -41,6 +42,7 @@ import com.loc.hexis.shared.ui.habit.ui.component.AnalyticsCard
 import com.loc.hexis.shared.ui.habit.ui.component.CalendarMonthHeader
 import com.loc.hexis.shared.ui.habit.ui.component.CardArrows
 import com.loc.hexis.shared.ui.habit.ui.component.MonthlyCalendarDayContent
+import com.loc.hexis.shared.ui.util.rememberToday
 import hexis.shared.ui.generated.resources.*
 import kotlinx.coroutines.launch
 import kotlinx.datetime.DateTimeUnit
@@ -71,7 +73,7 @@ fun CalendarMap(
     onDateClick: (LocalDate) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val today = LocalDate.now()
+    val today by rememberToday()
     val scope = rememberCoroutineScope()
 
     val edgeWeeks =

@@ -99,8 +99,15 @@ class HexisIntentReceiver : BroadcastReceiver(), KoinComponent {
         if (habitId < 0) return
 
         val habitRepo = get<HabitRepo>()
+        val habit = habitRepo.getHabitById(habitId) ?: return
 
-        habitRepo.insertHabitStatus(HabitStatus(habitId = habitId, date = LocalDate.now()))
+        habitRepo.insertHabitStatus(
+            HabitStatus(
+                habitId = habitId,
+                date = LocalDate.now(),
+                value = habit.targetValue ?: 1.0,
+            )
+        )
 
         Log.d(TAG, "Habit status added successfully")
 

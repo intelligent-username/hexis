@@ -129,6 +129,7 @@ class HabitOverviewWidget : GlanceAppWidget(), KoinComponent {
                                             HabitStatus(
                                                 habitId = habitWithStatus.first.id,
                                                 date = LocalDate.now(),
+                                                value = habitWithStatus.first.targetValue ?: 1.0,
                                             )
                                     )
                                 }

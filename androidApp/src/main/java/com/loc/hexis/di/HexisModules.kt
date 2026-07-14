@@ -29,6 +29,7 @@ import com.loc.hexis.tasks.data.database.CategoryDao
 import com.loc.hexis.tasks.data.database.PomodoroDao
 import com.loc.hexis.tasks.data.database.TaskDatabase
 import com.loc.hexis.tasks.data.database.TaskDbFactory
+import com.loc.hexis.note.data.database.NotesDao
 import com.loc.hexis.tasks.data.database.TasksDao
 import org.koin.core.annotation.ComponentScan
 import org.koin.core.annotation.Module
@@ -50,6 +51,8 @@ class HexisModules {
     @Single fun getCategoryDao(db: TaskDatabase): CategoryDao = db.categoryDao()
 
     @Single fun getPomodoroDao(db: TaskDatabase): PomodoroDao = db.pomodoroDao()
+
+    @Single fun getNotesDao(db: TaskDatabase): NotesDao = db.notesDao()
 
     @Single
     fun getDatastore(factory: DatastoreFactory): DataStore<Preferences> =

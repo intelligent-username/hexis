@@ -36,6 +36,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -449,7 +450,7 @@ private fun TimeDivisionSelector(state: HabitState, onAction: (HabitsAction) -> 
                     modifier = Modifier.weight(1f).fillMaxHeight(),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    items(state.timeDivisions, key = { it.id }) { division ->
+                    itemsIndexed(state.timeDivisions, key = { _, it -> it.id }) { index, division ->
                         val selected = state.selectedTimeDivisionId == division.id
                         Box(
                             modifier =
@@ -475,13 +476,18 @@ private fun TimeDivisionSelector(state: HabitState, onAction: (HabitsAction) -> 
                             )
                         }
 
-                        Box(
-                            modifier =
-                                Modifier.fillMaxHeight()
-                                    .padding(vertical = 8.dp)
-                                    .width(1.dp)
-                                    .background(MaterialTheme.colorScheme.outlineVariant)
-                        )
+                        val nextSelected = index < state.timeDivisions.lastIndex &&
+                                state.selectedTimeDivisionId == state.timeDivisions[index + 1].id
+
+                        if (index < state.timeDivisions.lastIndex && !selected && !nextSelected) {
+                            Box(
+                                modifier =
+                                    Modifier.fillMaxHeight()
+                                        .padding(vertical = 8.dp)
+                                        .width(1.dp)
+                                        .background(MaterialTheme.colorScheme.outlineVariant)
+                            )
+                        }
                     }
                 }
 
@@ -558,7 +564,7 @@ private fun HabitsTopAppBar(
                         onCheckedChange = { onAction(HabitsAction.ToggleShowArchivedHabits(it)) },
                     ) {
                         Icon(
-                            painter = painterResource(Res.drawable.download),
+                            painter = painterResource(Res.drawable.archive),
                             contentDescription = "Archived Habits",
                         )
                     }

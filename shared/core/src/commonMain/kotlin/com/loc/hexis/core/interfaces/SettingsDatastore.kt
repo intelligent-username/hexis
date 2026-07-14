@@ -71,4 +71,6 @@ interface SettingsDatastore {
     fun getPomodoroSettings(): Flow<PomodoroSettings>
 
     suspend fun setPomodoroSettings(settings: PomodoroSettings)
+
+    suspend fun setHabitTimeDivisionMap(map: Map<Long, Long>)
 }

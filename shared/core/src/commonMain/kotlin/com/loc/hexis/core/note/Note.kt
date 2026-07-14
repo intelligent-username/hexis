@@ -15,31 +15,18 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.loc.hexis.core.tasks
+package com.loc.hexis.core.note
 
-import kotlinx.coroutines.flow.Flow
-import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
+import kotlinx.serialization.Serializable
 
-interface PomodoroRepo {
-    suspend fun insertSession(session: PomodoroSession): Long
-
-    suspend fun finishSession(
-        id: Long,
-        timeFinished: LocalDateTime,
-        completed: Boolean,
-        timeCompletedMinutes: Float,
-    )
-
-    suspend fun getTodayStats(): PomodoroStats
-
-    fun getCompletedDates(): Flow<List<LocalDate>>
-
-    suspend fun getEarliestSessionDate(): LocalDate?
-
-    fun getSessionCountsByDay(): Flow<List<PomodoroDayCount>>
-
-    suspend fun getSessionCountsByHabit(): List<Pair<Long?, Int>>
-
-    suspend fun getAllSessions(): List<PomodoroSession>
-}
+@Serializable
+data class Note(
+    val id: Long = 0,
+    val title: String,
+    val content: String,
+    val createdAt: LocalDateTime,
+    val updatedAt: LocalDateTime,
+    val pinned: Boolean = false,
+    val archived: Boolean = false,
+)

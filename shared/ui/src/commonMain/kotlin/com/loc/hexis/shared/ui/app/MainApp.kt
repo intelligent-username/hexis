@@ -50,6 +50,7 @@ import com.loc.hexis.shared.ui.app.AppSections.Companion.toIconRes
 import com.loc.hexis.shared.ui.app.AppSections.Companion.toStringRes
 import com.loc.hexis.shared.ui.habit.ui.HabitsGraph
 import com.loc.hexis.shared.ui.setting.ui.SettingsGraph
+import com.loc.hexis.shared.ui.note.ui.NotesPage
 import com.loc.hexis.shared.ui.task.ui.TasksPage
 import com.loc.hexis.shared.ui.task.ui.component.PomodoroPage
 import com.loc.hexis.shared.ui.viewmodel.HabitViewModel
@@ -84,6 +85,7 @@ fun MainApp(state: MainAppState) {
 
     var showPomodoro by remember { mutableStateOf(false) }
     var pomodoroLinkedHabitId by remember { mutableStateOf<Long?>(null) }
+    var showNotes by remember { mutableStateOf(false) }
 
     androidx.compose.runtime.LaunchedEffect(state.shortcutAction) {
         state.shortcutAction?.let { action ->
@@ -154,6 +156,7 @@ fun MainApp(state: MainAppState) {
                                 state = taskPageState,
                                 onAction = tvm::onAction,
                                 onPomodoroClick = { showPomodoro = true },
+                                onNotesClick = { showNotes = true },
                             )
                         }
 
@@ -203,6 +206,7 @@ fun MainApp(state: MainAppState) {
                                 state = taskPageState,
                                 onAction = tvm::onAction,
                                 onPomodoroClick = { showPomodoro = true },
+                                onNotesClick = { showNotes = true },
                             )
                         }
 
@@ -235,6 +239,10 @@ fun MainApp(state: MainAppState) {
                 pomodoroLinkedHabitId = null
             },
         )
+    }
+
+    if (showNotes) {
+        NotesPage(onDismiss = { showNotes = false })
     }
 }
 

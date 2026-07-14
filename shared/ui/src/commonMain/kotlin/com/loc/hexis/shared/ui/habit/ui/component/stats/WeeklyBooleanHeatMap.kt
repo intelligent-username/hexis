@@ -35,6 +35,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -66,6 +67,7 @@ import com.loc.hexis.shared.ui.habit.ui.component.AnalyticsCard
 import com.loc.hexis.shared.ui.habit.ui.component.CardArrows
 import com.loc.hexis.shared.ui.heatMapStreakShape
 import com.loc.hexis.shared.ui.theme.flexFontRounded
+import com.loc.hexis.shared.ui.util.rememberToday
 import hexis.shared.ui.generated.resources.*
 import kotlinx.coroutines.launch
 import kotlinx.datetime.DateTimeUnit
@@ -89,7 +91,7 @@ fun WeeklyBooleanHeatMap(
     onDateClick: (LocalDate) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val today = LocalDate.now()
+    val today by rememberToday()
     val scope = rememberCoroutineScope()
 
     val isProgress = displayMode == DisplayMode.PROGRESS && targetValue > 1.0
