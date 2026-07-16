@@ -51,34 +51,30 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
-import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import com.loc.hexis.core.note.Note
+import com.loc.hexis.core.now
 import com.loc.hexis.shared.ui.note.getNextListPrefix
 import com.loc.hexis.shared.ui.note.removePrefix
 import com.loc.hexis.shared.ui.theme.flexFontEmphasis
 import com.loc.hexis.shared.ui.theme.flexFontRounded
-import com.loc.hexis.core.now
 import hexis.shared.ui.generated.resources.Res
 import hexis.shared.ui.generated.resources.close
+import hexis.shared.ui.generated.resources.edit_note
+import hexis.shared.ui.generated.resources.new_note
 import hexis.shared.ui.generated.resources.save
 import hexis.shared.ui.generated.resources.title
-import hexis.shared.ui.generated.resources.new_note
-import hexis.shared.ui.generated.resources.edit_note
 import kotlinx.datetime.LocalDateTime
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.resources.vectorResource
 
 @Composable
-fun NoteEditorSheet(
-    note: Note?,
-    onDismissRequest: () -> Unit,
-    onSave: (Note) -> Unit,
-) {
+fun NoteEditorSheet(note: Note?, onDismissRequest: () -> Unit, onSave: (Note) -> Unit) {
     var title by remember(note) { mutableStateOf(note?.title ?: "") }
     var contentValue by remember(note) { mutableStateOf(TextFieldValue(note?.content ?: "")) }
 
@@ -126,7 +122,8 @@ fun NoteEditorSheet(
                     text =
                         if (note == null) stringResource(Res.string.new_note)
                         else stringResource(Res.string.edit_note),
-                    style = MaterialTheme.typography.titleLarge.copy(fontFamily = flexFontEmphasis()),
+                    style =
+                        MaterialTheme.typography.titleLarge.copy(fontFamily = flexFontEmphasis()),
                     modifier = Modifier.weight(1f).padding(start = 4.dp),
                 )
 
@@ -134,7 +131,13 @@ fun NoteEditorSheet(
                     onClick = {
                         val now = LocalDateTime.now()
                         onSave(
-                            (note ?: Note(title = "", content = "", createdAt = now, updatedAt = now))
+                            (note
+                                    ?: Note(
+                                        title = "",
+                                        content = "",
+                                        createdAt = now,
+                                        updatedAt = now,
+                                    ))
                                 .copy(title = title, content = contentValue.text, updatedAt = now)
                         )
                     },
@@ -162,7 +165,9 @@ fun NoteEditorSheet(
                 onValueChange = { newValue ->
                     title =
                         newValue.split(" ").joinToString(" ") { word ->
-                            word.replaceFirstChar { if (it.isLowerCase()) it.uppercase() else it.toString() }
+                            word.replaceFirstChar {
+                                if (it.isLowerCase()) it.uppercase() else it.toString()
+                            }
                         }
                 },
                 label = { Text(stringResource(Res.string.title)) },
@@ -190,10 +195,11 @@ fun NoteEditorSheet(
                 value = contentValue,
                 onValueChange = { contentValue = it },
                 visualTransformation = NoteVisualTransformation(),
-                placeholder = { Text("Start writing\u2026", style = MaterialTheme.typography.bodyLarge) },
+                placeholder = {
+                    Text("Start writing\u2026", style = MaterialTheme.typography.bodyLarge)
+                },
                 modifier =
-                    Modifier
-                        .fillMaxWidth()
+                    Modifier.fillMaxWidth()
                         .weight(1f)
                         .padding(horizontal = 16.dp)
                         .onPreviewKeyEvent { event ->
@@ -209,7 +215,8 @@ fun NoteEditorSheet(
                                     if (cleanLine.isEmpty()) {
                                         val lineStart = before.lastIndexOf('\n') + 1
                                         val newText = text.substring(0, lineStart) + "\n" + after
-                                        contentValue = TextFieldValue(newText, TextRange(lineStart + 1))
+                                        contentValue =
+                                            TextFieldValue(newText, TextRange(lineStart + 1))
                                     } else {
                                         val newText = before + "\n" + prefix + after
                                         val newCursor = before.length + 1 + prefix.length
@@ -230,8 +237,7 @@ fun NoteEditorSheet(
             // Toolbar
             Row(
                 modifier =
-                    Modifier
-                        .fillMaxWidth()
+                    Modifier.fillMaxWidth()
                         .background(MaterialTheme.colorScheme.surfaceContainerLow)
                         .padding(horizontal = 16.dp, vertical = 8.dp)
                         .horizontalScroll(rememberScrollState()),
@@ -239,22 +245,26 @@ fun NoteEditorSheet(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 listOf(
-                    "H1" to { applyFormat("# ") },
-                    "H2" to { applyFormat("## ") },
-                    "H3" to { applyFormat("### ") },
-                ).forEach { (label, onClick) ->
-                    FilledTonalButton(
-                        onClick = onClick,
-                        modifier = Modifier.height(36.dp),
-                        shape = RoundedCornerShape(10.dp),
-                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 0.dp),
-                    ) {
-                        Text(
-                            text = label,
-                            style = MaterialTheme.typography.labelLarge.copy(fontFamily = flexFontRounded()),
-                        )
+                        "H1" to { applyFormat("# ") },
+                        "H2" to { applyFormat("## ") },
+                        "H3" to { applyFormat("### ") },
+                    )
+                    .forEach { (label, onClick) ->
+                        FilledTonalButton(
+                            onClick = onClick,
+                            modifier = Modifier.height(36.dp),
+                            shape = RoundedCornerShape(10.dp),
+                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 0.dp),
+                        ) {
+                            Text(
+                                text = label,
+                                style =
+                                    MaterialTheme.typography.labelLarge.copy(
+                                        fontFamily = flexFontRounded()
+                                    ),
+                            )
+                        }
                     }
-                }
             }
         }
     }

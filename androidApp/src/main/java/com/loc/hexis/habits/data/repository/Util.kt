@@ -233,7 +233,7 @@ fun computePointsSummary(
     for (status in completedStatuses.sortedBy { it.date }) {
         val allDatesUpTo = completedStatuses.filter { it.date <= status.date }.map { it.date }
         val streak = countStreakAtDate(allDatesUpTo, eligible, status.date)
-        val pts = 10 + (streak * 2)
+        val pts = 10 + (streak * 3)
         totalPoints += pts
 
         val daysFromFirst = (status.date.dayOfWeek.isoDayNumber - firstDay.isoDayNumber + 7) % 7
@@ -241,14 +241,15 @@ fun computePointsSummary(
         weeklyPoints[weekStart] = (weeklyPoints[weekStart] ?: 0) + pts
     }
 
-    val todayWeekStart = today.minus(
-        (today.dayOfWeek.isoDayNumber - firstDay.isoDayNumber + 7) % 7, DateTimeUnit.DAY
-    )
+    val todayWeekStart =
+        today.minus(
+            (today.dayOfWeek.isoDayNumber - firstDay.isoDayNumber + 7) % 7,
+            DateTimeUnit.DAY,
+        )
     val periodStart = todayWeekStart.minus(totalWeeks, DateTimeUnit.WEEK)
 
-    val history = (0..totalWeeks).map { i ->
-        weeklyPoints[periodStart.plus(i, DateTimeUnit.WEEK)] ?: 0
-    }
+    val history =
+        (0..totalWeeks).map { i -> weeklyPoints[periodStart.plus(i, DateTimeUnit.WEEK)] ?: 0 }
 
     val currentWeekStart = todayWeekStart
     val lastWeekStart = currentWeekStart.minus(1, DateTimeUnit.WEEK)

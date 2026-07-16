@@ -57,16 +57,17 @@ class MainActivity : FragmentActivity() {
 
         createNotificationChannel(this)
 
-        val launchSource = when {
-            intent.hasExtra("shortcut_action") -> {
-                val action = intent.getStringExtra("shortcut_action")!!
-                if (action.startsWith("widget_")) LaunchSource.WIDGET
-                else LaunchSource.SHORTCUT
+        val launchSource =
+            when {
+                intent.hasExtra("shortcut_action") -> {
+                    val action = intent.getStringExtra("shortcut_action")!!
+                    if (action.startsWith("widget_")) LaunchSource.WIDGET else LaunchSource.SHORTCUT
+                }
+                intent.action == Intent.ACTION_MAIN &&
+                    intent.hasCategory(Intent.CATEGORY_LAUNCHER) -> LaunchSource.LAUNCHER
+                intent.getBooleanExtra("from_notification", false) -> LaunchSource.NOTIFICATION
+                else -> LaunchSource.UNKNOWN
             }
-            intent.action == Intent.ACTION_MAIN && intent.hasCategory(Intent.CATEGORY_LAUNCHER) -> LaunchSource.LAUNCHER
-            intent.getBooleanExtra("from_notification", false) -> LaunchSource.NOTIFICATION
-            else -> LaunchSource.UNKNOWN
-        }
         mainViewModel.setLaunchSource(launchSource)
 
         intent.getStringExtra("shortcut_action")?.let { mainViewModel.setShortcutAction(it) }
@@ -108,7 +109,10 @@ class MainActivity : FragmentActivity() {
                             onDismissChangelog = { mainViewModel.dismissChangelog() },
                         )
                     } else {
-                        InitialLoading()
+                        InitialLoading(
+                            dayOnHexis = state.dayOnHexis,
+                            weeklyPoints = state.weeklyPoints,
+                        )
                     }
                 }
             }
@@ -117,15 +121,15 @@ class MainActivity : FragmentActivity() {
 
     override fun onNewIntent(intent: android.content.Intent) {
         super.onNewIntent(intent)
-        val source = when {
-            intent.hasExtra("shortcut_action") -> {
-                val action = intent.getStringExtra("shortcut_action")!!
-                if (action.startsWith("widget_")) LaunchSource.WIDGET
-                else LaunchSource.SHORTCUT
+        val source =
+            when {
+                intent.hasExtra("shortcut_action") -> {
+                    val action = intent.getStringExtra("shortcut_action")!!
+                    if (action.startsWith("widget_")) LaunchSource.WIDGET else LaunchSource.SHORTCUT
+                }
+                intent.getBooleanExtra("from_notification", false) -> LaunchSource.NOTIFICATION
+                else -> LaunchSource.UNKNOWN
             }
-            intent.getBooleanExtra("from_notification", false) -> LaunchSource.NOTIFICATION
-            else -> LaunchSource.UNKNOWN
-        }
         mainViewModel.setLaunchSource(source)
         intent.getStringExtra("shortcut_action")?.let { mainViewModel.setShortcutAction(it) }
     }

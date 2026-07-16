@@ -25,7 +25,8 @@ import com.loc.hexis.note.data.database.NoteEntity
 import com.loc.hexis.note.data.database.NotesDao
 
 @Database(
-    entities = [TaskEntity::class, CategoryEntity::class, PomodoroSessionEntity::class, NoteEntity::class],
+    entities =
+        [TaskEntity::class, CategoryEntity::class, PomodoroSessionEntity::class, NoteEntity::class],
     version = TaskDatabase.SCHEMA_VERSION,
     exportSchema = true,
 )

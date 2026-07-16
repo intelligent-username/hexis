@@ -110,7 +110,6 @@ fun getNextListPrefix(text: String): String? {
     }
 }
 
-
 fun removePrefix(text: String): String {
     val trimmed = text.trimStart()
     return when {

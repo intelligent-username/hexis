@@ -29,9 +29,7 @@ import kotlinx.coroutines.flow.map
 import org.koin.core.annotation.Single
 
 @Single(binds = [NoteRepo::class])
-class NotesRepository(
-    private val notesDao: NotesDao,
-) : NoteRepo {
+class NotesRepository(private val notesDao: NotesDao) : NoteRepo {
 
     override fun getNotesFlow(): Flow<List<Note>> {
         return notesDao

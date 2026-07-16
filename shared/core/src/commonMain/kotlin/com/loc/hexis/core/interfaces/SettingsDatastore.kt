@@ -22,6 +22,7 @@ import com.loc.hexis.core.settings.Sections
 import com.loc.hexis.core.tasks.PomodoroSettings
 import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.DayOfWeek
+import kotlinx.datetime.LocalDate
 
 interface SettingsDatastore {
     fun getStartOfTheWeekPref(): Flow<DayOfWeek>
@@ -73,4 +74,8 @@ interface SettingsDatastore {
     suspend fun setPomodoroSettings(settings: PomodoroSettings)
 
     suspend fun setHabitTimeDivisionMap(map: Map<Long, Long>)
+
+    fun getFirstLaunchDate(): Flow<LocalDate?>
+
+    suspend fun setFirstLaunchDate(date: LocalDate)
 }

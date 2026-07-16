@@ -97,4 +97,6 @@
     <string name="bullet_style">Bullet</string>
     <string name="numbered_style">Numbered</string>
     <string name="regular_style">Text</string>
+    <string name="points_trend">Progression Trends</string>
+    <string name="total_points">Total Points</string>
 </resources>

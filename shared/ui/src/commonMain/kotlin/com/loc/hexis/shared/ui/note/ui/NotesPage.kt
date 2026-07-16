@@ -37,6 +37,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ButtonShapes
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.FilledTonalIconToggleButton
@@ -53,7 +54,6 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.ButtonShapes
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.animateFloatingActionButton
 import androidx.compose.runtime.Composable
@@ -69,32 +69,32 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.loc.hexis.core.now
 import com.loc.hexis.core.note.Note
 import com.loc.hexis.core.note.NoteRepo
+import com.loc.hexis.core.now
 import com.loc.hexis.shared.ui.app.SystemBackHandler
 import com.loc.hexis.shared.ui.components.Empty
 import com.loc.hexis.shared.ui.theme.flexFontEmphasis
 import com.loc.hexis.shared.ui.theme.flexFontRounded
 import hexis.shared.ui.generated.resources.Res
+import hexis.shared.ui.generated.resources.add
+import hexis.shared.ui.generated.resources.archive
+import hexis.shared.ui.generated.resources.archived_notes
 import hexis.shared.ui.generated.resources.close
+import hexis.shared.ui.generated.resources.new_note
+import hexis.shared.ui.generated.resources.no_notes_found
+import hexis.shared.ui.generated.resources.note_archived
+import hexis.shared.ui.generated.resources.note_deleted
+import hexis.shared.ui.generated.resources.note_unarchived
 import hexis.shared.ui.generated.resources.notes
 import hexis.shared.ui.generated.resources.search
 import hexis.shared.ui.generated.resources.search_notes
-import hexis.shared.ui.generated.resources.no_notes_found
-import hexis.shared.ui.generated.resources.add
-import hexis.shared.ui.generated.resources.new_note
-import hexis.shared.ui.generated.resources.archive
 import hexis.shared.ui.generated.resources.unarchive
-import hexis.shared.ui.generated.resources.archived_notes
-import hexis.shared.ui.generated.resources.note_archived
-import hexis.shared.ui.generated.resources.note_unarchived
-import hexis.shared.ui.generated.resources.note_deleted
 import hexis.shared.ui.generated.resources.undo
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.minus
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
@@ -103,10 +103,7 @@ import org.koin.compose.koinInject
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NotesPage(
-    onDismiss: () -> Unit,
-    repo: NoteRepo = koinInject(),
-) {
+fun NotesPage(onDismiss: () -> Unit, repo: NoteRepo = koinInject()) {
     val scope = rememberCoroutineScope()
     val notes = remember { mutableStateListOf<Note>() }
     var showSearch by remember { mutableStateOf(false) }
@@ -175,10 +172,7 @@ fun NotesPage(
 
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
         Column(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .nestedScroll(scrollBehavior.nestedScrollConnection),
+            modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection)
         ) {
             // Top bar
             Row(
@@ -187,10 +181,7 @@ fun NotesPage(
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(
-                        onClick = onDismiss,
-                        modifier = Modifier.size(40.dp),
-                    ) {
+                    IconButton(onClick = onDismiss, modifier = Modifier.size(40.dp)) {
                         Icon(
                             imageVector = vectorResource(Res.drawable.close),
                             contentDescription = "Close",
@@ -203,12 +194,18 @@ fun NotesPage(
                         text =
                             if (showArchived) stringResource(Res.string.archived_notes)
                             else stringResource(Res.string.notes),
-                        style = MaterialTheme.typography.titleLarge.copy(fontFamily = flexFontEmphasis()),
+                        style =
+                            MaterialTheme.typography.titleLarge.copy(
+                                fontFamily = flexFontEmphasis()
+                            ),
                         color = MaterialTheme.colorScheme.onSurface,
                     )
                 }
 
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
                     if (notes.isNotEmpty() && !showArchived) {
                         FilledTonalIconButton(
                             onClick = {
@@ -249,9 +246,11 @@ fun NotesPage(
                         Icon(
                             painter =
                                 painterResource(
-                                    if (showArchived) Res.drawable.unarchive else Res.drawable.archive
+                                    if (showArchived) Res.drawable.unarchive
+                                    else Res.drawable.archive
                                 ),
-                            contentDescription = if (showArchived) "Show active" else "Show archived",
+                            contentDescription =
+                                if (showArchived) "Show active" else "Show archived",
                             modifier = Modifier.size(18.dp),
                         )
                     }
@@ -294,10 +293,7 @@ fun NotesPage(
             if (!notesLoaded) {
                 Spacer(modifier = Modifier.weight(1f))
             } else if (filteredNotes.isEmpty()) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center,
-                ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     if (searchQuery.isNotEmpty()) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
@@ -332,7 +328,9 @@ fun NotesPage(
                                 scope.launch {
                                     repo.upsertNote(note.copy(archived = true))
                                     showUndo(msgNoteArchived) {
-                                        scope.launch { repo.upsertNote(note.copy(archived = false)) }
+                                        scope.launch {
+                                            repo.upsertNote(note.copy(archived = false))
+                                        }
                                     }
                                 }
                             },
@@ -362,12 +360,14 @@ fun NotesPage(
         // FAB — only in active view
         if (!showArchived) {
             MediumFloatingActionButton(
-                onClick = { showEditor = true; editingNote = null },
+                onClick = {
+                    showEditor = true
+                    editingNote = null
+                },
                 containerColor = MaterialTheme.colorScheme.tertiaryContainer,
                 contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
                 modifier =
-                    Modifier
-                        .align(Alignment.BottomEnd)
+                    Modifier.align(Alignment.BottomEnd)
                         .padding(16.dp)
                         .animateFloatingActionButton(
                             visible = true,
@@ -376,7 +376,10 @@ fun NotesPage(
                             alphaAnimationSpec = MaterialTheme.motionScheme.fastEffectsSpec(),
                         ),
             ) {
-                Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
                     Icon(
                         imageVector = vectorResource(Res.drawable.add),
                         contentDescription = stringResource(Res.string.new_note),
@@ -444,7 +447,10 @@ fun NotesPage(
     if (showEditor) {
         NoteEditorSheet(
             note = editingNote,
-            onDismissRequest = { showEditor = false; editingNote = null },
+            onDismissRequest = {
+                showEditor = false
+                editingNote = null
+            },
             onSave = { saved ->
                 scope.launch { repo.upsertNote(saved) }
                 showEditor = false
@@ -455,8 +461,8 @@ fun NotesPage(
 }
 
 /**
- * Formats a [LocalDateTime] to a short human-readable date string.
- * Shows "Today" or "Yesterday" for recent dates, or a formatted date like "Jan 15".
+ * Formats a [LocalDateTime] to a short human-readable date string. Shows "Today" or "Yesterday" for
+ * recent dates, or a formatted date like "Jan 15".
  */
 internal fun formatNoteDate(dateTime: LocalDateTime): String {
     val now = LocalDateTime.now()

@@ -35,8 +35,9 @@ class TaskDbFactory(private val context: Context) {
     }
 
     companion object {
-        private val MIGRATION_2_3 = Migration(2, 3) { db ->
-            db.execSQL("ALTER TABLE notes ADD COLUMN archived INTEGER NOT NULL DEFAULT 0")
-        }
+        private val MIGRATION_2_3 =
+            Migration(2, 3) { db ->
+                db.execSQL("ALTER TABLE notes ADD COLUMN archived INTEGER NOT NULL DEFAULT 0")
+            }
     }
 }

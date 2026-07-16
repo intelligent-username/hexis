@@ -18,6 +18,7 @@
 package com.loc.hexis.widgets.habit_week_chart_widget
 
 import android.content.Context
+import android.content.Intent
 import android.os.Build
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -35,11 +36,12 @@ import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
 import androidx.glance.Image
 import androidx.glance.ImageProvider
+import androidx.glance.LocalContext
 import androidx.glance.LocalSize
-import androidx.glance.action.actionStartActivity
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.SizeMode
+import androidx.glance.appwidget.action.actionStartActivity
 import androidx.glance.appwidget.components.TitleBar
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
@@ -67,6 +69,7 @@ import com.loc.hexis.core.habits.Habit
 import com.loc.hexis.core.habits.HabitRepo
 import com.loc.hexis.core.habits.HabitWithAnalytics
 import com.loc.hexis.core.interfaces.ThemeDatastore
+import com.loc.hexis.core.interfaces.WidgetActions
 import com.loc.hexis.core.now
 import com.loc.hexis.widgets.WidgetSize
 import com.loc.hexis.widgets.rememberWidgetColorProviders
@@ -207,7 +210,14 @@ private fun Content(
                         )
                     }
                 )
-                .clickable(actionStartActivity<MainActivity>())
+                .clickable(
+                    androidx.glance.appwidget.action.actionStartActivity(
+                        Intent(LocalContext.current, MainActivity::class.java).apply {
+                            putExtra("shortcut_action", WidgetActions.OPEN_HABITS_ANALYTICS)
+                            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                        }
+                    )
+                )
     ) {
         if (habitWithAnalytics != null) {
             TitleBar(

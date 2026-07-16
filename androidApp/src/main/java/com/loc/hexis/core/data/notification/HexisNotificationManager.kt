@@ -29,9 +29,11 @@ import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.loc.hexis.R
+import com.loc.hexis.app.MainActivity
 import com.loc.hexis.core.data.HexisIntentReceiver
 import com.loc.hexis.core.habits.Habit
 import com.loc.hexis.core.interfaces.IntentActions
+import com.loc.hexis.core.interfaces.WidgetActions
 import com.loc.hexis.core.tasks.Task
 import org.koin.core.annotation.Single
 
@@ -74,11 +76,26 @@ class HexisNotificationManager(private val context: Context) {
                 PendingIntent.FLAG_IMMUTABLE,
             )
 
+        val contentIntent =
+            Intent(context, MainActivity::class.java).apply {
+                putExtra("shortcut_action", WidgetActions.OPEN_HABITS)
+                putExtra("from_notification", true)
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            }
+        val contentPendingIntent =
+            PendingIntent.getActivity(
+                context,
+                0,
+                contentIntent,
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+            )
+
         val builder =
             NotificationCompat.Builder(context, "1")
                 .setSmallIcon(R.drawable.notif_icon)
                 .setContentTitle(habit.title)
                 .setContentText(habit.description)
+                .setContentIntent(contentPendingIntent)
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT)
                 .setAutoCancel(true)
                 .addAction(R.drawable.notif_icon, "Mark Done", pendingBroadcast)
@@ -107,10 +124,25 @@ class HexisNotificationManager(private val context: Context) {
                 intent,
                 PendingIntent.FLAG_IMMUTABLE,
             )
+        val contentIntent =
+            Intent(context, MainActivity::class.java).apply {
+                putExtra("shortcut_action", WidgetActions.OPEN_TASKS)
+                putExtra("from_notification", true)
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            }
+        val contentPendingIntent =
+            PendingIntent.getActivity(
+                context,
+                0,
+                contentIntent,
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+            )
+
         val builder =
             NotificationCompat.Builder(context, "1")
                 .setSmallIcon(R.drawable.notif_icon)
                 .setContentTitle(task.title)
+                .setContentIntent(contentPendingIntent)
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT)
                 .setAutoCancel(true)
                 .addAction(R.drawable.notif_icon, "Mark Done", pendingBroadcast)

@@ -30,6 +30,7 @@ import com.loc.hexis.core.tasks.PomodoroSettings
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.DayOfWeek
+import kotlinx.datetime.LocalDate
 import kotlinx.serialization.json.Json
 import org.koin.core.annotation.Single
 
@@ -49,6 +50,7 @@ class SettingsDatastoreImpl(private val datastore: DataStore<Preferences>) : Set
         private val timeDivisionsKey = stringPreferencesKey("time_divisions")
         private val habitTimeDivisionMapKey = stringPreferencesKey("habit_time_division_map")
         private val pomodoroSettingsKey = stringPreferencesKey("pomodoro_settings")
+        private val firstLaunchDateKey = stringPreferencesKey("first_launch_date")
     }
 
     override fun getStartOfTheWeekPref(): Flow<DayOfWeek> =
@@ -163,5 +165,12 @@ class SettingsDatastoreImpl(private val datastore: DataStore<Preferences>) : Set
         datastore.edit { prefs ->
             prefs[habitTimeDivisionMapKey] = Json.encodeToString(map.mapKeys { it.key.toString() })
         }
+    }
+
+    override fun getFirstLaunchDate(): Flow<LocalDate?> =
+        datastore.data.map { prefs -> prefs[firstLaunchDateKey]?.let { LocalDate.parse(it) } }
+
+    override suspend fun setFirstLaunchDate(date: LocalDate) {
+        datastore.edit { prefs -> prefs[firstLaunchDateKey] = date.toString() }
     }
 }

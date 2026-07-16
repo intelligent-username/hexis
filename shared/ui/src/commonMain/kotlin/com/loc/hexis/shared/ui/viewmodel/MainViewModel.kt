@@ -19,9 +19,11 @@ package com.loc.hexis.shared.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.loc.hexis.core.habits.HabitRepo
 import com.loc.hexis.core.interfaces.ChangelogManager
 import com.loc.hexis.core.interfaces.SettingsDatastore
 import com.loc.hexis.core.interfaces.ThemeDatastore
+import com.loc.hexis.core.now
 import com.loc.hexis.shared.ui.app.LaunchSource
 import com.loc.hexis.shared.ui.app.MainAppState
 import kotlinx.coroutines.Job
@@ -36,6 +38,8 @@ import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.daysUntil
 import org.koin.core.annotation.KoinViewModel
 import org.koin.core.annotation.Provided
 
@@ -44,6 +48,7 @@ class MainViewModel(
     @Provided private val themeDatastore: ThemeDatastore,
     @Provided private val settingsDatastore: SettingsDatastore,
     @Provided private val changelogManager: ChangelogManager,
+    @Provided private val repo: HabitRepo,
 ) : ViewModel() {
     var observerJob: Job? = null
 
@@ -55,6 +60,7 @@ class MainViewModel(
             .onStart {
                 checkChangelog()
                 observeDatastore()
+                computeLoadingStats()
             }
             .stateIn(
                 scope = viewModelScope,
@@ -115,6 +121,22 @@ class MainViewModel(
                     }
                     .launchIn(this)
             }
+    }
+
+    private fun computeLoadingStats() {
+        viewModelScope.launch {
+            var firstLaunch = settingsDatastore.getFirstLaunchDate().first()
+            if (firstLaunch == null) {
+                firstLaunch = LocalDate.now()
+                settingsDatastore.setFirstLaunchDate(firstLaunch)
+            }
+            val days = firstLaunch.daysUntil(LocalDate.now()) + 1
+
+            val trend = repo.getPointsTrend().first()
+            val points = trend.currentPartialPoints
+
+            _state.update { it.copy(dayOnHexis = days, weeklyPoints = points) }
+        }
     }
 
     private fun checkChangelog() {

@@ -17,7 +17,6 @@
 
 package com.loc.hexis.core.habits
 
-import kotlinx.datetime.LocalDate
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -31,18 +30,23 @@ data class PointsTrend(
     val averageWeeklyPoints: Float,
     val bestWeekPoints: Int,
     val currentStreakWeeks: Int,
+    val currentPartialPoints: Int = 0,
+    val previousPartialPoints: Int = 0,
+    val partialNetChange: Int = 0,
+    val partialNetChangePercent: Float = 0f,
 ) {
     companion object {
-        val empty = PointsTrend(
-            weeklyPoints = emptyList(),
-            currentWeekPoints = 0,
-            previousWeekPoints = 0,
-            netChange = 0,
-            netChangePercent = 0f,
-            totalPointsAllTime = 0,
-            averageWeeklyPoints = 0f,
-            bestWeekPoints = 0,
-            currentStreakWeeks = 0,
-        )
+        val empty =
+            PointsTrend(
+                weeklyPoints = emptyList(),
+                currentWeekPoints = 0,
+                previousWeekPoints = 0,
+                netChange = 0,
+                netChangePercent = 0f,
+                totalPointsAllTime = 0,
+                averageWeeklyPoints = 0f,
+                bestWeekPoints = 0,
+                currentStreakWeeks = 0,
+            )
     }
 }

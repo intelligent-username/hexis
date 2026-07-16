@@ -33,8 +33,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
-import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ButtonShapes
@@ -71,7 +71,6 @@ import com.loc.hexis.shared.ui.LocalWindowSizeClass
 import com.loc.hexis.shared.ui.components.HexisDialog
 import com.loc.hexis.shared.ui.habit.HabitState
 import com.loc.hexis.shared.ui.habit.HabitsAction
-import com.loc.hexis.shared.ui.util.rememberToday
 import com.loc.hexis.shared.ui.habit.ui.component.HabitUpsertSheet
 import com.loc.hexis.shared.ui.habit.ui.component.TimeDivisionEditDialog
 import com.loc.hexis.shared.ui.habit.ui.component.stats.CalendarMap
@@ -83,8 +82,8 @@ import com.loc.hexis.shared.ui.habit.ui.component.stats.WeeklyActivity
 import com.loc.hexis.shared.ui.habit.ui.component.stats.WeeklyBooleanHeatMap
 import com.loc.hexis.shared.ui.theme.flexFontEmphasis
 import com.loc.hexis.shared.ui.theme.flexFontRounded
+import com.loc.hexis.shared.ui.util.rememberToday
 import hexis.shared.ui.generated.resources.*
-import kotlinx.datetime.LocalDate
 import kotlinx.datetime.yearMonth
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.resources.vectorResource
@@ -174,8 +173,7 @@ fun AnalyticsPage(
                     Icon(
                         imageVector =
                             vectorResource(
-                                if (isArchived) Res.drawable.unarchive
-                                else Res.drawable.archive
+                                if (isArchived) Res.drawable.unarchive else Res.drawable.archive
                             ),
                         contentDescription = if (isArchived) "Unarchive Habit" else "Archive Habit",
                     )
@@ -232,15 +230,15 @@ fun AnalyticsPage(
         )
 
         val maxWidth = 380.dp
-        LazyVerticalStaggeredGrid(
+        LazyVerticalGrid(
             modifier =
                 Modifier.fillMaxSize()
                     .padding(start = 16.dp, end = 16.dp)
                     .clip(RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)),
-            columns = StaggeredGridCells.Adaptive(minSize = maxWidth),
+            columns = GridCells.Adaptive(minSize = maxWidth),
             contentPadding = PaddingValues(top = 16.dp, bottom = 60.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalItemSpacing = 16.dp,
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             item {
                 StartStats(

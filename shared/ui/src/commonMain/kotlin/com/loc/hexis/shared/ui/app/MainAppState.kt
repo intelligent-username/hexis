@@ -41,4 +41,6 @@ data class MainAppState(
     val currentChangelog: VersionEntry? = null,
     val shortcutAction: String? = null,
     val launchSource: LaunchSource = LaunchSource.UNKNOWN,
+    val dayOnHexis: Int = 0,
+    val weeklyPoints: Int = 0,
 )

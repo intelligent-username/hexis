@@ -46,9 +46,9 @@ import com.loc.hexis.shared.ui.theme.flexFontEmphasis
 import com.loc.hexis.shared.ui.theme.flexFontRounded
 import hexis.shared.ui.generated.resources.Res
 import hexis.shared.ui.generated.resources.archive
-import hexis.shared.ui.generated.resources.unarchive
 import hexis.shared.ui.generated.resources.delete
 import hexis.shared.ui.generated.resources.flag
+import hexis.shared.ui.generated.resources.unarchive
 import hexis.shared.ui.generated.resources.untitled
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.resources.vectorResource
@@ -71,7 +71,7 @@ fun NoteCard(
             CardDefaults.cardColors(
                 containerColor =
                     if (showArchived) MaterialTheme.colorScheme.surfaceContainerLow
-                    else MaterialTheme.colorScheme.surfaceContainerHigh,
+                    else MaterialTheme.colorScheme.surfaceContainerHigh
             ),
         modifier = modifier.fillMaxWidth(),
     ) {
@@ -84,9 +84,7 @@ fun NoteCard(
                 Text(
                     text = note.title.ifEmpty { stringResource(Res.string.untitled) },
                     style =
-                        MaterialTheme.typography.titleMedium.copy(
-                            fontFamily = flexFontEmphasis()
-                        ),
+                        MaterialTheme.typography.titleMedium.copy(fontFamily = flexFontEmphasis()),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f),
@@ -122,7 +120,8 @@ fun NoteCard(
             ) {
                 Text(
                     text = formatNoteDate(note.updatedAt),
-                    style = MaterialTheme.typography.labelSmall.copy(fontFamily = flexFontRounded()),
+                    style =
+                        MaterialTheme.typography.labelSmall.copy(fontFamily = flexFontRounded()),
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                 )
 
@@ -137,7 +136,8 @@ fun NoteCard(
                                         if (note.pinned) MaterialTheme.colorScheme.primaryContainer
                                         else MaterialTheme.colorScheme.surfaceContainerHigh,
                                     contentColor =
-                                        if (note.pinned) MaterialTheme.colorScheme.onPrimaryContainer
+                                        if (note.pinned)
+                                            MaterialTheme.colorScheme.onPrimaryContainer
                                         else MaterialTheme.colorScheme.onSurfaceVariant,
                                 ),
                             shapes =

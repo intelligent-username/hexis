@@ -22,9 +22,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import com.loc.hexis.core.now
 import kotlinx.coroutines.delay
 import kotlinx.datetime.LocalDate
-import com.loc.hexis.core.now
 
 @Composable
 fun rememberToday(): State<LocalDate> {

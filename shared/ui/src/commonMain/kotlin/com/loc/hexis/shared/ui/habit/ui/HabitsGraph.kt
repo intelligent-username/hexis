@@ -35,7 +35,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
@@ -476,7 +475,8 @@ private fun TimeDivisionSelector(state: HabitState, onAction: (HabitsAction) -> 
                             )
                         }
 
-                        val nextSelected = index < state.timeDivisions.lastIndex &&
+                        val nextSelected =
+                            index < state.timeDivisions.lastIndex &&
                                 state.selectedTimeDivisionId == state.timeDivisions[index + 1].id
 
                         if (index < state.timeDivisions.lastIndex && !selected && !nextSelected) {

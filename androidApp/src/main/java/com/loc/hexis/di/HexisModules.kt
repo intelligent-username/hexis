@@ -24,12 +24,12 @@ import com.loc.hexis.habits.data.database.HabitDatabase
 import com.loc.hexis.habits.data.database.HabitDbFactory
 import com.loc.hexis.habits.data.database.HabitStatusDao
 import com.loc.hexis.habits.data.database.HabitsDao
+import com.loc.hexis.note.data.database.NotesDao
 import com.loc.hexis.shared.ui.di.UIModules
 import com.loc.hexis.tasks.data.database.CategoryDao
 import com.loc.hexis.tasks.data.database.PomodoroDao
 import com.loc.hexis.tasks.data.database.TaskDatabase
 import com.loc.hexis.tasks.data.database.TaskDbFactory
-import com.loc.hexis.note.data.database.NotesDao
 import com.loc.hexis.tasks.data.database.TasksDao
 import org.koin.core.annotation.ComponentScan
 import org.koin.core.annotation.Module

@@ -71,7 +71,6 @@ import com.loc.hexis.shared.ui.util.rememberToday
 import hexis.shared.ui.generated.resources.*
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.DayOfWeek
-import kotlinx.datetime.LocalDate
 import kotlinx.datetime.minus
 import org.jetbrains.compose.resources.vectorResource
 
@@ -315,7 +314,10 @@ fun HabitCard(
                 dayContent = { weekDay ->
                     val startDate = habitWithAnalytics.habit.time.date
                     val target = habitWithAnalytics.habit.targetValue ?: 1.0
-                    val done = habitWithAnalytics.statuses.any { it.date == weekDay.date && it.value >= target }
+                    val done =
+                        habitWithAnalytics.statuses.any {
+                            it.date == weekDay.date && it.value >= target
+                        }
                     val validDay =
                         weekDay.date <= today &&
                             weekDay.date >= startDate &&

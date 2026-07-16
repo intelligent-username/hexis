@@ -22,13 +22,15 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
-import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
@@ -39,6 +41,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -47,6 +50,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.kizitonwose.calendar.compose.heatmapcalendar.rememberHeatMapCalendarState
 import com.kizitonwose.calendar.core.minusMonths
+import com.loc.hexis.core.habits.PointsSummary
 import com.loc.hexis.shared.ui.LocalWindowSizeClass
 import com.loc.hexis.shared.ui.habit.HabitState
 import com.loc.hexis.shared.ui.habit.HabitsAction
@@ -59,7 +63,6 @@ import com.loc.hexis.shared.ui.theme.flexFontRounded
 import com.loc.hexis.shared.ui.util.rememberToday
 import hexis.shared.ui.generated.resources.*
 import kotlin.math.roundToInt
-import kotlinx.datetime.LocalDate
 import kotlinx.datetime.yearMonth
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.resources.vectorResource
@@ -84,6 +87,16 @@ fun OverallAnalytics(
             firstVisibleMonth = currentMonth,
             firstDayOfWeek = state.startingDay,
         )
+
+    val pointsSummary =
+        remember(state) {
+            PointsSummary(
+                currentWeekPoints = state.pointsTrend.currentPartialPoints,
+                lastWeekPoints = state.pointsTrend.previousPartialPoints,
+                totalPoints = state.overallAnalytics.totalPoints,
+                weeklyPointsHistory = state.overallAnalytics.weeklyPointsHistory,
+            )
+        }
 
     Column(modifier = modifier.fillMaxSize()) {
         TopAppBar(
@@ -117,13 +130,30 @@ fun OverallAnalytics(
         )
 
         val maxWidth = 380.dp
-        LazyVerticalStaggeredGrid(
+        LazyVerticalGrid(
             modifier = Modifier.fillMaxSize(),
-            columns = StaggeredGridCells.Adaptive(minSize = maxWidth),
+            columns = GridCells.Adaptive(minSize = maxWidth),
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 60.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalItemSpacing = 16.dp,
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
+            // 1. Week-over-week points comparison
+            item {
+                PointsStatCards(
+                    pointsSummary = pointsSummary,
+                    modifier = Modifier.widthIn(max = maxWidth),
+                )
+            }
+
+            // 2. Progression trends chart
+            item {
+                TrendLineChart(
+                    weeklyPointsHistory = state.overallAnalytics.weeklyPointsHistory,
+                    modifier = Modifier.widthIn(max = maxWidth),
+                )
+            }
+
+            // 3. Consistency circle + top habits
             item {
                 Row(
                     modifier = Modifier.fillMaxWidth().widthIn(max = maxWidth),
@@ -157,6 +187,25 @@ fun OverallAnalytics(
                                         color = MaterialTheme.colorScheme.onSurface,
                                     ),
                             )
+                            if (state.overallAnalytics.longestStreak > 0) {
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = "${state.overallAnalytics.longestStreak}d",
+                                    style =
+                                        MaterialTheme.typography.labelLarge.copy(
+                                            fontFamily = flexFontRounded(),
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        ),
+                                )
+                                Text(
+                                    text = stringResource(Res.string.best_streak),
+                                    style =
+                                        MaterialTheme.typography.labelSmall.copy(
+                                            fontFamily = flexFontRounded(),
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        ),
+                                )
+                            }
                         }
                     }
 
@@ -206,6 +255,7 @@ fun OverallAnalytics(
                 }
             }
 
+            // 4. Habit heat map
             item {
                 HabitHeatMap(
                     heatMapState = heatMapState,
@@ -216,62 +266,13 @@ fun OverallAnalytics(
                 )
             }
 
+            // 5. Week day breakdown
             item {
                 WeekDayBreakdown(
                     weekDayData = state.overallAnalytics.weekDayFrequencyData,
                     modifier = Modifier.widthIn(max = maxWidth),
                 )
             }
-
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth().widthIn(max = maxWidth),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    StatCard(
-                        label = stringResource(Res.string.total_points),
-                        value = state.overallAnalytics.totalPoints,
-                        modifier = Modifier.weight(1f),
-                    )
-                }
-            }
-
-            item {
-                TrendLineChart(
-                    weeklyPointsHistory = state.overallAnalytics.weeklyPointsHistory,
-                    modifier = Modifier.widthIn(max = maxWidth),
-                )
-            }
         }
-    }
-}
-
-@Composable
-private fun StatCard(
-    label: String,
-    value: Int,
-    modifier: Modifier = Modifier,
-) {
-    androidx.compose.foundation.layout.Column(
-        modifier = modifier
-            .background(
-                shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
-                color = MaterialTheme.colorScheme.surfaceContainerHigh,
-            )
-            .padding(12.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall.copy(fontFamily = flexFontRounded()),
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Text(
-            text = value.toString(),
-            style = MaterialTheme.typography.titleLarge.copy(
-                fontFamily = flexFontEmphasis(),
-                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-            ),
-        )
     }
 }

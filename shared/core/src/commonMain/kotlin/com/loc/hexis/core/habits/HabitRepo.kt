@@ -66,5 +66,6 @@ interface HabitRepo {
     suspend fun isHabitCompleted(habitId: Long, date: LocalDate): Boolean
 
     fun getWeeklyPointsFlow(): Flow<List<WeeklyPoints>>
+
     fun getPointsTrend(): Flow<PointsTrend>
 }

@@ -56,13 +56,13 @@ import com.loc.hexis.core.habits.HabitWithAnalytics
 import com.loc.hexis.shared.ui.LocalWindowSizeClass
 import com.loc.hexis.shared.ui.habit.HabitState
 import com.loc.hexis.shared.ui.habit.daysStartingFrom
-import com.loc.hexis.shared.ui.util.rememberToday
 import com.loc.hexis.shared.ui.habit.ui.component.CalendarMonthHeader
 import com.loc.hexis.shared.ui.habit.ui.component.MonthlyCalendarDayContent
 import com.loc.hexis.shared.ui.habit.ui.component.YearlyCalendarDayContent
 import com.loc.hexis.shared.ui.theme.flexFontEmphasis
 import com.loc.hexis.shared.ui.theme.flexFontRounded
 import com.loc.hexis.shared.ui.toStringRes
+import com.loc.hexis.shared.ui.util.rememberToday
 import hexis.shared.ui.generated.resources.*
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate

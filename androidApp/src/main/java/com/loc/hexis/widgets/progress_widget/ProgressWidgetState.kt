@@ -15,10 +15,6 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.loc.hexis.widgets.gamification_widget
+package com.loc.hexis.widgets.progress_widget
 
-import androidx.glance.appwidget.GlanceAppWidgetReceiver
-
-class GamificationWidgetReceiver : GlanceAppWidgetReceiver() {
-    override val glanceAppWidget = GamificationWidget()
-}
+// Intentionally empty

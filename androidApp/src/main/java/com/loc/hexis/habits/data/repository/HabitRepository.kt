@@ -35,7 +35,6 @@ import com.loc.hexis.habits.data.toHabit
 import com.loc.hexis.habits.data.toHabitEntity
 import com.loc.hexis.habits.data.toHabitStatus
 import com.loc.hexis.habits.data.toHabitStatusEntity
-import kotlin.math.min
 import kotlin.math.round
 import kotlin.time.ExperimentalTime
 import kotlinx.coroutines.CoroutineScope
@@ -50,6 +49,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.daysUntil
@@ -199,19 +199,36 @@ class HabitRepository(
                         .take(3)
                         .map { HabitRanking(it.first, it.second) }
 
-                val allPointsSummaries = habitsFlow.map { habit ->
-                    val completed = filterCompletedStatuses(
-                        habit,
-                        habitStatusesFlow.filter { it.habitId == habit.id },
-                    )
-                    computePointsSummary(habit, completed, firstDay)
-                }
-                val totalPoints = allPointsSummaries.sumOf { it.totalPoints }
-                val aggregateWeeklyHistory = if (allPointsSummaries.isNotEmpty()) {
-                    (0..52).map { weekIdx ->
-                        allPointsSummaries.sumOf { it.weeklyPointsHistory.getOrElse(weekIdx) { 0 } }
+                val allPointsSummaries =
+                    habitsFlow.map { habit ->
+                        val completed =
+                            filterCompletedStatuses(
+                                habit,
+                                habitStatusesFlow.filter { it.habitId == habit.id },
+                            )
+                        computePointsSummary(habit, completed, firstDay)
                     }
-                } else emptyList()
+                val totalPoints = allPointsSummaries.sumOf { it.totalPoints }
+                val aggregateWeeklyHistory =
+                    if (allPointsSummaries.isNotEmpty()) {
+                        (0..52).map { weekIdx ->
+                            allPointsSummaries.sumOf {
+                                it.weeklyPointsHistory.getOrElse(weekIdx) { 0 }
+                            }
+                        }
+                    } else emptyList()
+
+                val habitBestStreaks =
+                    habitsFlow.map { habit ->
+                        val completedDates =
+                            filterCompletedStatuses(
+                                    habit,
+                                    habitStatusesFlow.filter { it.habitId == habit.id },
+                                )
+                                .map { it.date }
+                        countBestStreak(dates = completedDates, eligibleWeekdays = habit.days)
+                    }
+                val longestStreak = habitBestStreaks.maxOrNull() ?: 0
 
                 OverallAnalytics(
                     heatMapData = prepareHeatMapData(allCompletedStatuses.toList()),
@@ -221,23 +238,51 @@ class HabitRepository(
                     topHabits = topHabits,
                     totalPoints = totalPoints,
                     weeklyPointsHistory = aggregateWeeklyHistory,
+                    longestStreak = longestStreak,
                 )
             }
             .flowOn(Dispatchers.Default)
     }
 
-    override fun getWeeklyPointsFlow(): Flow<List<WeeklyPoints>> = combine(
-        habits,
-        habitStatuses,
-        firstDayOfWeek,
-    ) { habitsFlow, habitStatusesFlow, firstDay ->
-        computeWeeklyPoints(habitsFlow, habitStatusesFlow, firstDay)
-    }.flowOn(Dispatchers.Default).distinctUntilChanged()
+    override fun getWeeklyPointsFlow(): Flow<List<WeeklyPoints>> =
+        combine(habits, habitStatuses, firstDayOfWeek) { habitsFlow, habitStatusesFlow, firstDay ->
+                computeWeeklyPoints(habitsFlow, habitStatusesFlow, firstDay)
+            }
+            .flowOn(Dispatchers.Default)
+            .distinctUntilChanged()
 
-    override fun getPointsTrend(): Flow<PointsTrend> = getWeeklyPointsFlow()
-        .map { weeklyPoints -> computePointsTrend(weeklyPoints) }
-        .flowOn(Dispatchers.Default)
-        .distinctUntilChanged()
+    override fun getPointsTrend(): Flow<PointsTrend> =
+        combine(habits, habitStatuses, firstDayOfWeek) { habits, statuses, firstDay ->
+                val weeklyPoints = computeWeeklyPoints(habits, statuses, firstDay)
+                val trend = computePointsTrend(weeklyPoints)
+
+                val today = LocalDate.now()
+                val todayDow = today.dayOfWeek.isoDayNumber
+                val firstDow = firstDay.isoDayNumber
+                val diff =
+                    if (todayDow >= firstDow) todayDow - firstDow else 7 + todayDow - firstDow
+                val weekStart = today.minus(diff, DateTimeUnit.DAY)
+
+                val currentPartial = computePointsForPeriod(habits, statuses, weekStart, today)
+                val prevWeekStart = weekStart.minus(7, DateTimeUnit.DAY)
+                val prevToday = today.minus(7, DateTimeUnit.DAY)
+                val previousPartial =
+                    computePointsForPeriod(habits, statuses, prevWeekStart, prevToday)
+
+                val partialNetChange = currentPartial - previousPartial
+                val partialNetChangePercent =
+                    if (previousPartial > 0) (partialNetChange.toFloat() / previousPartial * 100)
+                    else 0f
+
+                trend.copy(
+                    currentPartialPoints = currentPartial,
+                    previousPartialPoints = previousPartial,
+                    partialNetChange = partialNetChange,
+                    partialNetChangePercent = partialNetChangePercent,
+                )
+            }
+            .flowOn(Dispatchers.Default)
+            .distinctUntilChanged()
 
     override fun getHabitsWithStatus(): Flow<List<Pair<Habit, Boolean>>> {
         return habits.combine(habitStatuses) { habitsFlow, statusFlow ->
@@ -332,16 +377,20 @@ class HabitRepository(
     ): List<WeeklyPoints> {
         val now = LocalDate.now()
         val weeksBack = 26
-        val weekStarts = (0 until weeksBack).map { i ->
-            now.minusWeeks(i).with(firstDayOfWeek)
-        }.reversed()
+        val weekStarts =
+            (0 until weeksBack)
+                .map { i ->
+                    val weekStart = now.minus(i, DateTimeUnit.WEEK)
+                    val diff = firstDayOfWeek.isoDayNumber - weekStart.dayOfWeek.isoDayNumber
+                    val shift = if (diff > 0) diff - 7 else diff
+                    weekStart.plus(shift, DateTimeUnit.DAY)
+                }
+                .reversed()
 
         return weekStarts.map { weekStart ->
-            val weekEnd = weekStart.plusDays(6)
+            val weekEnd = weekStart.plus(6, DateTimeUnit.DAY)
             val weekStatuses = statuses.filter { it.date in weekStart..weekEnd }
-            val activeHabits = habits.filter {
-                it.time.toLocalDate() <= weekEnd
-            }
+            val activeHabits = habits.filter { it.time.date <= weekEnd }
 
             var totalPoints = 0
             var completedCount = 0
@@ -352,28 +401,38 @@ class HabitRepository(
             activeHabits.forEach { habit ->
                 val habitStatuses = weekStatuses.filter { it.habitId == habit.id }
                 val eligibleDays = habit.days
-                val weekEligibleDays = eligibleDays.filter { day ->
-                    val d = weekStart.daysUntil(weekEnd)
-                    (0..d).any { weekStart.plusDays(it.toLong()).dayOfWeek == day }
-                }
+                val weekEligibleDays =
+                    eligibleDays.filter { day ->
+                        val d = weekStart.daysUntil(weekEnd)
+                        (0..d).any {
+                            weekStart.plus(it.toLong(), DateTimeUnit.DAY).dayOfWeek == day
+                        }
+                    }
                 maxPossible += weekEligibleDays.size * 10
 
                 if (habit.displayMode == DisplayMode.CHECKBOX) {
                     val completedDays = habitStatuses.map { it.date }.toSet()
-                    val completedEligible = weekEligibleDays.count { day ->
-                        val datesInWeek = (0..weekStart.daysUntil(weekEnd)).map { weekStart.plusDays(it.toLong()) }
-                        datesInWeek.any { it.dayOfWeek == day && it in completedDays }
-                    }
+                    val completedEligible =
+                        weekEligibleDays.count { day ->
+                            val datesInWeek =
+                                (0..weekStart.daysUntil(weekEnd)).map {
+                                    weekStart.plus(it.toLong(), DateTimeUnit.DAY)
+                                }
+                            datesInWeek.any { it.dayOfWeek == day && it in completedDays }
+                        }
                     totalPoints += completedEligible * 10
                     if (completedEligible > 0) completedCount++
 
-                    val streak = countCurrentStreak(
-                        dates = statuses.filter { it.habitId == habit.id }.map { it.date },
-                        eligibleWeekdays = habit.days,
-                    )
-                    streakBonus += minOf(streak * 2, 20)
+                    val streak =
+                        countCurrentStreak(
+                            dates = statuses.filter { it.habitId == habit.id }.map { it.date },
+                            eligibleWeekdays = habit.days,
+                        )
+                    streakBonus += minOf(streak * 3, 30)
 
-                    if (completedEligible == weekEligibleDays.size && weekEligibleDays.isNotEmpty()) {
+                    if (
+                        completedEligible == weekEligibleDays.size && weekEligibleDays.isNotEmpty()
+                    ) {
                         perfectWeekBonus += 50
                     }
                 } else {
@@ -381,7 +440,8 @@ class HabitRepository(
                         val ratio = (status.value / (habit.targetValue ?: 1.0)).coerceIn(0.0, 1.0)
                         totalPoints += round(ratio * 10).toInt()
                     }
-                    if (habitStatuses.any { it.value >= (habit.targetValue ?: 1.0) }) completedCount++
+                    if (habitStatuses.any { it.value >= (habit.targetValue ?: 1.0) })
+                        completedCount++
                 }
             }
 
@@ -391,7 +451,10 @@ class HabitRepository(
                 pointsEarned = totalPoints + streakBonus + perfectWeekBonus,
                 habitsCompleted = completedCount,
                 totalPossiblePoints = maxPossible,
-                completionRate = if (maxPossible > 0) (totalPoints + streakBonus + perfectWeekBonus).toFloat() / maxPossible else 0f,
+                completionRate =
+                    if (maxPossible > 0)
+                        (totalPoints + streakBonus + perfectWeekBonus).toFloat() / maxPossible
+                    else 0f,
                 streakBonusPoints = streakBonus,
                 perfectWeekBonusPoints = perfectWeekBonus,
             )
@@ -402,18 +465,25 @@ class HabitRepository(
         if (weeklyPoints.isEmpty()) return PointsTrend.empty
 
         val current = weeklyPoints.last()
-        val previous = weeklyPoints.getOrNull(weeklyPoints.size - 2) ?: WeeklyPoints(
-            weekStart = current.weekStart.minusWeeks(1),
-            weekEnd = current.weekEnd.minusWeeks(1),
-            pointsEarned = 0, habitsCompleted = 0, totalPossiblePoints = 0, completionRate = 0f,
-        )
+        val previous =
+            weeklyPoints.getOrNull(weeklyPoints.size - 2)
+                ?: WeeklyPoints(
+                    weekStart = current.weekStart.minus(1, DateTimeUnit.WEEK),
+                    weekEnd = current.weekEnd.minus(1, DateTimeUnit.WEEK),
+                    pointsEarned = 0,
+                    habitsCompleted = 0,
+                    totalPossiblePoints = 0,
+                    completionRate = 0f,
+                )
 
         val netChange = current.pointsEarned - previous.pointsEarned
-        val netChangePercent = if (previous.pointsEarned > 0)
-            (netChange.toFloat() / previous.pointsEarned * 100) else 0f
+        val netChangePercent =
+            if (previous.pointsEarned > 0) (netChange.toFloat() / previous.pointsEarned * 100)
+            else 0f
 
         val totalAllTime = weeklyPoints.sumOf { it.pointsEarned }
-        val avgWeekly = if (weeklyPoints.isNotEmpty()) totalAllTime.toFloat() / weeklyPoints.size else 0f
+        val avgWeekly =
+            if (weeklyPoints.isNotEmpty()) totalAllTime.toFloat() / weeklyPoints.size else 0f
         val bestWeek = weeklyPoints.maxByOrNull { it.pointsEarned }?.pointsEarned ?: 0
 
         var streakWeeks = 0
@@ -432,5 +502,33 @@ class HabitRepository(
             bestWeekPoints = bestWeek,
             currentStreakWeeks = streakWeeks,
         )
+    }
+
+    private fun computePointsForPeriod(
+        habits: List<Habit>,
+        statuses: List<HabitStatus>,
+        from: LocalDate,
+        to: LocalDate,
+    ): Int {
+        var totalPoints = 0
+        habits.forEach { habit ->
+            val habitStatuses = statuses.filter { it.habitId == habit.id }
+            val eligibleDays = habit.days
+            val daysInRange =
+                (0..from.daysUntil(to)).map { from.plus(it.toLong(), DateTimeUnit.DAY) }
+            val eligibleDatesInRange = daysInRange.filter { it.dayOfWeek in eligibleDays }
+
+            if (habit.displayMode == DisplayMode.CHECKBOX) {
+                val completedDays = habitStatuses.map { it.date }.toSet()
+                val completed = eligibleDatesInRange.count { it in completedDays }
+                totalPoints += completed * 10
+            } else {
+                habitStatuses.forEach { status ->
+                    val ratio = (status.value / (habit.targetValue ?: 1.0)).coerceIn(0.0, 1.0)
+                    totalPoints += round(ratio * 10).toInt()
+                }
+            }
+        }
+        return totalPoints
     }
 }

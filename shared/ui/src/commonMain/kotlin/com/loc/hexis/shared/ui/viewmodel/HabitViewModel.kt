@@ -293,9 +293,7 @@ class HabitViewModel(
         pointsTrendJob =
             repo
                 .getPointsTrend()
-                .onEach { trend ->
-                    _state.update { it.copy(pointsTrend = trend) }
-                }
+                .onEach { trend -> _state.update { it.copy(pointsTrend = trend) } }
                 .launchIn(viewModelScope)
     }
 

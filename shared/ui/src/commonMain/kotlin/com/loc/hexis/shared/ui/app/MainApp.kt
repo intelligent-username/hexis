@@ -51,8 +51,8 @@ import com.loc.hexis.shared.ui.app.AppSections.Companion.toIconRes
 import com.loc.hexis.shared.ui.app.AppSections.Companion.toStringRes
 import com.loc.hexis.shared.ui.habit.HabitsAction
 import com.loc.hexis.shared.ui.habit.ui.HabitsGraph
-import com.loc.hexis.shared.ui.setting.ui.SettingsGraph
 import com.loc.hexis.shared.ui.note.ui.NotesPage
+import com.loc.hexis.shared.ui.setting.ui.SettingsGraph
 import com.loc.hexis.shared.ui.task.TaskAction
 import com.loc.hexis.shared.ui.task.ui.TasksPage
 import com.loc.hexis.shared.ui.task.ui.component.PomodoroPage
@@ -122,7 +122,7 @@ fun MainApp(state: MainAppState) {
                 WidgetActions.OPEN_TASKS -> {
                     pagerState.animateScrollToPage(taskPage)
                 }
-                WidgetActions.OPEN_GAMIFICATION,
+                WidgetActions.OPEN_PROGRESS,
                 WidgetActions.OPEN_OVERALL_ANALYTICS -> {
                     pagerState.animateScrollToPage(habitPage)
                     hvm.onAction(HabitsAction.PrepareAnalytics(null))

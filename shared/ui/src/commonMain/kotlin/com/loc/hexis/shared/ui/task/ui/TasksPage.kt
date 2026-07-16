@@ -69,7 +69,12 @@ import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 
 @Composable
-fun TasksPage(state: TaskState, onAction: (TaskAction) -> Unit, onPomodoroClick: () -> Unit, onNotesClick: () -> Unit) {
+fun TasksPage(
+    state: TaskState,
+    onAction: (TaskAction) -> Unit,
+    onPomodoroClick: () -> Unit,
+    onNotesClick: () -> Unit,
+) {
     var showCategoryEditor by remember { mutableStateOf(false) }
 
     TaskList(

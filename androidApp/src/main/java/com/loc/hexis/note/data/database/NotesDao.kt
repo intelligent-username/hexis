@@ -30,12 +30,9 @@ interface NotesDao {
     @Query("SELECT * FROM notes WHERE archived = 1 ORDER BY updatedAt DESC")
     fun getArchivedNotesFlow(): Flow<List<NoteEntity>>
 
-    @Query("SELECT * FROM notes WHERE id = :id")
-    suspend fun getNoteById(id: Long): NoteEntity?
+    @Query("SELECT * FROM notes WHERE id = :id") suspend fun getNoteById(id: Long): NoteEntity?
 
-    @Upsert
-    suspend fun upsertNote(note: NoteEntity): Long
+    @Upsert suspend fun upsertNote(note: NoteEntity): Long
 
-    @Query("DELETE FROM notes WHERE id = :id")
-    suspend fun deleteNote(id: Long)
+    @Query("DELETE FROM notes WHERE id = :id") suspend fun deleteNote(id: Long)
 }

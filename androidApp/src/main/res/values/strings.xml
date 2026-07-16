@@ -6,4 +6,6 @@
     <string name="shortcut_add_new_task">Add New Task</string>
     <string name="shortcut_analytics">Analytics</string>
     <string name="shortcut_overall_analytics">Overall Analytics</string>
+    <string name="widget_progress_name">Progress</string>
+    <string name="widget_progress_desc">Track your weekly progress and habit completion trends</string>
 </resources>

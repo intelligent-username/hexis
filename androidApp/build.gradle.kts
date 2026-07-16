@@ -136,8 +136,6 @@ android {
     }
 }
 
-
-
 kotlin {
     compilerOptions {
         freeCompilerArgs.add("-Xcontext-sensitive-resolution")
