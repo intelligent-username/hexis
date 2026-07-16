@@ -177,7 +177,8 @@ fun TrendLineChart(weeklyPointsHistory: List<Int>, modifier: Modifier = Modifier
 
                     // Gradient fill
                     val fillPath =
-                        Path(sp).apply {
+                        Path().apply {
+                            addPath(sp)
                             lineTo(pts.last().x, height - padB)
                             lineTo(pts.first().x, height - padB)
                             close()
