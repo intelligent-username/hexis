@@ -129,19 +129,18 @@ fun OverallAnalytics(
             },
         )
 
-        val maxWidth = 380.dp
         LazyVerticalGrid(
             modifier = Modifier.fillMaxSize(),
-            columns = GridCells.Adaptive(minSize = maxWidth),
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 60.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            columns = GridCells.Adaptive(minSize = 360.dp),
+            contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 12.dp, bottom = 60.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             // 1. Week-over-week points comparison
             item {
                 PointsStatCards(
                     pointsSummary = pointsSummary,
-                    modifier = Modifier.widthIn(max = maxWidth),
+                    modifier = Modifier.widthIn(max = 400.dp),
                 )
             }
 
@@ -149,24 +148,24 @@ fun OverallAnalytics(
             item {
                 TrendLineChart(
                     weeklyPointsHistory = state.overallAnalytics.weeklyPointsHistory,
-                    modifier = Modifier.widthIn(max = maxWidth),
+                    modifier = Modifier.widthIn(max = 400.dp),
                 )
             }
 
             // 3. Consistency circle + top habits
             item {
                 Row(
-                    modifier = Modifier.fillMaxWidth().widthIn(max = maxWidth),
+                    modifier = Modifier.fillMaxWidth().widthIn(max = 400.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement =
-                        Arrangement.spacedBy(24.dp, Alignment.CenterHorizontally),
+                        Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         CircularProgressIndicator(
                             progress = { state.overallAnalytics.consistency },
                             strokeCap = StrokeCap.Round,
-                            strokeWidth = 36.dp,
-                            modifier = Modifier.size(200.dp),
+                            strokeWidth = 28.dp,
+                            modifier = Modifier.size(160.dp),
                         )
 
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -174,7 +173,7 @@ fun OverallAnalytics(
                                 text =
                                     "${(state.overallAnalytics.consistency * 100).roundToInt()}%",
                                 style =
-                                    MaterialTheme.typography.headlineSmall.copy(
+                                    MaterialTheme.typography.headlineMedium.copy(
                                         fontFamily = flexFontRounded(),
                                         color = MaterialTheme.colorScheme.primary,
                                     ),
@@ -188,7 +187,7 @@ fun OverallAnalytics(
                                     ),
                             )
                             if (state.overallAnalytics.longestStreak > 0) {
-                                Spacer(modifier = Modifier.height(4.dp))
+                                Spacer(modifier = Modifier.height(2.dp))
                                 Text(
                                     text = "${state.overallAnalytics.longestStreak}d",
                                     style =
@@ -211,13 +210,13 @@ fun OverallAnalytics(
 
                     if (state.overallAnalytics.topHabits.isNotEmpty()) {
                         Column(
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp),
                             horizontalAlignment = Alignment.Start,
                         ) {
                             state.overallAnalytics.topHabits.forEachIndexed { index, habit ->
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
                                 ) {
                                     Text(
                                         text = "${index + 1}",
@@ -260,7 +259,7 @@ fun OverallAnalytics(
                 HabitHeatMap(
                     heatMapState = heatMapState,
                     heatMapData = state.overallAnalytics.heatMapData,
-                    modifier = Modifier.widthIn(max = maxWidth),
+                    modifier = Modifier.widthIn(max = 400.dp),
                     totalHabits = state.habitsWithAnalytics.size,
                     onNavigateToCalendarHeatMap = onNavigateToCalendarHeatMap,
                 )
@@ -270,7 +269,7 @@ fun OverallAnalytics(
             item {
                 WeekDayBreakdown(
                     weekDayData = state.overallAnalytics.weekDayFrequencyData,
-                    modifier = Modifier.widthIn(max = maxWidth),
+                    modifier = Modifier.widthIn(max = 400.dp),
                 )
             }
         }

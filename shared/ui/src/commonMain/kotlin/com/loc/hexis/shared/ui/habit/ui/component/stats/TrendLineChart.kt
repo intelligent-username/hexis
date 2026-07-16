@@ -39,6 +39,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
@@ -102,7 +103,6 @@ fun TrendLineChart(weeklyPointsHistory: List<Int>, modifier: Modifier = Modifier
 
             val textMeasurer = rememberTextMeasurer()
             val lineColor = MaterialTheme.colorScheme.primary
-            val fillColor = lineColor.copy(alpha = 0.15f)
             val surfaceColor = MaterialTheme.colorScheme.surface
             val outlineVariantColor = MaterialTheme.colorScheme.outlineVariant
             val textStyle = MaterialTheme.typography.labelSmall.copy(fontFamily = flexFontRounded())
@@ -115,121 +115,111 @@ fun TrendLineChart(weeklyPointsHistory: List<Int>, modifier: Modifier = Modifier
             ) {
                 val width = size.width
                 val height = size.height
-                val padding = 32.dp.toPx()
-                val graphWidth = width - 2 * padding
-                val graphHeight = height - 2 * padding
+                val padL = 40.dp.toPx()
+                val padR = 16.dp.toPx()
+                val padT = 8.dp.toPx()
+                val padB = 24.dp.toPx()
+                val gW = width - padL - padR
+                val gH = height - padT - padB
 
-                // Grid lines
-                val gridLines = 4
-                for (i in 0..gridLines) {
-                    val y = padding + (graphHeight / gridLines) * i
+                // Grid lines + Y-axis labels
+                val gridCount = 3
+                for (i in 0..gridCount) {
+                    val y = padT + (gH / gridCount) * i
                     drawLine(
-                        color = outlineVariantColor,
-                        start = Offset(padding, y),
-                        end = Offset(width - padding, y),
+                        color = outlineVariantColor.copy(alpha = 0.4f),
+                        start = Offset(padL, y),
+                        end = Offset(width - padR, y),
                         strokeWidth = 1f,
+                    )
+                    val labelVal = maxVal - (maxVal / gridCount) * i
+                    val labelResult =
+                        textMeasurer.measure(
+                            text = "$labelVal",
+                            style = textStyle,
+                        )
+                    drawText(
+                        textLayoutResult = labelResult,
+                        topLeft = Offset(0f, y - labelResult.size.height / 2f),
+                        color = outlineVariantColor,
                     )
                 }
 
-                // Map data to pixel offsets
-                val points =
+                // Map data
+                val pts =
                     visibleData.mapIndexed { index, value ->
-                        val x =
-                            padding +
-                                (index.toFloat() / (visibleData.size - 1).coerceAtLeast(1)) *
-                                    graphWidth
-                        val y = height - padding - (value.toFloat() / maxVal) * graphHeight
+                        val x = padL + (index.toFloat() / (visibleData.size - 1).coerceAtLeast(1)) * gW
+                        val y = height - padB - (value.toFloat() / maxVal) * gH
                         Offset(x, y)
                     }
 
-                if (points.size >= 2) {
-                    // Gradient fill under curve
-                    val fillPath =
+                if (pts.size >= 2) {
+                    // Smooth bezier path (Catmull-Rom)
+                    fun smoothPath(): Path =
                         Path().apply {
-                            moveTo(points.first().x, height - padding)
-                            points.forEachIndexed { i, point ->
-                                if (i == 0) moveTo(point.x, point.y)
-                                else {
-                                    val prev = points[i - 1]
-                                    val cp1x = prev.x + (point.x - prev.x) / 3f
-                                    val cp1y = prev.y
-                                    val cp2x = point.x - (point.x - prev.x) / 3f
-                                    val cp2y = point.y
-                                    cubicTo(cp1x, cp1y, cp2x, cp2y, point.x, point.y)
-                                }
+                            moveTo(pts[0].x, pts[0].y)
+                            for (i in 0 until pts.size - 1) {
+                                val p0 = if (i > 0) pts[i - 1] else pts[i]
+                                val p1 = pts[i]
+                                val p2 = pts[i + 1]
+                                val p3 = if (i < pts.size - 2) pts[i + 2] else pts[i + 1]
+                                cubicTo(
+                                    p1.x + (p2.x - p0.x) / 6f,
+                                    p1.y + (p2.y - p0.y) / 6f,
+                                    p2.x - (p3.x - p1.x) / 6f,
+                                    p2.y - (p3.y - p1.y) / 6f,
+                                    p2.x, p2.y,
+                                )
                             }
-                            lineTo(points.last().x, height - padding)
+                        }
+
+                    val sp = smoothPath()
+
+                    // Gradient fill
+                    val fillPath =
+                        Path(sp).apply {
+                            lineTo(pts.last().x, height - padB)
+                            lineTo(pts.first().x, height - padB)
                             close()
                         }
-                    drawPath(path = fillPath, color = fillColor)
+                    drawPath(path = fillPath, color = lineColor.copy(alpha = 0.1f))
 
-                    // Stroke path (smooth curve)
-                    val strokePath =
-                        Path().apply {
-                            points.forEachIndexed { i, point ->
-                                if (i == 0) moveTo(point.x, point.y)
-                                else {
-                                    val prev = points[i - 1]
-                                    val cp1x = prev.x + (point.x - prev.x) / 3f
-                                    val cp1y = prev.y
-                                    val cp2x = point.x - (point.x - prev.x) / 3f
-                                    val cp2y = point.y
-                                    cubicTo(cp1x, cp1y, cp2x, cp2y, point.x, point.y)
-                                }
-                            }
-                        }
+                    // Glow
                     drawPath(
-                        path = strokePath,
-                        color = lineColor,
-                        style =
-                            Stroke(
-                                width = 4.dp.toPx(),
-                                cap = androidx.compose.ui.graphics.StrokeCap.Round,
-                            ),
+                        path = sp,
+                        color = lineColor.copy(alpha = 0.2f),
+                        style = Stroke(width = 8.dp.toPx(), cap = StrokeCap.Round),
                     )
 
-                    // Dots at each point
-                    points.forEach { point ->
-                        drawCircle(
-                            color = lineColor,
-                            center = Offset(point.x, point.y),
-                            radius = 6.dp.toPx(),
-                        )
-                        drawCircle(
-                            color = surfaceColor,
-                            center = Offset(point.x, point.y),
-                            radius = 3.dp.toPx(),
-                        )
+                    // Main line
+                    drawPath(
+                        path = sp,
+                        color = lineColor,
+                        style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round),
+                    )
+
+                    // Dots
+                    pts.forEach { pt ->
+                        drawCircle(color = lineColor, center = pt, radius = 5.dp.toPx())
+                        drawCircle(color = surfaceColor, center = pt, radius = 2.5.dp.toPx())
                     }
-                } else if (points.size == 1) {
-                    // Single point — just draw a dot
-                    val point = points.first()
-                    drawCircle(
-                        color = lineColor,
-                        center = Offset(point.x, point.y),
-                        radius = 6.dp.toPx(),
-                    )
-                    drawCircle(
-                        color = surfaceColor,
-                        center = Offset(point.x, point.y),
-                        radius = 3.dp.toPx(),
-                    )
-                }
 
-                // Label latest value
-                if (points.isNotEmpty()) {
-                    val last = points.last()
+                    // Last value label
+                    val lastPt = pts.last()
                     val label = "${visibleData.last()}"
-                    val textResult = textMeasurer.measure(text = label, style = textStyle)
+                    val labelResult = textMeasurer.measure(text = label, style = textStyle)
+                    val labelX =
+                        (lastPt.x - labelResult.size.width / 2f)
+                            .coerceIn(padL, width - padR - labelResult.size.width)
                     drawText(
-                        textLayoutResult = textResult,
-                        topLeft =
-                            Offset(
-                                last.x - textResult.size.width / 2,
-                                last.y - textResult.size.height - 8.dp.toPx(),
-                            ),
+                        textLayoutResult = labelResult,
+                        topLeft = Offset(labelX, lastPt.y - labelResult.size.height - 6.dp.toPx()),
                         color = lineColor,
                     )
+                } else if (pts.size == 1) {
+                    val pt = pts.first()
+                    drawCircle(color = lineColor, center = pt, radius = 5.dp.toPx())
+                    drawCircle(color = surfaceColor, center = pt, radius = 2.5.dp.toPx())
                 }
             }
         } else NotEnoughData()

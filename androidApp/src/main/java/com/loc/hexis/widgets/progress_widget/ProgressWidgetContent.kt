@@ -124,81 +124,69 @@ private fun CompactContent(trend: PointsTrend, analytics: OverallAnalytics) {
                     text = trend.currentPartialPoints.toString(),
                     style =
                         TextStyle(
-                            fontSize = 32.sp,
+                            fontSize = 28.sp,
                             fontWeight = FontWeight.Bold,
                             color = GlanceTheme.colors.onSurface,
                         ),
                 )
                 Text(
-                    text = "this week so far",
-                    style = TextStyle(fontSize = 10.sp, color = GlanceTheme.colors.onSurfaceVariant),
+                    text = "pts this week",
+                    style = TextStyle(fontSize = 9.sp, color = GlanceTheme.colors.onSurfaceVariant),
                 )
             }
             val netUp = trend.partialNetChange >= 0
+            val changeColor = if (netUp) GlanceTheme.colors.tertiary else GlanceTheme.colors.error
             Box(
                 modifier =
-                    GlanceModifier.background(
-                            if (netUp) GlanceTheme.colors.tertiary else GlanceTheme.colors.error
-                        )
+                    GlanceModifier.background(GlanceTheme.colors.secondaryContainer)
                         .cornerRadius(8.dp)
-                        .padding(horizontal = 10.dp, vertical = 6.dp)
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
             ) {
                 Text(
-                    text =
-                        "${if (trend.partialNetChange > 0) "+" else ""}${trend.partialNetChange}",
+                    text = "${if (netUp) "+" else ""}${trend.partialNetChange}",
                     style =
                         TextStyle(
-                            fontSize = 16.sp,
+                            fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
-                            color =
-                                if (netUp) GlanceTheme.colors.onTertiary
-                                else GlanceTheme.colors.onError,
+                            color = changeColor,
                         ),
                 )
             }
         }
 
-        Spacer(modifier = GlanceModifier.height(8.dp))
+        Spacer(modifier = GlanceModifier.height(6.dp))
 
         val last14Days = dailyData(analytics.heatMapData)
         ProgressLineGraph(
             dataPoints = last14Days,
-            modifier = GlanceModifier.fillMaxWidth().height(46.dp),
+            modifier = GlanceModifier.fillMaxWidth().height(48.dp),
         )
 
-        Spacer(modifier = GlanceModifier.height(6.dp))
-
         Row(
-            modifier = GlanceModifier.fillMaxWidth(),
+            modifier = GlanceModifier.fillMaxWidth().padding(top = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Row(
-                modifier =
-                    GlanceModifier.background(GlanceTheme.colors.secondaryContainer)
-                        .cornerRadius(12.dp)
-                        .padding(horizontal = 8.dp, vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
                     text = "${"%.0f".format(analytics.consistency * 100)}%",
                     style =
                         TextStyle(
-                            fontSize = 14.sp,
+                            fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
-                            color = GlanceTheme.colors.onSecondaryContainer,
+                            color = GlanceTheme.colors.primary,
                         ),
                 )
-                Spacer(modifier = GlanceModifier.width(4.dp))
                 Text(
-                    text = "consistency",
-                    style =
-                        TextStyle(fontSize = 9.sp, color = GlanceTheme.colors.onSecondaryContainer),
+                    text = " consistency",
+                    style = TextStyle(fontSize = 8.sp, color = GlanceTheme.colors.onSurfaceVariant),
                 )
             }
             Spacer(modifier = GlanceModifier.defaultWeight())
             Text(
-                text = "Tap for Analytics",
-                style = TextStyle(fontSize = 9.sp, color = GlanceTheme.colors.primary),
+                text = "Analytics \u2192",
+                style = TextStyle(fontSize = 8.sp, color = GlanceTheme.colors.primary),
             )
         }
     }
@@ -207,155 +195,105 @@ private fun CompactContent(trend: PointsTrend, analytics: OverallAnalytics) {
 @Composable
 @GlanceComposable
 private fun FullContent(trend: PointsTrend, analytics: OverallAnalytics) {
-    Column(modifier = GlanceModifier.fillMaxSize().padding(horizontal = 14.dp, vertical = 6.dp)) {
-        // Primary: StatPill row — larger fonts, prominent comparison
-        Row(modifier = GlanceModifier.fillMaxWidth()) {
-            StatPill(
+    Column(modifier = GlanceModifier.fillMaxSize().padding(horizontal = 14.dp, vertical = 4.dp)) {
+        // Mini stat chips: ultra-compact inline row
+        Row(
+            modifier = GlanceModifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            StatChip(
                 label = "This Week",
                 value = trend.currentPartialPoints.toString(),
-                icon = R.drawable.check_circle,
                 tint = GlanceTheme.colors.primary,
                 modifier = GlanceModifier.defaultWeight(),
             )
-            Spacer(modifier = GlanceModifier.width(6.dp))
-            StatPill(
+            Spacer(modifier = GlanceModifier.width(4.dp))
+            StatChip(
                 label = "Last Week",
                 value = trend.previousPartialPoints.toString(),
-                icon = R.drawable.circle_border,
                 tint = GlanceTheme.colors.onSurfaceVariant,
                 modifier = GlanceModifier.defaultWeight(),
             )
-            Spacer(modifier = GlanceModifier.width(6.dp))
+            Spacer(modifier = GlanceModifier.width(4.dp))
             val netUp = trend.partialNetChange >= 0
-            StatPill(
-                label = "Change",
-                value = "${if (trend.partialNetChange > 0) "+" else ""}${trend.partialNetChange}",
-                icon = R.drawable.arrow_forward,
-                tint = if (netUp) GlanceTheme.colors.tertiary else GlanceTheme.colors.error,
+            val changeColor = if (netUp) GlanceTheme.colors.tertiary else GlanceTheme.colors.error
+            StatChip(
+                label = if (netUp) "+${trend.partialNetChange}" else trend.partialNetChange.toString(),
+                value = "${"%.0f".format(kotlin.math.abs(trend.partialNetChangePercent))}%",
+                tint = changeColor,
                 modifier = GlanceModifier.defaultWeight(),
             )
         }
 
         Spacer(modifier = GlanceModifier.height(6.dp))
 
-        // Secondary row: MetricPills + mini graph side by side
+        // Large graph
         val last14Days = dailyData(analytics.heatMapData)
-        Row(modifier = GlanceModifier.fillMaxWidth()) {
-            Column(modifier = GlanceModifier.defaultWeight()) {
-                MetricPill(
-                    label = "Consistency",
-                    value = "${"%.0f".format(analytics.consistency * 100)}%",
-                    icon = R.drawable.heat,
-                    modifier = GlanceModifier.fillMaxWidth(),
-                )
-                Spacer(modifier = GlanceModifier.height(3.dp))
-                MetricPill(
-                    label = "Streak",
-                    value = "${trend.currentStreakWeeks}w",
-                    icon = R.drawable.heat_outlined,
-                    modifier = GlanceModifier.fillMaxWidth(),
-                )
-                Spacer(modifier = GlanceModifier.height(3.dp))
-                MetricPill(
-                    label = "Total",
-                    value = trend.totalPointsAllTime.toString(),
-                    icon = R.drawable.analytics,
-                    modifier = GlanceModifier.fillMaxWidth(),
-                )
-            }
-            Spacer(modifier = GlanceModifier.width(6.dp))
-            ProgressLineGraph(
-                dataPoints = last14Days,
-                modifier = GlanceModifier.defaultWeight().height(80.dp),
-            )
-        }
+        ProgressLineGraph(
+            dataPoints = last14Days,
+            modifier = GlanceModifier.fillMaxWidth().height(74.dp),
+        )
 
         Spacer(modifier = GlanceModifier.height(4.dp))
 
-        Text(
-            text = "Tap to open Analytics \u2192",
-            style = TextStyle(fontSize = 8.sp, color = GlanceTheme.colors.primary),
-        )
+        // Secondary meta row
+        Row(
+            modifier = GlanceModifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            MetaTag(text = "${"%.0f".format(analytics.consistency * 100)}% consistent")
+            Spacer(modifier = GlanceModifier.width(8.dp))
+            MetaTag(text = "${trend.currentStreakWeeks}w streak")
+            Spacer(modifier = GlanceModifier.width(8.dp))
+            MetaTag(text = "${trend.totalPointsAllTime} total")
+            Spacer(modifier = GlanceModifier.defaultWeight())
+            Text(
+                text = "\u2192",
+                style = TextStyle(fontSize = 10.sp, color = GlanceTheme.colors.primary),
+            )
+        }
     }
 }
 
 @Composable
 @GlanceComposable
-private fun StatPill(
+private fun StatChip(
     label: String,
     value: String,
-    icon: Int,
     tint: androidx.glance.unit.ColorProvider,
     modifier: GlanceModifier = GlanceModifier,
 ) {
     Column(
         modifier =
             modifier
-                .padding(3.dp)
                 .background(GlanceTheme.colors.secondaryContainer)
-                .cornerRadius(14.dp),
+                .cornerRadius(10.dp)
+                .padding(horizontal = 6.dp, vertical = 5.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Spacer(modifier = GlanceModifier.height(6.dp))
-        Image(
-            provider = ImageProvider(icon),
-            contentDescription = null,
-            colorFilter = ColorFilter.tint(tint),
-            modifier = GlanceModifier.width(18.dp).height(18.dp),
-        )
-        Spacer(modifier = GlanceModifier.height(2.dp))
         Text(
             text = value,
-            style = TextStyle(fontSize = 20.sp, fontWeight = FontWeight.Bold, color = tint),
+            style =
+                TextStyle(fontSize = 15.sp, fontWeight = FontWeight.Bold, color = tint),
         )
         Text(
             text = label,
-            style = TextStyle(fontSize = 9.sp, color = GlanceTheme.colors.onSurfaceVariant),
+            style = TextStyle(fontSize = 8.sp, color = GlanceTheme.colors.onSurfaceVariant),
         )
-        Spacer(modifier = GlanceModifier.height(6.dp))
     }
 }
 
 @Composable
 @GlanceComposable
-private fun MetricPill(
-    label: String,
-    value: String,
-    icon: Int,
-    modifier: GlanceModifier = GlanceModifier,
-) {
-    Row(
-        modifier =
-            modifier
-                .padding(2.dp)
-                .background(GlanceTheme.colors.secondaryContainer)
-                .cornerRadius(10.dp)
-                .padding(horizontal = 6.dp, vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Image(
-            provider = ImageProvider(icon),
-            contentDescription = null,
-            colorFilter = ColorFilter.tint(GlanceTheme.colors.onSurfaceVariant),
-            modifier = GlanceModifier.width(12.dp).height(12.dp),
-        )
-        Spacer(modifier = GlanceModifier.width(3.dp))
-        Column {
-            Text(
-                text = value,
-                style =
-                    TextStyle(
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = GlanceTheme.colors.onSurface,
-                    ),
-            )
-            Text(
-                text = label,
-                style = TextStyle(fontSize = 7.sp, color = GlanceTheme.colors.onSurfaceVariant),
-            )
-        }
-    }
+private fun MetaTag(text: String) {
+    Text(
+        text = text,
+        style =
+            TextStyle(
+                fontSize = 8.sp,
+                color = GlanceTheme.colors.onSurfaceVariant,
+            ),
+    )
 }
 
 private fun dailyData(heatMapData: Map<LocalDate, Int>, days: Int = 14): List<Int> {

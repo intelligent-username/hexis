@@ -46,18 +46,18 @@ import kotlin.math.max
 fun PointsStatCards(pointsSummary: PointsSummary, modifier: Modifier = Modifier) {
     Row(modifier = modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         StatCard(
-            label = "This Week So Far",
+            label = "This Week",
             value = pointsSummary.currentWeekPoints,
             modifier = Modifier.weight(1f),
         )
         StatCard(
-            label = "Same Time Last Week",
+            label = "Last Week",
             value = pointsSummary.lastWeekPoints,
             modifier = Modifier.weight(1f),
         )
-        ChangeCard(
-            current = pointsSummary.currentWeekPoints,
-            previous = pointsSummary.lastWeekPoints,
+        StatCard(
+            label = "Total",
+            value = pointsSummary.totalPoints,
             modifier = Modifier.weight(1f),
         )
     }
@@ -72,15 +72,9 @@ private fun StatCard(label: String, value: Int, modifier: Modifier = Modifier) {
             CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
     ) {
         Column(
-            modifier = Modifier.padding(12.dp),
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 10.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelSmall.copy(fontFamily = flexFontRounded()),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = value.toString(),
                 style =
@@ -88,68 +82,13 @@ private fun StatCard(label: String, value: Int, modifier: Modifier = Modifier) {
                         fontFamily = flexFontEmphasis(),
                         fontWeight = FontWeight.Bold,
                     ),
+                color = MaterialTheme.colorScheme.onSurface,
             )
-        }
-    }
-}
-
-@Composable
-private fun ChangeCard(current: Int, previous: Int, modifier: Modifier = Modifier) {
-    val change =
-        if (previous == 0 && current == 0) null
-        else {
-            ((current - previous).toFloat() / max(previous, 1)) * 100f
-        }
-
-    Card(
-        modifier = modifier,
-        shape = RoundedCornerShape(16.dp),
-        colors =
-            CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-    ) {
-        Column(
-            modifier = Modifier.padding(12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
             Text(
-                text = "Change",
+                text = label,
                 style = MaterialTheme.typography.labelSmall.copy(fontFamily = flexFontRounded()),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Spacer(modifier = Modifier.height(4.dp))
-            if (change != null) {
-                val isUp = change >= 0
-                val color =
-                    if (isUp) MaterialTheme.colorScheme.tertiary
-                    else MaterialTheme.colorScheme.error
-                val arrow = if (isUp) "\u25B2" else "\u25BC"
-                Box(
-                    modifier =
-                        Modifier.clip(RoundedCornerShape(20.dp))
-                            .background(color.copy(alpha = 0.15f))
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
-                ) {
-                    Text(
-                        text = "$arrow ${"%.0f".format(change)}%",
-                        style =
-                            MaterialTheme.typography.labelSmall.copy(
-                                fontFamily = flexFontRounded(),
-                                fontWeight = FontWeight.Bold,
-                            ),
-                        color = color,
-                    )
-                }
-            } else {
-                Text(
-                    text = "\u2014",
-                    style =
-                        MaterialTheme.typography.titleLarge.copy(
-                            fontFamily = flexFontEmphasis(),
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        ),
-                )
-            }
         }
     }
 }
