@@ -21,6 +21,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import com.loc.hexis.core.habits.HabitWithAnalytics
 import com.loc.hexis.core.habits.OverallAnalytics
+import com.loc.hexis.core.habits.PointsTrend
 import com.loc.hexis.core.habits.TimeDivision
 import kotlinx.datetime.DayOfWeek
 
@@ -66,4 +67,5 @@ data class HabitState(
     val timeDivisions: List<TimeDivision> = emptyList(),
     val habitTimeDivisionMap: Map<Long, Long> = emptyMap(),
     val selectedTimeDivisionId: Long? = null,
+    val pointsTrend: PointsTrend = PointsTrend.empty,
 )

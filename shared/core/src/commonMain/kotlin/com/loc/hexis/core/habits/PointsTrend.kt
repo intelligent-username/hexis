@@ -20,17 +20,29 @@ package com.loc.hexis.core.habits
 import kotlinx.datetime.LocalDate
 import kotlinx.serialization.Serializable
 
-typealias HeatMapData = Map<LocalDate, Int>
-
-@Serializable data class HabitRanking(val title: String, val consistency: Float)
-
 @Serializable
-data class OverallAnalytics(
-    val heatMapData: HeatMapData = emptyMap(),
-    val weekDayFrequencyData: WeekDayFrequencyData = emptyMap(),
-    val completedHabits: Pair<LocalDate, List<String>>? = null,
-    val consistency: Float = 0f,
-    val topHabits: List<HabitRanking> = emptyList(),
-    val totalPoints: Int = 0,
-    val weeklyPointsHistory: List<Int> = emptyList(),
-)
+data class PointsTrend(
+    val weeklyPoints: List<WeeklyPoints>,
+    val currentWeekPoints: Int,
+    val previousWeekPoints: Int,
+    val netChange: Int,
+    val netChangePercent: Float,
+    val totalPointsAllTime: Int,
+    val averageWeeklyPoints: Float,
+    val bestWeekPoints: Int,
+    val currentStreakWeeks: Int,
+) {
+    companion object {
+        val empty = PointsTrend(
+            weeklyPoints = emptyList(),
+            currentWeekPoints = 0,
+            previousWeekPoints = 0,
+            netChange = 0,
+            netChangePercent = 0f,
+            totalPointsAllTime = 0,
+            averageWeeklyPoints = 0f,
+            bestWeekPoints = 0,
+            currentStreakWeeks = 0,
+        )
+    }
+}

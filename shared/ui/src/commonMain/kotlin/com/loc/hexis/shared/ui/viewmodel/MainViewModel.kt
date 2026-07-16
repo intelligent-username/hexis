@@ -22,6 +22,7 @@ import androidx.lifecycle.viewModelScope
 import com.loc.hexis.core.interfaces.ChangelogManager
 import com.loc.hexis.core.interfaces.SettingsDatastore
 import com.loc.hexis.core.interfaces.ThemeDatastore
+import com.loc.hexis.shared.ui.app.LaunchSource
 import com.loc.hexis.shared.ui.app.MainAppState
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -136,5 +137,9 @@ class MainViewModel(
 
     fun setShortcutAction(action: String?) {
         _state.update { it.copy(shortcutAction = action) }
+    }
+
+    fun setLaunchSource(source: LaunchSource) {
+        _state.update { it.copy(launchSource = source) }
     }
 }

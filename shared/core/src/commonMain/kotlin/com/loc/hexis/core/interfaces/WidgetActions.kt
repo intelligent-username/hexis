@@ -15,22 +15,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.loc.hexis.core.habits
+package com.loc.hexis.core.interfaces
 
-import kotlinx.datetime.LocalDate
-import kotlinx.serialization.Serializable
-
-typealias HeatMapData = Map<LocalDate, Int>
-
-@Serializable data class HabitRanking(val title: String, val consistency: Float)
-
-@Serializable
-data class OverallAnalytics(
-    val heatMapData: HeatMapData = emptyMap(),
-    val weekDayFrequencyData: WeekDayFrequencyData = emptyMap(),
-    val completedHabits: Pair<LocalDate, List<String>>? = null,
-    val consistency: Float = 0f,
-    val topHabits: List<HabitRanking> = emptyList(),
-    val totalPoints: Int = 0,
-    val weeklyPointsHistory: List<Int> = emptyList(),
-)
+object WidgetActions {
+    const val OPEN_HABITS = "widget_open_habits"
+    const val OPEN_HABITS_ANALYTICS = "widget_open_habits_analytics"
+    const val OPEN_TASKS = "widget_open_tasks"
+    const val OPEN_GAMIFICATION = "widget_open_gamification"
+    const val OPEN_OVERALL_ANALYTICS = "widget_open_overall_analytics"
+}

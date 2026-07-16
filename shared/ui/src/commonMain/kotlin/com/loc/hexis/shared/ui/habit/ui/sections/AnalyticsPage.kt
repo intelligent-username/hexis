@@ -75,7 +75,9 @@ import com.loc.hexis.shared.ui.util.rememberToday
 import com.loc.hexis.shared.ui.habit.ui.component.HabitUpsertSheet
 import com.loc.hexis.shared.ui.habit.ui.component.TimeDivisionEditDialog
 import com.loc.hexis.shared.ui.habit.ui.component.stats.CalendarMap
+import com.loc.hexis.shared.ui.habit.ui.component.stats.PointsStatCards
 import com.loc.hexis.shared.ui.habit.ui.component.stats.StartStats
+import com.loc.hexis.shared.ui.habit.ui.component.stats.TrendLineChart
 import com.loc.hexis.shared.ui.habit.ui.component.stats.WeekDayBreakdown
 import com.loc.hexis.shared.ui.habit.ui.component.stats.WeeklyActivity
 import com.loc.hexis.shared.ui.habit.ui.component.stats.WeeklyBooleanHeatMap
@@ -246,6 +248,20 @@ fun AnalyticsPage(
                     startDate = currentHabit.habit.time.date,
                     bestStreak = currentHabit.bestStreak,
                     currentStreak = currentHabit.currentStreak,
+                )
+            }
+
+            item {
+                PointsStatCards(
+                    pointsSummary = currentHabit.pointsSummary,
+                    modifier = Modifier.widthIn(max = maxWidth),
+                )
+            }
+
+            item {
+                TrendLineChart(
+                    weeklyPointsHistory = currentHabit.pointsSummary.weeklyPointsHistory,
+                    modifier = Modifier.widthIn(max = maxWidth),
                 )
             }
 

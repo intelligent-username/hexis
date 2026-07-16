@@ -23,6 +23,14 @@ import com.loc.hexis.core.app.VersionEntry
 import com.loc.hexis.core.settings.Sections
 import com.loc.hexis.core.theme.Theme
 
+enum class LaunchSource {
+    LAUNCHER,
+    WIDGET,
+    SHORTCUT,
+    NOTIFICATION,
+    UNKNOWN,
+}
+
 @Stable
 @Immutable
 data class MainAppState(
@@ -32,4 +40,5 @@ data class MainAppState(
     val theme: Theme = Theme(),
     val currentChangelog: VersionEntry? = null,
     val shortcutAction: String? = null,
+    val launchSource: LaunchSource = LaunchSource.UNKNOWN,
 )

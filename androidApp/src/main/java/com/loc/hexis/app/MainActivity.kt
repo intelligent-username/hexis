@@ -17,6 +17,7 @@
 
 package com.loc.hexis.app
 
+import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.compose.setContent
@@ -36,6 +37,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.loc.hexis.core.data.notification.HexisNotificationManager.Companion.createNotificationChannel
 import com.loc.hexis.core.interfaces.BiometricUtils
 import com.loc.hexis.shared.ui.LocalWindowSizeClass
+import com.loc.hexis.shared.ui.app.LaunchSource
 import com.loc.hexis.shared.ui.components.InitialLoading
 import com.loc.hexis.shared.ui.theme.HexisTheme
 import com.loc.hexis.shared.ui.viewmodel.MainViewModel
@@ -54,6 +56,18 @@ class MainActivity : FragmentActivity() {
         FileKit.init(this)
 
         createNotificationChannel(this)
+
+        val launchSource = when {
+            intent.hasExtra("shortcut_action") -> {
+                val action = intent.getStringExtra("shortcut_action")!!
+                if (action.startsWith("widget_")) LaunchSource.WIDGET
+                else LaunchSource.SHORTCUT
+            }
+            intent.action == Intent.ACTION_MAIN && intent.hasCategory(Intent.CATEGORY_LAUNCHER) -> LaunchSource.LAUNCHER
+            intent.getBooleanExtra("from_notification", false) -> LaunchSource.NOTIFICATION
+            else -> LaunchSource.UNKNOWN
+        }
+        mainViewModel.setLaunchSource(launchSource)
 
         intent.getStringExtra("shortcut_action")?.let { mainViewModel.setShortcutAction(it) }
 
@@ -103,6 +117,16 @@ class MainActivity : FragmentActivity() {
 
     override fun onNewIntent(intent: android.content.Intent) {
         super.onNewIntent(intent)
+        val source = when {
+            intent.hasExtra("shortcut_action") -> {
+                val action = intent.getStringExtra("shortcut_action")!!
+                if (action.startsWith("widget_")) LaunchSource.WIDGET
+                else LaunchSource.SHORTCUT
+            }
+            intent.getBooleanExtra("from_notification", false) -> LaunchSource.NOTIFICATION
+            else -> LaunchSource.UNKNOWN
+        }
+        mainViewModel.setLaunchSource(source)
         intent.getStringExtra("shortcut_action")?.let { mainViewModel.setShortcutAction(it) }
     }
 

@@ -45,12 +45,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavKey
+import com.loc.hexis.core.interfaces.WidgetActions
 import com.loc.hexis.shared.ui.LocalWindowSizeClass
 import com.loc.hexis.shared.ui.app.AppSections.Companion.toIconRes
 import com.loc.hexis.shared.ui.app.AppSections.Companion.toStringRes
+import com.loc.hexis.shared.ui.habit.HabitsAction
 import com.loc.hexis.shared.ui.habit.ui.HabitsGraph
 import com.loc.hexis.shared.ui.setting.ui.SettingsGraph
 import com.loc.hexis.shared.ui.note.ui.NotesPage
+import com.loc.hexis.shared.ui.task.TaskAction
 import com.loc.hexis.shared.ui.task.ui.TasksPage
 import com.loc.hexis.shared.ui.task.ui.component.PomodoroPage
 import com.loc.hexis.shared.ui.viewmodel.HabitViewModel
@@ -89,27 +92,41 @@ fun MainApp(state: MainAppState) {
 
     androidx.compose.runtime.LaunchedEffect(state.shortcutAction) {
         state.shortcutAction?.let { action ->
+            val habitPage = AppSections.mainRoutes.indexOf(AppSections.HabitPages).coerceAtLeast(0)
+            val taskPage = AppSections.mainRoutes.indexOf(AppSections.TaskPages).coerceAtLeast(0)
+
             when (action) {
                 "add_habit" -> {
-                    pagerState.animateScrollToPage(
-                        AppSections.mainRoutes.indexOf(AppSections.HabitPages).coerceAtLeast(0)
-                    )
-                    hvm.onAction(com.loc.hexis.shared.ui.habit.HabitsAction.OnAddHabitClicked)
+                    pagerState.animateScrollToPage(habitPage)
+                    hvm.onAction(HabitsAction.OnAddHabitClicked)
                 }
                 "add_task" -> {
-                    pagerState.animateScrollToPage(
-                        AppSections.mainRoutes.indexOf(AppSections.TaskPages).coerceAtLeast(0)
-                    )
-                    tvm.onAction(com.loc.hexis.shared.ui.task.TaskAction.ToggleAddTaskSheet(true))
+                    pagerState.animateScrollToPage(taskPage)
+                    tvm.onAction(TaskAction.ToggleAddTaskSheet(true))
                 }
                 "overall_analytics" -> {
-                    pagerState.animateScrollToPage(
-                        AppSections.mainRoutes.indexOf(AppSections.HabitPages).coerceAtLeast(0)
-                    )
-                    hvm.onAction(com.loc.hexis.shared.ui.habit.HabitsAction.PrepareAnalytics(null))
-                    hvm.onAction(
-                        com.loc.hexis.shared.ui.habit.HabitsAction.ToggleOverallAnalytics(true)
-                    )
+                    pagerState.animateScrollToPage(habitPage)
+                    hvm.onAction(HabitsAction.PrepareAnalytics(null))
+                    hvm.onAction(HabitsAction.ToggleOverallAnalytics(true))
+                }
+
+                WidgetActions.OPEN_HABITS -> {
+                    pagerState.animateScrollToPage(habitPage)
+                    hvm.onAction(HabitsAction.NavigateToRoot)
+                }
+                WidgetActions.OPEN_HABITS_ANALYTICS -> {
+                    pagerState.animateScrollToPage(habitPage)
+                    hvm.onAction(HabitsAction.PrepareAnalytics(null))
+                    hvm.onAction(HabitsAction.ToggleAnalytics(true))
+                }
+                WidgetActions.OPEN_TASKS -> {
+                    pagerState.animateScrollToPage(taskPage)
+                }
+                WidgetActions.OPEN_GAMIFICATION,
+                WidgetActions.OPEN_OVERALL_ANALYTICS -> {
+                    pagerState.animateScrollToPage(habitPage)
+                    hvm.onAction(HabitsAction.PrepareAnalytics(null))
+                    hvm.onAction(HabitsAction.ToggleOverallAnalytics(true))
                 }
             }
             mvm.setShortcutAction(null)

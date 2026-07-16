@@ -31,4 +31,5 @@ data class HabitWithAnalytics(
     val currentStreak: Int,
     val bestStreak: Int,
     val startedDaysAgo: Long,
+    val pointsSummary: PointsSummary = PointsSummary(),
 )

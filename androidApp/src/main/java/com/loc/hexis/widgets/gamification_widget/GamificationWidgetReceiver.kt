@@ -15,22 +15,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.loc.hexis.core.habits
+package com.loc.hexis.widgets.gamification_widget
 
-import kotlinx.datetime.LocalDate
-import kotlinx.serialization.Serializable
+import androidx.glance.appwidget.GlanceAppWidgetReceiver
 
-typealias HeatMapData = Map<LocalDate, Int>
-
-@Serializable data class HabitRanking(val title: String, val consistency: Float)
-
-@Serializable
-data class OverallAnalytics(
-    val heatMapData: HeatMapData = emptyMap(),
-    val weekDayFrequencyData: WeekDayFrequencyData = emptyMap(),
-    val completedHabits: Pair<LocalDate, List<String>>? = null,
-    val consistency: Float = 0f,
-    val topHabits: List<HabitRanking> = emptyList(),
-    val totalPoints: Int = 0,
-    val weeklyPointsHistory: List<Int> = emptyList(),
-)
+class GamificationWidgetReceiver : GlanceAppWidgetReceiver() {
+    override val glanceAppWidget = GamificationWidget()
+}

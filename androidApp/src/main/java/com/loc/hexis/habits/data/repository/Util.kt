@@ -19,6 +19,7 @@ package com.loc.hexis.habits.data.repository
 
 import com.loc.hexis.core.habits.Habit
 import com.loc.hexis.core.habits.HabitStatus
+import com.loc.hexis.core.habits.PointsSummary
 import com.loc.hexis.core.habits.WeekDayFrequencyData
 import com.loc.hexis.core.habits.WeeklyComparisonData
 import com.loc.hexis.core.now
@@ -165,7 +166,7 @@ fun prepareHeatMapData(habitData: List<HabitStatus>): Map<LocalDate, Int> {
     return dateFrequency
 }
 
-private fun areConsecutiveEligibleDays(
+internal fun areConsecutiveEligibleDays(
     date1: LocalDate,
     date2: LocalDate,
     eligibleWeekdays: Set<DayOfWeek>,
@@ -179,6 +180,85 @@ private fun areConsecutiveEligibleDays(
         checkDate = checkDate.plus(1, DateTimeUnit.DAY)
     }
     return checkDate == date2
+}
+
+fun countStreakAtDate(
+    dates: List<LocalDate>,
+    eligibleWeekdays: Set<DayOfWeek>,
+    referenceDate: LocalDate,
+): Int {
+    val filtered = dates.filter { it <= referenceDate && it.dayOfWeek in eligibleWeekdays }.sorted()
+    if (filtered.isEmpty()) return 0
+
+    val last = filtered.last()
+    val gap = last.daysUntil(referenceDate)
+    if (gap > 0) {
+        var missedEligible = false
+        for (i in 1..gap) {
+            val d = last.plus(DatePeriod(days = i))
+            if (d.dayOfWeek in eligibleWeekdays && d < referenceDate) {
+                missedEligible = true
+                break
+            }
+        }
+        if (missedEligible) return 0
+    }
+
+    var streak = 1
+    for (i in filtered.size - 2 downTo 0) {
+        if (areConsecutiveEligibleDays(filtered[i], filtered[i + 1], eligibleWeekdays)) {
+            streak++
+        } else break
+    }
+    if (referenceDate.dayOfWeek in eligibleWeekdays && referenceDate !in filtered) {
+        streak++
+    }
+    return streak
+}
+
+fun computePointsSummary(
+    habit: Habit,
+    completedStatuses: List<HabitStatus>,
+    firstDay: DayOfWeek,
+): PointsSummary {
+    if (completedStatuses.isEmpty()) return PointsSummary()
+
+    val eligible = habit.days
+    val today = LocalDate.now()
+    val totalWeeks = 52
+
+    val weeklyPoints = mutableMapOf<LocalDate, Int>()
+    var totalPoints = 0
+
+    for (status in completedStatuses.sortedBy { it.date }) {
+        val allDatesUpTo = completedStatuses.filter { it.date <= status.date }.map { it.date }
+        val streak = countStreakAtDate(allDatesUpTo, eligible, status.date)
+        val pts = 10 + (streak * 2)
+        totalPoints += pts
+
+        val daysFromFirst = (status.date.dayOfWeek.isoDayNumber - firstDay.isoDayNumber + 7) % 7
+        val weekStart = status.date.minus(daysFromFirst, DateTimeUnit.DAY)
+        weeklyPoints[weekStart] = (weeklyPoints[weekStart] ?: 0) + pts
+    }
+
+    val todayWeekStart = today.minus(
+        (today.dayOfWeek.isoDayNumber - firstDay.isoDayNumber + 7) % 7, DateTimeUnit.DAY
+    )
+    val periodStart = todayWeekStart.minus(totalWeeks, DateTimeUnit.WEEK)
+
+    val history = (0..totalWeeks).map { i ->
+        weeklyPoints[periodStart.plus(i, DateTimeUnit.WEEK)] ?: 0
+    }
+
+    val currentWeekStart = todayWeekStart
+    val lastWeekStart = currentWeekStart.minus(1, DateTimeUnit.WEEK)
+
+    return PointsSummary(
+        currentWeekPoints = weeklyPoints[currentWeekStart] ?: 0,
+        lastWeekPoints = weeklyPoints[lastWeekStart] ?: 0,
+        totalPoints = totalPoints,
+        weeklyPointsHistory = history,
+    )
 }
 
 fun filterCompletedStatuses(habit: Habit, statuses: List<HabitStatus>): List<HabitStatus> {

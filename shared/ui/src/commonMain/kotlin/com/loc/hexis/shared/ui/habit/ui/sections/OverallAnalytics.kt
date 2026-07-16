@@ -51,6 +51,8 @@ import com.loc.hexis.shared.ui.LocalWindowSizeClass
 import com.loc.hexis.shared.ui.habit.HabitState
 import com.loc.hexis.shared.ui.habit.HabitsAction
 import com.loc.hexis.shared.ui.habit.ui.component.stats.HabitHeatMap
+import com.loc.hexis.shared.ui.habit.ui.component.stats.PointsStatCards
+import com.loc.hexis.shared.ui.habit.ui.component.stats.TrendLineChart
 import com.loc.hexis.shared.ui.habit.ui.component.stats.WeekDayBreakdown
 import com.loc.hexis.shared.ui.theme.flexFontEmphasis
 import com.loc.hexis.shared.ui.theme.flexFontRounded
@@ -220,6 +222,56 @@ fun OverallAnalytics(
                     modifier = Modifier.widthIn(max = maxWidth),
                 )
             }
+
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth().widthIn(max = maxWidth),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    StatCard(
+                        label = stringResource(Res.string.total_points),
+                        value = state.overallAnalytics.totalPoints,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+            }
+
+            item {
+                TrendLineChart(
+                    weeklyPointsHistory = state.overallAnalytics.weeklyPointsHistory,
+                    modifier = Modifier.widthIn(max = maxWidth),
+                )
+            }
         }
+    }
+}
+
+@Composable
+private fun StatCard(
+    label: String,
+    value: Int,
+    modifier: Modifier = Modifier,
+) {
+    androidx.compose.foundation.layout.Column(
+        modifier = modifier
+            .background(
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            )
+            .padding(12.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall.copy(fontFamily = flexFontRounded()),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            text = value.toString(),
+            style = MaterialTheme.typography.titleLarge.copy(
+                fontFamily = flexFontEmphasis(),
+                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+            ),
+        )
     }
 }

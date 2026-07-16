@@ -55,6 +55,7 @@ class HabitViewModel(
     private var overallAnalyticsJob: Job? = null
     private var observeDatastoreJob: Job? = null
     private var completedHabitsFetchJob: Job? = null
+    private var pointsTrendJob: Job? = null
 
     private val _state = MutableStateFlow(HabitState())
 
@@ -65,6 +66,7 @@ class HabitViewModel(
                 observeDataStore()
                 observeHabitStatuses()
                 observeOverallAnalytics()
+                observePointsTrend()
 
                 rescheduleAllHabits()
             }
@@ -243,6 +245,14 @@ class HabitViewModel(
                 }
 
                 is ToggleTimeDivisionSheet -> {}
+
+                is NavigateToRoot -> {
+                    _state.update { it.copy(analyticsHabitId = null, showOverallAnalytics = false) }
+                }
+
+                is ToggleAnalytics -> {
+                    _state.update { it.copy(showOverallAnalytics = action.show) }
+                }
             }
         }
     }
@@ -274,6 +284,17 @@ class HabitViewModel(
                 .getOverallAnalytics()
                 .onEach { overallAnalytics ->
                     _state.update { it.copy(overallAnalytics = overallAnalytics) }
+                }
+                .launchIn(viewModelScope)
+    }
+
+    private fun observePointsTrend() {
+        pointsTrendJob?.cancel()
+        pointsTrendJob =
+            repo
+                .getPointsTrend()
+                .onEach { trend ->
+                    _state.update { it.copy(pointsTrend = trend) }
                 }
                 .launchIn(viewModelScope)
     }
