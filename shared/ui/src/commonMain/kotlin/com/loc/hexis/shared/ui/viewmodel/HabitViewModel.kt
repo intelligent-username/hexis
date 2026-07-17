@@ -9,7 +9,6 @@ import com.loc.hexis.core.interfaces.SettingsDatastore
 import com.loc.hexis.core.now
 import com.loc.hexis.shared.ui.habit.HabitState
 import com.loc.hexis.shared.ui.habit.HabitsAction
-import com.loc.hexis.shared.ui.habit.HabitsAction.*
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -59,11 +58,11 @@ class HabitViewModel(
     fun onAction(action: HabitsAction) {
         viewModelScope.launch {
             when (action) {
-                is AddHabit -> upsertHabit(action.habit)
+                is HabitsAction.AddHabit -> upsertHabit(action.habit)
 
-                is DeleteHabit -> deleteHabit(action.habit)
+                is HabitsAction.DeleteHabit -> deleteHabit(action.habit)
 
-                is InsertStatus -> toggleHabitProgress(action.habit, action.date)
+                is HabitsAction.InsertStatus -> toggleHabitProgress(action.habit, action.date)
 
                 is HabitsAction.ToggleHabitProgress ->
                     toggleHabitProgress(action.habit, action.date)
@@ -74,9 +73,9 @@ class HabitViewModel(
                 is HabitsAction.IncrementHabitProgress ->
                     incrementHabitProgress(action.habit, action.date)
 
-                is UpdateHabit -> upsertHabit(action.habit)
+                is HabitsAction.UpdateHabit -> upsertHabit(action.habit)
 
-                ReorderHabits -> {
+                HabitsAction.ReorderHabits -> {
                     _state.update { it.copy(isReordering = true) }
                     val currentList =
                         _state.value.habitsWithAnalytics.mapIndexed { index, analytics ->
@@ -92,21 +91,21 @@ class HabitViewModel(
                     }
                 }
 
-                is PrepareAnalytics -> {
+                is HabitsAction.PrepareAnalytics -> {
                     _state.update { it.copy(analyticsHabitId = action.habit?.id) }
                 }
 
-                OnAddHabitClicked -> {
+                HabitsAction.OnAddHabitClicked -> {
                     _state.update { it.copy(showHabitAddSheet = true) }
                 }
 
-                DismissAddHabitDialog -> _state.update { it.copy(showHabitAddSheet = false) }
+                HabitsAction.DismissAddHabitDialog -> _state.update { it.copy(showHabitAddSheet = false) }
 
-                is OnToggleCompactView -> datastore.setCompactView(action.pref)
+                is HabitsAction.OnToggleCompactView -> datastore.setCompactView(action.pref)
 
-                is OnToggleEditState -> _state.update { it.copy(editState = action.pref) }
+                is HabitsAction.OnToggleEditState -> _state.update { it.copy(editState = action.pref) }
 
-                is OnTransientHabitReorder -> {
+                is HabitsAction.OnTransientHabitReorder -> {
                     if (action.from == action.to) return@launch
                     val currentState = _state.value
                     val filteredList =
@@ -132,7 +131,7 @@ class HabitViewModel(
                     }
                 }
 
-                is FetchCompletedHabitsForDate -> {
+                is HabitsAction.FetchCompletedHabitsForDate -> {
                     completedHabitsFetchJob?.cancel()
                     completedHabitsFetchJob = launch {
                         if (action.date == null) {
@@ -162,22 +161,22 @@ class HabitViewModel(
                     }
                 }
 
-                is ToggleArchiveHabit -> {
+                is HabitsAction.ToggleArchiveHabit -> {
                     val currentArchived = _state.value.archivedHabitIds.toMutableSet()
                     if (action.isArchived) currentArchived.add(action.id)
                     else currentArchived.remove(action.id)
                     datastore.setArchivedHabitIds(currentArchived)
                 }
 
-                is ToggleShowArchivedHabits -> {
+                is HabitsAction.ToggleShowArchivedHabits -> {
                     _state.update { it.copy(showArchivedHabits = action.show) }
                 }
 
-                is ToggleOverallAnalytics -> {
+                is HabitsAction.ToggleOverallAnalytics -> {
                     _state.update { it.copy(showOverallAnalytics = action.show) }
                 }
 
-                is AddTimeDivision -> {
+                is HabitsAction.AddTimeDivision -> {
                     val currentList = _state.value.timeDivisions.toMutableList()
                     val newDivision =
                         action.division.copy(
@@ -190,7 +189,7 @@ class HabitViewModel(
                     datastore.setTimeDivisions(currentList)
                 }
 
-                is UpdateTimeDivision -> {
+                is HabitsAction.UpdateTimeDivision -> {
                     val currentList = _state.value.timeDivisions.toMutableList()
                     val index = currentList.indexOfFirst { it.id == action.division.id }
                     if (index != -1) {
@@ -199,7 +198,7 @@ class HabitViewModel(
                     }
                 }
 
-                is DeleteTimeDivision -> {
+                is HabitsAction.DeleteTimeDivision -> {
                     val currentList = _state.value.timeDivisions.toMutableList()
                     currentList.removeAll { it.id == action.id }
                     datastore.setTimeDivisions(currentList)
@@ -214,26 +213,24 @@ class HabitViewModel(
                     }
                 }
 
-                is ReorderTimeDivisions -> {
+                is HabitsAction.ReorderTimeDivisions -> {
                     val currentList = action.mapping.map { it.second }.toMutableList()
                     datastore.setTimeDivisions(currentList)
                 }
 
-                is SetHabitTimeDivision -> {
+                is HabitsAction.SetHabitTimeDivision -> {
                     datastore.setHabitTimeDivision(action.habitId, action.divisionId)
                 }
 
-                is SelectTimeDivision -> {
+                is HabitsAction.SelectTimeDivision -> {
                     _state.update { it.copy(selectedTimeDivisionId = action.divisionId) }
                 }
 
-                is ToggleTimeDivisionSheet -> {}
-
-                is NavigateToRoot -> {
+                is HabitsAction.NavigateToRoot -> {
                     _state.update { it.copy(analyticsHabitId = null, showOverallAnalytics = false) }
                 }
 
-                is ToggleAnalytics -> {
+                is HabitsAction.ToggleAnalytics -> {
                     _state.update { it.copy(showOverallAnalytics = action.show) }
                 }
             }

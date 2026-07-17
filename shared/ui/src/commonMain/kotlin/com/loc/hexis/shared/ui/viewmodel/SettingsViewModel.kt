@@ -16,12 +16,12 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
 import org.koin.core.annotation.KoinViewModel
 import org.koin.core.annotation.Provided
 
@@ -130,81 +130,44 @@ class SettingsViewModel(
             .launchIn(viewModelScope)
     }
 
-    private fun observeJob() =
-        viewModelScope.launch {
-            observeJob?.cancel()
-            observeJob = launch {
-                settingsDatastore
-                    .getTaskReorderPref()
-                    .onEach { pref -> _state.update { it.copy(reorderTasks = pref) } }
-                    .launchIn(this)
-
-                settingsDatastore
-                    .getNotificationsFlow()
-                    .onEach { pref -> _state.update { it.copy(pauseNotifications = pref) } }
-                    .launchIn(this)
-
-                themeDatastore
-                    .getAppThemeFlow()
-                    .onEach { flow ->
-                        _state.update { it.copy(theme = it.theme.copy(appTheme = flow)) }
+    private fun observeJob() {
+        observeJob?.cancel()
+        observeJob =
+            combine(
+                    settingsDatastore.getTaskReorderPref(),
+                    settingsDatastore.getNotificationsFlow(),
+                    themeDatastore.getAppThemeFlow(),
+                    themeDatastore.getFontPrefFlow(),
+                    themeDatastore.getSeedColorFlow(),
+                    themeDatastore.getAmoledPref(),
+                    themeDatastore.getMaterialYouFlow(),
+                    themeDatastore.getPaletteStyle(),
+                    settingsDatastore.getIs24Hr(),
+                    settingsDatastore.getStartingSectionPref(),
+                    settingsDatastore.getStartOfTheWeekPref(),
+                    settingsDatastore.getBiometricLockPref(),
+                ) { reorderTasks, pauseNotifications, appTheme, font, seedColor, isAmoled, isMaterialYou,
+                    paletteStyle, is24Hr, startingPage, startOfTheWeek, isBiometricLockOn ->
+                    _state.update {
+                        it.copy(
+                            reorderTasks = reorderTasks,
+                            pauseNotifications = pauseNotifications,
+                            theme =
+                                it.theme.copy(
+                                    appTheme = appTheme,
+                                    font = font,
+                                    seedColor = seedColor,
+                                    isAmoled = isAmoled,
+                                    isMaterialYou = isMaterialYou,
+                                    paletteStyle = paletteStyle,
+                                ),
+                            is24Hr = is24Hr,
+                            startingPage = startingPage,
+                            startOfTheWeek = startOfTheWeek,
+                            isBiometricLockOn = isBiometricLockOn,
+                        )
                     }
-                    .launchIn(this)
-
-                themeDatastore
-                    .getFontPrefFlow()
-                    .onEach { flow ->
-                        _state.update { it.copy(theme = it.theme.copy(font = flow)) }
-                    }
-                    .launchIn(this)
-
-                themeDatastore
-                    .getSeedColorFlow()
-                    .onEach { flow ->
-                        _state.update { it.copy(theme = it.theme.copy(seedColor = flow)) }
-                    }
-                    .launchIn(this)
-
-                themeDatastore
-                    .getAmoledPref()
-                    .onEach { flow ->
-                        _state.update { it.copy(theme = it.theme.copy(isAmoled = flow)) }
-                    }
-                    .launchIn(this)
-
-                themeDatastore
-                    .getMaterialYouFlow()
-                    .onEach { flow ->
-                        _state.update { it.copy(theme = it.theme.copy(isMaterialYou = flow)) }
-                    }
-                    .launchIn(this)
-
-                themeDatastore
-                    .getPaletteStyle()
-                    .onEach { flow ->
-                        _state.update { it.copy(theme = it.theme.copy(paletteStyle = flow)) }
-                    }
-                    .launchIn(this)
-
-                settingsDatastore
-                    .getIs24Hr()
-                    .onEach { flow -> _state.update { it.copy(is24Hr = flow) } }
-                    .launchIn(this)
-
-                settingsDatastore
-                    .getStartingSectionPref()
-                    .onEach { flow -> _state.update { it.copy(startingPage = flow) } }
-                    .launchIn(this)
-
-                settingsDatastore
-                    .getStartOfTheWeekPref()
-                    .onEach { flow -> _state.update { it.copy(startOfTheWeek = flow) } }
-                    .launchIn(this)
-
-                settingsDatastore
-                    .getBiometricLockPref()
-                    .onEach { flow -> _state.update { it.copy(isBiometricLockOn = flow) } }
-                    .launchIn(this)
-            }
-        }
+                }
+                .launchIn(viewModelScope)
+    }
 }

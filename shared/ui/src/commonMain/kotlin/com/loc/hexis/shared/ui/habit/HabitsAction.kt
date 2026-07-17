@@ -66,8 +66,6 @@ sealed interface HabitsAction {
 
     data class SelectTimeDivision(val divisionId: Long?) : HabitsAction
 
-    data object ToggleTimeDivisionSheet : HabitsAction
-
     data object NavigateToRoot : HabitsAction
 
     data class ToggleAnalytics(val show: Boolean) : HabitsAction
