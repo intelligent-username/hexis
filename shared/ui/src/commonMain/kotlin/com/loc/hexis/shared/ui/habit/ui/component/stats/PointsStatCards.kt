@@ -33,7 +33,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.loc.hexis.core.habits.PointsSummary
 import com.loc.hexis.shared.ui.theme.flexFontEmphasis
 import com.loc.hexis.shared.ui.theme.flexFontRounded
@@ -73,7 +75,7 @@ private fun StatChangeCard(previous: Int, current: Int, modifier: Modifier = Mod
             CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
     ) {
         Column(
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 10.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 10.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
@@ -88,8 +90,12 @@ private fun StatChangeCard(previous: Int, current: Int, modifier: Modifier = Mod
             Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = "Change",
-                style = MaterialTheme.typography.labelSmall.copy(fontFamily = flexFontRounded()),
+                style = MaterialTheme.typography.labelSmall.copy(
+                    fontFamily = flexFontRounded(),
+                    fontSize = 9.sp,
+                ),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
             )
         }
     }
@@ -104,7 +110,7 @@ private fun StatCard(label: String, value: Int, modifier: Modifier = Modifier) {
             CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
     ) {
         Column(
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 10.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 10.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
@@ -119,8 +125,12 @@ private fun StatCard(label: String, value: Int, modifier: Modifier = Modifier) {
             Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = label,
-                style = MaterialTheme.typography.labelSmall.copy(fontFamily = flexFontRounded()),
+                style = MaterialTheme.typography.labelSmall.copy(
+                    fontFamily = flexFontRounded(),
+                    fontSize = 9.sp,
+                ),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
             )
         }
     }
