@@ -109,69 +109,64 @@ fun ProgressLineGraph(
             val padB = 85f
             val gW = 1200f - padL - padR
             val gH = 400f - padT - padB
+            val barMax = max(
+                if (bestWeek > 0) bestWeek else bars.maxOrNull() ?: 1,
+                1
+            )
+            val barCount = bars.size
+            val totalGap = gW * 0.25f
+            val gap = totalGap / (barCount + 1)
+            val barW = (gW - totalGap) / barCount
+
+            // Calculate trend line points matching the center top of each weekly bar
+            val pts = bars.mapIndexed { i, valPoints ->
+                val x = padL + gap * (i + 1) + barW * i
+                val barCenterX = x + barW / 2f
+                val frac = (valPoints.toFloat() / barMax).coerceIn(0f, 1f)
+                val y = 400f - padB - frac * gH
+                Offset(barCenterX, y)
+            }
 
             // ── BAR COLUMNS ────────────────────────────────────────────────
-            if (hasWeekly) {
-                val barMax = max(
-                    if (bestWeek > 0) bestWeek else bars.maxOrNull() ?: 1,
-                    1
-                )
-                val barCount = bars.size
-                val totalGap = gW * 0.25f
-                val gap = totalGap / (barCount + 1)
-                val barW = (gW - totalGap) / barCount
+            bars.forEachIndexed { i, valPoints ->
+                val isLast = i == barCount - 1 && currentPartial > 0
+                val frac = (valPoints.toFloat() / barMax).coerceIn(0f, 1f)
+                val barH = (frac * gH).coerceAtLeast(4f)
+                val x = padL + gap * (i + 1) + barW * i
+                val top = 400f - padB - barH
+                val rect = RectF(x, top, x + barW, 400f - padB)
+                val radius = barW * 0.25f
 
-                bars.forEachIndexed { i, pts ->
-                    val isLast = i == barCount - 1 && currentPartial > 0
-                    val frac = (pts.toFloat() / barMax).coerceIn(0f, 1f)
-                    val barH = (frac * gH).coerceAtLeast(4f)
-                    val x = padL + gap * (i + 1) + barW * i
-                    val top = 400f - padB - barH
-                    val rect = RectF(x, top, x + barW, 400f - padB)
-                    val radius = barW * 0.25f
-
-                    if (isLast) {
-                        // In-progress: striped / translucent with dashed border
-                        paint.color = lineColorInt and 0x28FFFFFF.toInt()
-                        paint.style = Paint.Style.FILL
-                        canvas.drawRoundRect(rect, radius, radius, paint)
-                        paint.color = lineColorInt and 0x60FFFFFF.toInt()
-                        paint.style = Paint.Style.STROKE
-                        paint.strokeWidth = 3f
-                        paint.pathEffect = android.graphics.DashPathEffect(floatArrayOf(12f, 8f), 0f)
-                        canvas.drawRoundRect(rect, radius, radius, paint)
-                        paint.pathEffect = null
-                    } else {
-                        // Solid bar with vertical gradient from primary to primary@40%
-                        val gradient = LinearGradient(
-                            x, top, x, 400f - padB,
-                            intArrayOf(
-                                lineColorInt and 0x90FFFFFF.toInt(),
-                                lineColorInt and 0x30FFFFFF.toInt(),
-                            ),
-                            null,
-                            Shader.TileMode.CLAMP,
-                        )
-                        paint.shader = gradient
-                        paint.style = Paint.Style.FILL
-                        canvas.drawRoundRect(rect, radius, radius, paint)
-                        paint.shader = null
-                    }
+                if (isLast) {
+                    // In-progress: striped / translucent with dashed border
+                    paint.color = lineColorInt and 0x28FFFFFF.toInt()
+                    paint.style = Paint.Style.FILL
+                    canvas.drawRoundRect(rect, radius, radius, paint)
+                    paint.color = lineColorInt and 0x60FFFFFF.toInt()
+                    paint.style = Paint.Style.STROKE
+                    paint.strokeWidth = 3f
+                    paint.pathEffect = android.graphics.DashPathEffect(floatArrayOf(12f, 8f), 0f)
+                    canvas.drawRoundRect(rect, radius, radius, paint)
+                    paint.pathEffect = null
+                } else {
+                    // Solid bar with vertical gradient from primary to primary@40%
+                    val gradient = LinearGradient(
+                        x, top, x, 400f - padB,
+                        intArrayOf(
+                            lineColorInt and 0x90FFFFFF.toInt(),
+                            lineColorInt and 0x30FFFFFF.toInt(),
+                        ),
+                        null,
+                        Shader.TileMode.CLAMP,
+                    )
+                    paint.shader = gradient
+                    paint.style = Paint.Style.FILL
+                    canvas.drawRoundRect(rect, radius, radius, paint)
+                    paint.shader = null
                 }
             }
 
-            // ── TREND LINE (daily) ─────────────────────────────────────────
-            val maxVal = max(data.maxOrNull() ?: 1, 1)
-            val minVal = min(data.minOrNull() ?: 0, 0)
-            val range = max(maxVal - minVal, 1)
-
-            val pts =
-                data.mapIndexed { i, v ->
-                    val x = padL + (i.toFloat() / (data.size - 1).coerceAtLeast(1)) * gW
-                    val y = 400f - padB - ((v - minVal).toFloat() / range) * gH
-                    Offset(x, y)
-                }
-
+            // ── TREND LINE (smooth curve overlay) ──────────────────────────
             fun buildSmoothPath(): Path =
                 Path().apply {
                     moveTo(pts[0].x, pts[0].y)
@@ -226,7 +221,7 @@ fun ProgressLineGraph(
             paint.strokeJoin = Paint.Join.ROUND
             canvas.drawPath(smoothPath, paint)
 
-            // Accent dot on last point only
+            // Accent dot on last point only (center of current week's bar)
             val last = pts.last()
             paint.style = Paint.Style.FILL
             paint.color = surfaceColorInt
@@ -239,7 +234,7 @@ fun ProgressLineGraph(
             paint.typeface = Typeface.DEFAULT_BOLD
             paint.isAntiAlias = true
             paint.color = lineColorInt
-            val lastLabel = "${data.last()}"
+            val lastLabel = "${bars.last()}"
             val labelW = paint.measureText(lastLabel)
             val labelX = (last.x - labelW / 2f).coerceIn(padL, 1200f - padR - labelW)
             val labelY = (last.y - 22f).coerceAtLeast(padT + paint.textSize)
