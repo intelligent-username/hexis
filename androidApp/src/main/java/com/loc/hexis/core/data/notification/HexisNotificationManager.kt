@@ -33,8 +33,9 @@ class HexisNotificationManager(private val context: Context) {
                 NotificationChannel("1", "Hexis Notifications", importance).apply {
                     description = "Notification Channel for Habits and Tasks"
                 }
-            val notificationManager: NotificationManager =
-                context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            val notificationManager =
+                context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
+                    ?: return
 
             notificationManager.createNotificationChannel(channel)
         }

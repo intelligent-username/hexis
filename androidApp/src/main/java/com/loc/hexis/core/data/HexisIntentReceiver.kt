@@ -12,7 +12,6 @@ import com.loc.hexis.core.interfaces.IntentActions
 import com.loc.hexis.core.interfaces.SettingsDatastore
 import com.loc.hexis.core.now
 import com.loc.hexis.core.tasks.TaskRepo
-import kotlin.time.ExperimentalTime
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -28,11 +27,9 @@ class HexisIntentReceiver : BroadcastReceiver(), KoinComponent {
         private const val TAG = "HexisIntentReceiver"
     }
 
-    private val receiverScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    private val receiverScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-    @OptIn(ExperimentalTime::class)
     override fun onReceive(context: Context, intent: Intent?) {
-        Log.d(TAG, "Received intent")
         val pendingResult = goAsync()
 
         receiverScope.launch {

@@ -17,7 +17,9 @@ class SilentHapticService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val channelId = "silent_haptic_channel"
-        val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val manager =
+            getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
+                ?: return START_STICKY
 
         if (manager.getNotificationChannel(channelId) == null) {
             val channel =
@@ -46,8 +48,10 @@ class SilentHapticService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     private fun triggerSilentVibration() {
-        val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
-        val vibratorManager = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
+        val powerManager =
+            getSystemService(Context.POWER_SERVICE) as? PowerManager ?: return
+        val vibratorManager =
+            getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? VibratorManager ?: return
         val vibrator = vibratorManager.defaultVibrator
 
         val wakeLock =

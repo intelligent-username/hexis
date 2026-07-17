@@ -19,48 +19,7 @@ import kotlinx.datetime.plus
 fun countCurrentStreak(
     dates: List<LocalDate>,
     eligibleWeekdays: Set<DayOfWeek> = DayOfWeek.entries.toSet(),
-): Int {
-    if (dates.isEmpty()) return 0
-
-    val today = LocalDate.now()
-    val filteredDates = dates.filter { eligibleWeekdays.contains(it.dayOfWeek) }.sorted()
-
-    if (filteredDates.isEmpty()) return 0
-
-    val lastDate = filteredDates.last()
-
-    // Check if we need to account for eligible days between lastDate and today
-    val daysBetween = lastDate.daysUntil(today)
-    if (daysBetween > 0) {
-        // Check if there are any eligible days we missed between lastDate and today
-        var hasEligibleDayMissed = false
-        for (i in 1..daysBetween) {
-            val checkDate = lastDate.plus(DatePeriod(days = i))
-            if (eligibleWeekdays.contains(checkDate.dayOfWeek) && checkDate < today) {
-                hasEligibleDayMissed = true
-                break
-            }
-        }
-        if (hasEligibleDayMissed) return 0
-    }
-
-    var streak = 1
-    for (i in filteredDates.size - 2 downTo 0) {
-        val currentDate = filteredDates[i]
-        val nextDate = filteredDates[i + 1]
-
-        // Check if these are consecutive eligible days
-        if (areConsecutiveEligibleDays(currentDate, nextDate, eligibleWeekdays)) {
-            streak++
-        } else {
-            break
-        }
-    }
-    if (today.dayOfWeek in eligibleWeekdays && today !in filteredDates) {
-        streak++
-    }
-    return streak
-}
+): Int = countStreakAtDate(dates, eligibleWeekdays, LocalDate.now())
 
 fun countBestStreak(
     dates: List<LocalDate>,

@@ -327,10 +327,6 @@ class HabitViewModel(
         scheduler.cancel(habit)
     }
 
-    private suspend fun insertHabitStatus(habit: Habit, date: LocalDate) {
-        toggleHabitProgress(habit, date)
-    }
-
     private suspend fun toggleHabitProgress(habit: Habit, date: LocalDate) {
         if (habit.pomodoroLinked) return
         val currentValue = repo.getHabitProgress(habit.id, date)

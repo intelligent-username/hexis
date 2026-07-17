@@ -12,7 +12,9 @@ import org.koin.core.annotation.Single
 class PomodoroAlarmImpl(private val context: Context) : PomodoroAlarm {
 
     override fun schedule(timeMillis: Long) {
-        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val alarmManager =
+            context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager
+                ?: return
         val intent = Intent(context, PomodoroAlarmReceiver::class.java)
         val pendingIntent =
             PendingIntent.getBroadcast(
@@ -34,7 +36,9 @@ class PomodoroAlarmImpl(private val context: Context) : PomodoroAlarm {
     }
 
     override fun cancel() {
-        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val alarmManager =
+            context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager
+                ?: return
         val intent = Intent(context, PomodoroAlarmReceiver::class.java)
         val pendingIntent =
             PendingIntent.getBroadcast(

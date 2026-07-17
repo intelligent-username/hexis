@@ -6,8 +6,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.google.common.truth.Truth.assertThat
 import com.loc.hexis.habits.data.database.HabitDatabase
-import com.loc.hexis.shared.ui.now
-import kotlin.time.ExperimentalTime
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
@@ -38,7 +36,6 @@ class HabitDBMigrationTest {
         InstrumentationRegistry.getInstrumentation().targetContext.deleteDatabase(DB_NAME)
     }
 
-    @OptIn(ExperimentalTime::class)
     @Test
     fun migration4to5_containsCorrectData() = runBlocking {
         helper

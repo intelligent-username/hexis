@@ -16,7 +16,6 @@ import com.loc.hexis.core.tasks.TaskRepo
 import io.github.vinceglb.filekit.FileKit
 import io.github.vinceglb.filekit.dialogs.openFileSaver
 import io.github.vinceglb.filekit.writeString
-import kotlin.time.ExperimentalTime
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -33,7 +32,6 @@ class ExportImpl(
     private val pomodoroRepo: PomodoroRepo,
     private val settingsDatastore: SettingsDatastore,
 ) : ExportRepo {
-    @OptIn(ExperimentalTime::class)
     override suspend fun exportToJson() {
         coroutineScope {
             val habitsDef =

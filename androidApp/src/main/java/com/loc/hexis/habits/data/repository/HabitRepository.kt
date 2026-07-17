@@ -19,18 +19,15 @@ import com.loc.hexis.habits.data.toHabitEntity
 import com.loc.hexis.habits.data.toHabitStatus
 import com.loc.hexis.habits.data.toHabitStatusEntity
 import kotlin.math.round
-import kotlin.time.ExperimentalTime
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.DayOfWeek
@@ -42,7 +39,6 @@ import kotlinx.datetime.plus
 import org.koin.core.annotation.Single
 
 @Single(binds = [HabitRepo::class])
-@OptIn(ExperimentalTime::class)
 class HabitRepository(
     private val habitDao: HabitsDao,
     private val habitStatusDao: HabitStatusDao,
@@ -63,10 +59,11 @@ class HabitRepository(
             .flowOn(Dispatchers.IO)
 
     private val firstDayOfWeek = MutableStateFlow(DayOfWeek.MONDAY)
+    private val repoScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     init {
-        CoroutineScope(Dispatchers.IO).launch {
-            datastore.getStartOfTheWeekPref().onEach { firstDayOfWeek.update { it } }.launchIn(this)
+        repoScope.launch {
+            datastore.getStartOfTheWeekPref().collect { firstDayOfWeek.value = it }
         }
     }
 

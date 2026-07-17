@@ -54,14 +54,12 @@ import com.loc.hexis.core.interfaces.WidgetActions
 import com.loc.hexis.core.now
 import com.loc.hexis.widgets.WidgetSize
 import com.loc.hexis.widgets.rememberWidgetColorProviders
-import kotlin.time.ExperimentalTime
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.get
 
-@OptIn(ExperimentalTime::class)
 class HabitOverviewWidget : GlanceAppWidget(), KoinComponent {
     override val sizeMode: SizeMode = SizeMode.Exact
 

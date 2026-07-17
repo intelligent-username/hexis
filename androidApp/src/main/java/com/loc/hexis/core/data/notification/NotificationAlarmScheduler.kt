@@ -12,7 +12,6 @@ import com.loc.hexis.core.interfaces.AlarmScheduler
 import com.loc.hexis.core.interfaces.IntentActions
 import com.loc.hexis.core.now
 import com.loc.hexis.core.tasks.Task
-import kotlin.time.ExperimentalTime
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
@@ -22,14 +21,15 @@ import org.koin.core.annotation.Single
 
 // implementation of AlarmScheduler using AlarmManager
 @Single(binds = [AlarmScheduler::class])
-@OptIn(ExperimentalTime::class)
 class NotificationAlarmScheduler(private val context: Context) : AlarmScheduler {
 
     companion object {
         private const val TAG = "NotificationAlarmScheduler"
     }
 
-    private val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+    private val alarmManager =
+        context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager
+            ?: throw IllegalStateException("AlarmManager not available")
 
     override fun schedule(habit: Habit) {
         cancel(habit)
@@ -65,7 +65,7 @@ class NotificationAlarmScheduler(private val context: Context) : AlarmScheduler 
             pendingIntent,
         )
 
-        Log.d(TAG, "Scheduled: Habit '${habit.title}' at $scheduleTime")
+        Log.d(TAG, "Scheduled habit #${habit.id} at $scheduleTime")
     }
 
     override fun schedule(task: Task) {
@@ -76,7 +76,7 @@ class NotificationAlarmScheduler(private val context: Context) : AlarmScheduler 
         val now = LocalDateTime.now()
 
         if (scheduleTime < now) {
-            Log.d(TAG, "Task '${task.title}' reminder time is in the past")
+            Log.d(TAG, "Task #${task.id} reminder time is in the past")
             return
         }
 
@@ -100,7 +100,7 @@ class NotificationAlarmScheduler(private val context: Context) : AlarmScheduler 
             pendingIntent,
         )
 
-        Log.d(TAG, "Scheduled: Task '${task.title}' at $scheduleTime")
+        Log.d(TAG, "Scheduled task #${task.id} at $scheduleTime")
     }
 
     override fun cancel(habit: Habit) {
@@ -118,7 +118,7 @@ class NotificationAlarmScheduler(private val context: Context) : AlarmScheduler 
             )
 
         alarmManager.cancel(pendingIntent)
-        Log.d(TAG, "Cancelled: Habit '${habit.title}'")
+        Log.d(TAG, "Cancelled habit #${habit.id}")
     }
 
     override fun cancel(task: Task) {
@@ -136,7 +136,7 @@ class NotificationAlarmScheduler(private val context: Context) : AlarmScheduler 
             )
 
         alarmManager.cancel(pendingIntent)
-        Log.d(TAG, "Cancelled: Task '${task.title}'")
+        Log.d(TAG, "Cancelled task #${task.id}")
     }
 
     override fun cancelAll() {

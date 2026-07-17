@@ -6,13 +6,11 @@ import com.loc.hexis.core.habits.HabitStatus
 import com.loc.hexis.core.tasks.Category
 import com.loc.hexis.core.tasks.PomodoroSession
 import com.loc.hexis.core.tasks.Task
-import kotlin.time.ExperimentalTime
-import kotlin.time.Instant
+import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
 
-@OptIn(ExperimentalTime::class)
 fun Habit.toHabitSchema(): HabitSchema {
     return HabitSchema(
         id = id,
@@ -25,7 +23,6 @@ fun Habit.toHabitSchema(): HabitSchema {
     )
 }
 
-@OptIn(ExperimentalTime::class)
 fun HabitSchema.toHabit(): Habit {
     return Habit(
         id = id,

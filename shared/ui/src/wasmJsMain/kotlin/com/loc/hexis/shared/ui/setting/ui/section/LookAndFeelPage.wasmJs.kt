@@ -33,7 +33,9 @@ import hexis.shared.ui.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.resources.vectorResource
 
-@Composable actual fun MaterialYouToggle(isMaterialYou: Boolean, onClick: (Boolean) -> Unit) {}
+@Composable actual fun MaterialYouToggle(isMaterialYou: Boolean, onClick: (Boolean) -> Unit) {
+    println("WARNING: MaterialYouToggle not supported on WASM")
+}
 
 @Composable
 actual fun PaletteStylePicker(
