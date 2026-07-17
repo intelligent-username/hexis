@@ -257,11 +257,34 @@ class HabitRepository(
                     if (previousPartial > 0) (partialNetChange.toFloat() / previousPartial * 100)
                     else 0f
 
+                val offsetDays = weekStart.daysUntil(today)
+                val historicalPartials = weeklyPoints.dropLast(1).map { wp ->
+                    computePointsForPeriod(
+                        habits,
+                        statuses,
+                        wp.weekStart,
+                        wp.weekStart.plus(offsetDays, DateTimeUnit.DAY),
+                    )
+                }
+
+                val avgWeeklyPartial = if (historicalPartials.isNotEmpty()) {
+                    historicalPartials.average().toFloat()
+                } else {
+                    0f
+                }
+                val bestWeekPartial = if (historicalPartials.isNotEmpty()) {
+                    historicalPartials.max()
+                } else {
+                    0
+                }
+
                 trend.copy(
                     currentPartialPoints = currentPartial,
                     previousPartialPoints = previousPartial,
                     partialNetChange = partialNetChange,
                     partialNetChangePercent = partialNetChangePercent,
+                    averageWeeklyPoints = avgWeeklyPartial,
+                    bestWeekPoints = bestWeekPartial,
                 )
             }
             .flowOn(Dispatchers.Default)
@@ -495,7 +518,7 @@ class HabitRepository(
     ): Int {
         var totalPoints = 0
         habits.forEach { habit ->
-            val habitStatuses = statuses.filter { it.habitId == habit.id }
+            val habitStatuses = statuses.filter { it.habitId == habit.id && it.date in from..to }
             val eligibleDays = habit.days
             val daysInRange =
                 (0..from.daysUntil(to)).map { from.plus(it.toLong(), DateTimeUnit.DAY) }

@@ -1,9 +1,28 @@
+/*
+ * Copyright (C) 2025 Hexis Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package com.loc.hexis.widgets.progress_widget
 
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.graphics.LinearGradient
 import android.graphics.Paint
 import android.graphics.Path
+import android.graphics.RectF
+import android.graphics.Shader
 import android.graphics.Typeface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -14,6 +33,7 @@ import androidx.glance.GlanceTheme
 import androidx.glance.Image
 import androidx.glance.ImageProvider
 import androidx.glance.LocalContext
+import androidx.glance.LocalSize
 import androidx.glance.layout.ContentScale
 import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.height
@@ -22,63 +42,136 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
 
+/**
+ * Bar+line hybrid chart.
+ *
+ * [dailyData]   — 14 daily point values for the trend line
+ * [weeklyData]  — per-week point totals for bar columns (optional, up to 8 bars)
+ * [bestWeek]    — all-time best week, used to scale bars (0 = auto-scale from data)
+ * [currentPartial] — current partial-week points; if provided, last bar renders as a
+ *                    semi-transparent "in progress" column
+ */
 @Composable
 fun ProgressLineGraph(
-    dataPoints: List<Int>,
+    dailyData: List<Int>,
+    weeklyData: List<Int> = emptyList(),
+    bestWeek: Int = 0,
+    currentPartial: Int = 0,
     modifier: GlanceModifier = GlanceModifier,
     graphHeight: Dp = 80.dp,
     lineColor: ColorProvider = GlanceTheme.colors.primary,
+    surfaceColor: ColorProvider = GlanceTheme.colors.widgetBackground,
 ) {
-    val data = dataPoints.takeLast(14)
+    val data = dailyData.takeLast(14)
     if (data.size < 2) return
 
     val context = LocalContext.current
-    val resolvedColor = lineColor.getColor(context)
+    val size = LocalSize.current
+    val resolvedLine = lineColor.getColor(context)
+    val resolvedSurface = surfaceColor.getColor(context)
 
-    val colorInt =
-        ((resolvedColor.alpha * 255f).roundToInt() shl 24) or
-            ((resolvedColor.red * 255f).roundToInt() shl 16) or
-            ((resolvedColor.green * 255f).roundToInt() shl 8) or
-            ((resolvedColor.blue * 255f).roundToInt())
+    fun colorToInt(c: androidx.compose.ui.graphics.Color): Int =
+        ((c.alpha * 255f).roundToInt() shl 24) or
+            ((c.red * 255f).roundToInt() shl 16) or
+            ((c.green * 255f).roundToInt() shl 8) or
+            ((c.blue * 255f).roundToInt())
+
+    val lineColorInt = colorToInt(resolvedLine)
+    val surfaceColorInt = colorToInt(resolvedSurface)
+
+    val bars = weeklyData.takeLast(8)
+    val hasWeekly = bars.size >= 2
+
+    // Calculate actual pixel dimensions using screen density for sharp 1:1 rendering
+    val density = context.resources.displayMetrics.density
+    val scale = 1.2f
+    val w = max((size.width.value * density * scale).roundToInt(), 120)
+    val h = max((graphHeight.value * density * scale).roundToInt(), 60)
 
     val bitmap =
-        remember(data, colorInt) {
-            val w = 1200
-            val h = 360
+        remember(data, bars, lineColorInt, currentPartial, bestWeek, w, h) {
             val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
             val canvas = Canvas(bmp)
+            
+            // Scale canvas from virtual 1200x400 space to physical pixels
+            val sx = w.toFloat() / 1200f
+            val sy = h.toFloat() / 400f
+            canvas.scale(sx, sy)
+
             val paint = Paint(Paint.ANTI_ALIAS_FLAG)
 
+            // Dynamic padding inside the 1200x400 virtual space:
+            // Top padding (90f) leaves ample space for the overlaid Header.
+            // Bottom padding (85f) leaves space for the overlaid Footer.
+            val padL = 8f
+            val padR = 8f
+            val padT = 90f
+            val padB = 85f
+            val gW = 1200f - padL - padR
+            val gH = 400f - padT - padB
+
+            // ── BAR COLUMNS ────────────────────────────────────────────────
+            if (hasWeekly) {
+                val barMax = max(
+                    if (bestWeek > 0) bestWeek else bars.maxOrNull() ?: 1,
+                    1
+                )
+                val barCount = bars.size
+                val totalGap = gW * 0.25f
+                val gap = totalGap / (barCount + 1)
+                val barW = (gW - totalGap) / barCount
+
+                bars.forEachIndexed { i, pts ->
+                    val isLast = i == barCount - 1 && currentPartial > 0
+                    val frac = (pts.toFloat() / barMax).coerceIn(0f, 1f)
+                    val barH = (frac * gH).coerceAtLeast(4f)
+                    val x = padL + gap * (i + 1) + barW * i
+                    val top = 400f - padB - barH
+                    val rect = RectF(x, top, x + barW, 400f - padB)
+                    val radius = barW * 0.25f
+
+                    if (isLast) {
+                        // In-progress: striped / translucent with dashed border
+                        paint.color = lineColorInt and 0x28FFFFFF.toInt()
+                        paint.style = Paint.Style.FILL
+                        canvas.drawRoundRect(rect, radius, radius, paint)
+                        paint.color = lineColorInt and 0x60FFFFFF.toInt()
+                        paint.style = Paint.Style.STROKE
+                        paint.strokeWidth = 3f
+                        paint.pathEffect = android.graphics.DashPathEffect(floatArrayOf(12f, 8f), 0f)
+                        canvas.drawRoundRect(rect, radius, radius, paint)
+                        paint.pathEffect = null
+                    } else {
+                        // Solid bar with vertical gradient from primary to primary@40%
+                        val gradient = LinearGradient(
+                            x, top, x, 400f - padB,
+                            intArrayOf(
+                                lineColorInt and 0x90FFFFFF.toInt(),
+                                lineColorInt and 0x30FFFFFF.toInt(),
+                            ),
+                            null,
+                            Shader.TileMode.CLAMP,
+                        )
+                        paint.shader = gradient
+                        paint.style = Paint.Style.FILL
+                        canvas.drawRoundRect(rect, radius, radius, paint)
+                        paint.shader = null
+                    }
+                }
+            }
+
+            // ── TREND LINE (daily) ─────────────────────────────────────────
             val maxVal = max(data.maxOrNull() ?: 1, 1)
             val minVal = min(data.minOrNull() ?: 0, 0)
             val range = max(maxVal - minVal, 1)
 
-            val padL = 40f
-            val padR = 24f
-            val padT = 24f
-            val padB = 28f
-            val gW = w - padL - padR
-            val gH = h - padT - padB
-
-            // --- points ---
             val pts =
                 data.mapIndexed { i, v ->
                     val x = padL + (i.toFloat() / (data.size - 1).coerceAtLeast(1)) * gW
-                    val y = h - padB - ((v - minVal).toFloat() / range) * gH
+                    val y = 400f - padB - ((v - minVal).toFloat() / range) * gH
                     Offset(x, y)
                 }
 
-            // --- subtle horizontal grid lines ---
-            paint.color = colorInt and 0x18FFFFFF
-            paint.strokeWidth = 1f
-            paint.style = Paint.Style.STROKE
-            val gridCount = 3
-            for (i in 1..gridCount) {
-                val y = padT + (gH / (gridCount + 1)) * i
-                canvas.drawLine(padL, y, w - padR, y, paint)
-            }
-
-            // --- smooth cubic bezier path ---
             fun buildSmoothPath(): Path =
                 Path().apply {
                     moveTo(pts[0].x, pts[0].y)
@@ -99,64 +192,57 @@ fun ProgressLineGraph(
 
             val smoothPath = buildSmoothPath()
 
-            // --- fill ---
+            // Subtle area fill under line
             paint.style = Paint.Style.FILL
-            paint.color = colorInt and 0x14FFFFFF
-            val fillPath =
-                Path(smoothPath).apply {
-                    lineTo(pts.last().x, h - padB)
-                    lineTo(pts.first().x, h - padB)
-                    close()
-                }
+            val areaGradient = LinearGradient(
+                0f, padT, 0f, 400f - padB,
+                intArrayOf(
+                    lineColorInt and 0x22FFFFFF.toInt(),
+                    lineColorInt and 0x00FFFFFF.toInt(),
+                ),
+                null,
+                Shader.TileMode.CLAMP,
+            )
+            paint.shader = areaGradient
+            val fillPath = Path(smoothPath).apply {
+                lineTo(pts.last().x, 400f - padB)
+                lineTo(pts.first().x, 400f - padB)
+                close()
+            }
             canvas.drawPath(fillPath, paint)
+            paint.shader = null
 
-            // --- glow (wide translucent stroke) ---
+            // Subtle horizontal baseline
+            paint.color = lineColorInt and 0x24FFFFFF.toInt()
+            paint.strokeWidth = 2f
             paint.style = Paint.Style.STROKE
-            paint.strokeWidth = 14f
-            paint.color = colorInt and 0x18FFFFFF
+            canvas.drawLine(padL, 400f - padB, 1200f - padR, 400f - padB, paint)
+
+            // Main line — clean, no glow
+            paint.style = Paint.Style.STROKE
+            paint.strokeWidth = 6f
+            paint.color = lineColorInt
             paint.strokeCap = Paint.Cap.ROUND
             paint.strokeJoin = Paint.Join.ROUND
             canvas.drawPath(smoothPath, paint)
 
-            // --- main line ---
-            paint.strokeWidth = 5f
-            paint.color = colorInt
-            canvas.drawPath(smoothPath, paint)
-
-            // --- tiny dots ---
+            // Accent dot on last point only
+            val last = pts.last()
             paint.style = Paint.Style.FILL
-            paint.strokeWidth = 0f
-            val dotR = 10f
-            paint.color = colorInt and 0xCCFFFFFF.toInt()
-            pts.forEach { canvas.drawCircle(it.x, it.y, dotR, paint) }
-            paint.color = -0x1 // white outline dot
-            pts.forEach { canvas.drawCircle(it.x, it.y, dotR * 0.4f, paint) }
+            paint.color = surfaceColorInt
+            canvas.drawCircle(last.x, last.y, 14f, paint)
+            paint.color = lineColorInt
+            canvas.drawCircle(last.x, last.y, 9f, paint)
 
-            // --- last value label ---
-            paint.style = Paint.Style.FILL
-            paint.color = colorInt
-            paint.textSize = 22f
+            // Last-point value label — floats above the dot
+            paint.textSize = 28f
             paint.typeface = Typeface.DEFAULT_BOLD
             paint.isAntiAlias = true
+            paint.color = lineColorInt
             val lastLabel = "${data.last()}"
             val labelW = paint.measureText(lastLabel)
-            val lastPt = pts.last()
-            val labelX = if (lastPt.x + labelW + 10f <= w - padR) {
-                lastPt.x + 10f
-            } else {
-                lastPt.x - labelW - 10f
-            }
-            val labelY = lastPt.y - 6f
-            // subtle bg behind label
-            paint.style = Paint.Style.FILL
-            paint.color = -0x1 // white bg
-            val bgPad = 6f
-            canvas.drawRoundRect(
-                labelX - bgPad, labelY - paint.textSize + 2f,
-                labelX + labelW + bgPad, labelY + 4f,
-                6f, 6f, paint,
-            )
-            paint.color = colorInt
+            val labelX = (last.x - labelW / 2f).coerceIn(padL, 1200f - padR - labelW)
+            val labelY = (last.y - 22f).coerceAtLeast(padT + paint.textSize)
             canvas.drawText(lastLabel, labelX, labelY, paint)
 
             bmp
@@ -164,7 +250,7 @@ fun ProgressLineGraph(
 
     Image(
         provider = ImageProvider(bitmap),
-        contentDescription = "Progress Line Graph",
+        contentDescription = "Progress chart",
         contentScale = ContentScale.FillBounds,
         modifier = modifier.fillMaxWidth().height(graphHeight),
     )

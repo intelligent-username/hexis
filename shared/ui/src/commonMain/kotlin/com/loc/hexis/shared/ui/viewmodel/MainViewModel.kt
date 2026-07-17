@@ -92,6 +92,10 @@ class MainViewModel(
                     }
                     .launchIn(this)
 
+                // Read startingSection eagerly so the initial page is correct before
+                // the UI is shown, then subscribe for ongoing changes.
+                val initialSection = settingsDatastore.getStartingSectionPref().first()
+                _state.update { it.copy(startingSection = initialSection) }
                 settingsDatastore
                     .getStartingSectionPref()
                     .onEach { pref -> _state.update { it.copy(startingSection = pref) } }

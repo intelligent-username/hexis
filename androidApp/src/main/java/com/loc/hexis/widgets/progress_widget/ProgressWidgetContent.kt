@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2025 Hexis Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package com.loc.hexis.widgets.progress_widget
 
 import android.os.Build
@@ -37,6 +53,8 @@ import com.loc.hexis.widgets.WidgetSize
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.minus
+import kotlin.math.abs
+import kotlin.math.roundToInt
 
 @Composable
 @GlanceComposable
@@ -67,216 +85,172 @@ fun ProgressWidgetContent(
                 )
                 .clickable(onOpenApp)
     ) {
-        TitleBar(
-            startIcon = ImageProvider(R.drawable.analytics),
-            title = "Progress",
-            actions = {
-                if (size.width >= WidgetSize.Width4) {
-                    Box(GlanceModifier.padding(horizontal = 16.dp)) {
-                        Image(
-                            provider = ImageProvider(R.drawable.refresh),
-                            contentDescription = null,
-                            colorFilter = ColorFilter.tint(GlanceTheme.colors.onSurface),
-                            modifier = GlanceModifier.clickable { onRefresh() },
-                        )
-                    }
-                } else {
-                    Spacer(modifier = GlanceModifier.width(16.dp))
+        if (size.height >= 100.dp) {
+            WidgetTitleBar(size.width >= WidgetSize.Width4, onRefresh)
+        }
+
+        Box(
+            modifier = GlanceModifier.fillMaxWidth().defaultWeight()
+        ) {
+            val graphHeightDp = if (size.height < 100.dp) size.height else size.height - 48.dp
+            ProgressLineGraph(
+                dailyData = dailyData(analytics.heatMapData),
+                weeklyData = trend.weeklyPoints.map { it.pointsEarned },
+                bestWeek = trend.bestWeekPoints,
+                currentPartial = trend.currentPartialPoints,
+                modifier = GlanceModifier.fillMaxSize(),
+                graphHeight = graphHeightDp,
+            )
+
+            if (size.height >= 140.dp) {
+                PtsHeader(trend, compact = size.height < 200.dp)
+            }
+
+            if (size.height >= 200.dp) {
+                Box(
+                    modifier = GlanceModifier.fillMaxSize().padding(start = 10.dp, bottom = 4.dp),
+                    contentAlignment = Alignment.BottomStart
+                ) {
+                    StatsFooter(analytics)
                 }
-            },
-        )
-
-        if (size.height < 140.dp) {
-            CompactContent(trend, analytics)
-        } else {
-            FullContent(trend, analytics)
+            }
         }
     }
 }
 
+// ── Sub-composables ──────────────────────────────────────────────────────────
+
 @Composable
 @GlanceComposable
-private fun CompactContent(trend: PointsTrend, analytics: OverallAnalytics) {
-    Column(modifier = GlanceModifier.fillMaxSize().padding(horizontal = 12.dp)) {
-        Row(
-            modifier = GlanceModifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(modifier = GlanceModifier.defaultWeight()) {
-                Text(
-                    text = trend.currentPartialPoints.toString(),
-                    style =
-                        TextStyle(
-                            fontSize = 28.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = GlanceTheme.colors.onSurface,
-                        ),
-                )
-                Text(
-                    text = "pts this week",
-                    style = TextStyle(fontSize = 9.sp, color = GlanceTheme.colors.onSurfaceVariant),
-                )
+private fun WidgetTitleBar(showRefresh: Boolean, onRefresh: () -> Unit) {
+    TitleBar(
+        startIcon = ImageProvider(R.drawable.analytics),
+        title = "Progress",
+        actions = {
+            if (showRefresh) {
+                Box(GlanceModifier.padding(horizontal = 16.dp)) {
+                    Image(
+                        provider = ImageProvider(R.drawable.refresh),
+                        contentDescription = null,
+                        colorFilter = ColorFilter.tint(GlanceTheme.colors.onSurface),
+                        modifier = GlanceModifier.clickable { onRefresh() },
+                    )
+                }
+            } else {
+                Spacer(modifier = GlanceModifier.width(16.dp))
             }
-            val netUp = trend.partialNetChange >= 0
-            val changeColor = if (netUp) GlanceTheme.colors.tertiary else GlanceTheme.colors.error
-            Box(
-                modifier =
-                    GlanceModifier.background(GlanceTheme.colors.secondaryContainer)
-                        .cornerRadius(8.dp)
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
-            ) {
-                Text(
-                    text = "${if (netUp) "+" else ""}${trend.partialNetChange}",
-                    style =
-                        TextStyle(
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = changeColor,
-                        ),
-                )
-            }
-        }
-
-        Spacer(modifier = GlanceModifier.height(6.dp))
-
-        val last14Days = dailyData(analytics.heatMapData)
-        ProgressLineGraph(
-            dataPoints = last14Days,
-            modifier = GlanceModifier.fillMaxWidth().height(48.dp),
-        )
-
-        Row(
-            modifier = GlanceModifier.fillMaxWidth().padding(top = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = "${"%.0f".format(analytics.consistency * 100)}%",
-                    style =
-                        TextStyle(
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = GlanceTheme.colors.primary,
-                        ),
-                )
-                Text(
-                    text = " consistency",
-                    style = TextStyle(fontSize = 8.sp, color = GlanceTheme.colors.onSurfaceVariant),
-                )
-            }
-            Spacer(modifier = GlanceModifier.defaultWeight())
-            Text(
-                text = "Analytics \u2192",
-                style = TextStyle(fontSize = 8.sp, color = GlanceTheme.colors.primary),
-            )
-        }
-    }
+        },
+    )
 }
 
+/**
+ * Large primary number + coloured delta — replaces the 3-card layout.
+ *
+ * Compact:  [  47  +12↑  pts this week ]  — one line
+ * Full:     same but slightly larger pts
+ */
 @Composable
 @GlanceComposable
-private fun FullContent(trend: PointsTrend, analytics: OverallAnalytics) {
-    Column(modifier = GlanceModifier.fillMaxSize().padding(horizontal = 14.dp, vertical = 4.dp)) {
-        // Mini stat chips: ultra-compact inline row
-        Row(
-            modifier = GlanceModifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            StatChip(
-                label = "This Week",
-                value = trend.currentPartialPoints.toString(),
-                tint = GlanceTheme.colors.primary,
-                modifier = GlanceModifier.defaultWeight(),
-            )
-            Spacer(modifier = GlanceModifier.width(4.dp))
-            StatChip(
-                label = "Last Week",
-                value = trend.previousPartialPoints.toString(),
-                tint = GlanceTheme.colors.onSurfaceVariant,
-                modifier = GlanceModifier.defaultWeight(),
-            )
-            Spacer(modifier = GlanceModifier.width(4.dp))
-            val netUp = trend.partialNetChange >= 0
-            val changeColor = if (netUp) GlanceTheme.colors.tertiary else GlanceTheme.colors.error
-            StatChip(
-                label = if (netUp) "+${trend.partialNetChange}" else trend.partialNetChange.toString(),
-                value = "${"%.0f".format(kotlin.math.abs(trend.partialNetChangePercent))}%",
-                tint = changeColor,
-                modifier = GlanceModifier.defaultWeight(),
-            )
-        }
+private fun PtsHeader(trend: PointsTrend, compact: Boolean) {
+    val netUp = trend.partialNetChange >= 0
+    val deltaColor = if (netUp) GlanceTheme.colors.tertiary else GlanceTheme.colors.error
+    val deltaText = "${if (netUp) "+" else ""}${trend.partialNetChange}"
+    val pctText = "${abs(trend.partialNetChangePercent).roundToInt()}%"
+    val ptsFontSize = if (compact) 26.sp else 32.sp
 
-        Spacer(modifier = GlanceModifier.height(6.dp))
-
-        // Large graph
-        val last14Days = dailyData(analytics.heatMapData)
-        ProgressLineGraph(
-            dataPoints = last14Days,
-            modifier = GlanceModifier.fillMaxWidth().height(74.dp),
-        )
-
-        Spacer(modifier = GlanceModifier.height(4.dp))
-
-        // Secondary meta row
-        Row(
-            modifier = GlanceModifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            MetaTag(text = "${"%.0f".format(analytics.consistency * 100)}% consistent")
-            Spacer(modifier = GlanceModifier.width(8.dp))
-            MetaTag(text = "${trend.currentStreakWeeks}w streak")
-            Spacer(modifier = GlanceModifier.width(8.dp))
-            MetaTag(text = "${trend.totalPointsAllTime} total")
-            Spacer(modifier = GlanceModifier.defaultWeight())
-            Text(
-                text = "\u2192",
-                style = TextStyle(fontSize = 10.sp, color = GlanceTheme.colors.primary),
-            )
-        }
-    }
-}
-
-@Composable
-@GlanceComposable
-private fun StatChip(
-    label: String,
-    value: String,
-    tint: androidx.glance.unit.ColorProvider,
-    modifier: GlanceModifier = GlanceModifier,
-) {
-    Column(
-        modifier =
-            modifier
-                .background(GlanceTheme.colors.secondaryContainer)
-                .cornerRadius(10.dp)
-                .padding(horizontal = 6.dp, vertical = 5.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
+    Row(
+        modifier = GlanceModifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
+        // Primary number
         Text(
-            text = value,
-            style =
-                TextStyle(fontSize = 15.sp, fontWeight = FontWeight.Bold, color = tint),
+            text = trend.currentPartialPoints.toString(),
+            style = TextStyle(
+                fontSize = ptsFontSize,
+                fontWeight = FontWeight.Bold,
+                color = GlanceTheme.colors.onSurface,
+            ),
         )
+        Spacer(GlanceModifier.width(4.dp))
+        Column(horizontalAlignment = Alignment.Start) {
+            Text(
+                text = "pts",
+                style = TextStyle(fontSize = 10.sp, color = GlanceTheme.colors.onSurfaceVariant),
+            )
+            Text(
+                text = "this wk",
+                style = TextStyle(fontSize = 8.sp, color = GlanceTheme.colors.onSurfaceVariant),
+            )
+        }
+        Spacer(GlanceModifier.width(10.dp))
+        // Delta pill — no box, just coloured text with arrow
         Text(
-            text = label,
-            style = TextStyle(fontSize = 8.sp, color = GlanceTheme.colors.onSurfaceVariant),
+            text = "$deltaText ($pctText ${if (netUp) "↑" else "↓"})",
+            style = TextStyle(
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+                color = deltaColor,
+            ),
         )
-    }
-}
 
-@Composable
-@GlanceComposable
-private fun MetaTag(text: String) {
-    Text(
-        text = text,
-        style =
-            TextStyle(
-                fontSize = 8.sp,
+        // WoW Avg and Best stats (consistent partial-week numbers)
+        Spacer(GlanceModifier.width(12.dp))
+        Text(
+            text = "avg ${trend.averageWeeklyPoints.roundToInt()}",
+            style = TextStyle(
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
                 color = GlanceTheme.colors.onSurfaceVariant,
             ),
-    )
+        )
+        Spacer(GlanceModifier.width(8.dp))
+        Text(
+            text = "best ${trend.bestWeekPoints}",
+            style = TextStyle(
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                color = GlanceTheme.colors.onSurfaceVariant,
+            ),
+        )
+
+        Spacer(GlanceModifier.defaultWeight())
+        // Streak badge — right-aligned, understated
+        if (trend.currentStreakWeeks > 0) {
+            Text(
+                text = "streak: ${trend.currentStreakWeeks}w",
+                style = TextStyle(
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = GlanceTheme.colors.onSurfaceVariant,
+                ),
+            )
+        }
+    }
+}
+
+/**
+ * One-line footer strip — dense, no cards, no repeated info.
+ * Shows consistency blocks at the bottom left.
+ */
+@Composable
+@GlanceComposable
+private fun StatsFooter(analytics: OverallAnalytics) {
+    val consistencyPct = (analytics.consistency * 100).roundToInt()
+    val filledBlocks = (analytics.consistency * 5).roundToInt().coerceIn(0, 5)
+    val emptyBlocks = 5 - filledBlocks
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = "■".repeat(filledBlocks) + "□".repeat(emptyBlocks) + " $consistencyPct% consistency",
+            style = TextStyle(
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold,
+                color = GlanceTheme.colors.primary,
+            ),
+        )
+    }
 }
 
 private fun dailyData(heatMapData: Map<LocalDate, Int>, days: Int = 14): List<Int> {

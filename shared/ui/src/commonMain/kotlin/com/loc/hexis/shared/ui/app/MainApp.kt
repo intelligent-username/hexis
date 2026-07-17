@@ -52,14 +52,30 @@ import org.koin.compose.viewmodel.koinViewModel
 fun MainApp(state: MainAppState) {
     val windowSizeClass = LocalWindowSizeClass.current
 
+    val habitPage = AppSections.mainRoutes.indexOf(AppSections.HabitPages).coerceAtLeast(0)
+    val taskPage = AppSections.mainRoutes.indexOf(AppSections.TaskPages).coerceAtLeast(0)
+
+    // Widget/shortcut actions override the default starting section so the pager never
+    // starts on the wrong tab and then scrolls — the initial page is already correct.
+    val initialPage =
+        when (state.shortcutAction) {
+            WidgetActions.OPEN_HABITS,
+            WidgetActions.OPEN_HABITS_ANALYTICS,
+            WidgetActions.OPEN_PROGRESS,
+            WidgetActions.OPEN_OVERALL_ANALYTICS,
+            "add_habit",
+            "overall_analytics" -> habitPage
+            WidgetActions.OPEN_TASKS, "add_task" -> taskPage
+            else ->
+                when (state.startingSection) {
+                    Tasks -> taskPage
+                    Habits -> habitPage
+                }
+        }
+
     val pagerState =
         rememberPagerState(
-            initialPage =
-                when (state.startingSection) {
-                    Tasks -> AppSections.mainRoutes.indexOf(AppSections.TaskPages).coerceAtLeast(0)
-                    Habits ->
-                        AppSections.mainRoutes.indexOf(AppSections.HabitPages).coerceAtLeast(0)
-                },
+            initialPage = initialPage,
             pageCount = { AppSections.mainRoutes.size },
         )
     val coroutineScope = rememberCoroutineScope()
@@ -75,39 +91,39 @@ fun MainApp(state: MainAppState) {
 
     androidx.compose.runtime.LaunchedEffect(state.shortcutAction) {
         state.shortcutAction?.let { action ->
-            val habitPage = AppSections.mainRoutes.indexOf(AppSections.HabitPages).coerceAtLeast(0)
-            val taskPage = AppSections.mainRoutes.indexOf(AppSections.TaskPages).coerceAtLeast(0)
-
+            // Use scrollToPage (instant) not animateScrollToPage — the initial page was
+            // already set correctly so this is a no-op for the tab, but the subsequent
+            // VM actions (open sheet, open analytics) still need to fire.
             when (action) {
                 "add_habit" -> {
-                    pagerState.animateScrollToPage(habitPage)
+                    pagerState.scrollToPage(habitPage)
                     hvm.onAction(HabitsAction.OnAddHabitClicked)
                 }
                 "add_task" -> {
-                    pagerState.animateScrollToPage(taskPage)
+                    pagerState.scrollToPage(taskPage)
                     tvm.onAction(TaskAction.ToggleAddTaskSheet(true))
                 }
                 "overall_analytics" -> {
-                    pagerState.animateScrollToPage(habitPage)
+                    pagerState.scrollToPage(habitPage)
                     hvm.onAction(HabitsAction.PrepareAnalytics(null))
                     hvm.onAction(HabitsAction.ToggleOverallAnalytics(true))
                 }
 
                 WidgetActions.OPEN_HABITS -> {
-                    pagerState.animateScrollToPage(habitPage)
+                    pagerState.scrollToPage(habitPage)
                     hvm.onAction(HabitsAction.NavigateToRoot)
                 }
                 WidgetActions.OPEN_HABITS_ANALYTICS -> {
-                    pagerState.animateScrollToPage(habitPage)
+                    pagerState.scrollToPage(habitPage)
                     hvm.onAction(HabitsAction.PrepareAnalytics(null))
                     hvm.onAction(HabitsAction.ToggleAnalytics(true))
                 }
                 WidgetActions.OPEN_TASKS -> {
-                    pagerState.animateScrollToPage(taskPage)
+                    pagerState.scrollToPage(taskPage)
                 }
                 WidgetActions.OPEN_PROGRESS,
                 WidgetActions.OPEN_OVERALL_ANALYTICS -> {
-                    pagerState.animateScrollToPage(habitPage)
+                    pagerState.scrollToPage(habitPage)
                     hvm.onAction(HabitsAction.PrepareAnalytics(null))
                     hvm.onAction(HabitsAction.ToggleOverallAnalytics(true))
                 }
