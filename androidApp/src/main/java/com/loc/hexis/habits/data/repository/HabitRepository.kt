@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 2025-2026 Hexis
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.loc.hexis.habits.data.repository
 
 import com.loc.hexis.core.data.notification.HexisNotificationManager
@@ -62,9 +79,7 @@ class HabitRepository(
     private val repoScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     init {
-        repoScope.launch {
-            datastore.getStartOfTheWeekPref().collect { firstDayOfWeek.value = it }
-        }
+        repoScope.launch { datastore.getStartOfTheWeekPref().collect { firstDayOfWeek.value = it } }
     }
 
     override suspend fun upsertHabit(habit: Habit) {
@@ -255,25 +270,28 @@ class HabitRepository(
                     else 0f
 
                 val offsetDays = weekStart.daysUntil(today)
-                val historicalPartials = weeklyPoints.dropLast(1).map { wp ->
-                    computePointsForPeriod(
-                        habits,
-                        statuses,
-                        wp.weekStart,
-                        wp.weekStart.plus(offsetDays, DateTimeUnit.DAY),
-                    )
-                }
+                val historicalPartials =
+                    weeklyPoints.dropLast(1).map { wp ->
+                        computePointsForPeriod(
+                            habits,
+                            statuses,
+                            wp.weekStart,
+                            wp.weekStart.plus(offsetDays, DateTimeUnit.DAY),
+                        )
+                    }
 
-                val avgWeeklyPartial = if (historicalPartials.isNotEmpty()) {
-                    historicalPartials.average().toFloat()
-                } else {
-                    0f
-                }
-                val bestWeekPartial = if (historicalPartials.isNotEmpty()) {
-                    historicalPartials.max()
-                } else {
-                    0
-                }
+                val avgWeeklyPartial =
+                    if (historicalPartials.isNotEmpty()) {
+                        historicalPartials.average().toFloat()
+                    } else {
+                        0f
+                    }
+                val bestWeekPartial =
+                    if (historicalPartials.isNotEmpty()) {
+                        historicalPartials.max()
+                    } else {
+                        0
+                    }
 
                 trend.copy(
                     currentPartialPoints = currentPartial,
@@ -426,9 +444,11 @@ class HabitRepository(
                     totalPoints += completedEligible * 10
                     if (completedEligible > 0) completedCount++
 
+                    val completedForStreak =
+                        filterCompletedStatuses(habit, statuses.filter { it.habitId == habit.id })
                     val streak =
                         countCurrentStreak(
-                            dates = statuses.filter { it.habitId == habit.id }.map { it.date },
+                            dates = completedForStreak.map { it.date },
                             eligibleWeekdays = habit.days,
                         )
                     streakBonus += minOf(streak * 3, 30)

@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 2025-2026 Hexis
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.loc.hexis.shared.ui.app
 
 import androidx.compose.foundation.background
@@ -65,7 +82,8 @@ fun MainApp(state: MainAppState) {
             WidgetActions.OPEN_OVERALL_ANALYTICS,
             "add_habit",
             "overall_analytics" -> habitPage
-            WidgetActions.OPEN_TASKS, "add_task" -> taskPage
+            WidgetActions.OPEN_TASKS,
+            "add_task" -> taskPage
             else ->
                 when (state.startingSection) {
                     Tasks -> taskPage
@@ -74,10 +92,7 @@ fun MainApp(state: MainAppState) {
         }
 
     val pagerState =
-        rememberPagerState(
-            initialPage = initialPage,
-            pageCount = { AppSections.mainRoutes.size },
-        )
+        rememberPagerState(initialPage = initialPage, pageCount = { AppSections.mainRoutes.size })
     val coroutineScope = rememberCoroutineScope()
 
     val mvm: MainViewModel = koinViewModel()

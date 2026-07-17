@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 2025-2026 Hexis
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.loc.hexis.shared.ui.viewmodel
 
 import androidx.compose.ui.graphics.toArgb
@@ -32,7 +49,6 @@ import com.loc.hexis.shared.ui.setting.SettingsAction.OnRestore
 import com.loc.hexis.shared.ui.setting.SettingsState
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.launchIn
@@ -40,6 +56,7 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import org.koin.core.annotation.KoinViewModel
 import org.koin.core.annotation.Provided
 
@@ -91,19 +108,25 @@ class SettingsViewModel(
 
                 OnExport -> {
                     _state.update {
-                        it.copy(backupState = it.backupState.copy(exportState = ExportState.EXPORTING))
+                        it.copy(
+                            backupState = it.backupState.copy(exportState = ExportState.EXPORTING)
+                        )
                     }
 
                     exportRepo.exportToJson()
 
                     _state.update {
-                        it.copy(backupState = it.backupState.copy(exportState = ExportState.EXPORTED))
+                        it.copy(
+                            backupState = it.backupState.copy(exportState = ExportState.EXPORTED)
+                        )
                     }
                 }
 
                 OnRestore -> {
                     _state.update {
-                        it.copy(backupState = it.backupState.copy(restoreState = RestoreState.RESTORING))
+                        it.copy(
+                            backupState = it.backupState.copy(restoreState = RestoreState.RESTORING)
+                        )
                     }
 
                     val result = restoreRepo.restoreData()
@@ -152,53 +175,87 @@ class SettingsViewModel(
         observeJob?.cancel()
         observeJob =
             viewModelScope.launch {
-                settingsDatastore.getTaskReorderPref().onEach { pref ->
-                    _state.update { it.copy(reorderTasks = pref) }
-                }.launchIn(this)
+                settingsDatastore
+                    .getTaskReorderPref()
+                    .onEach { pref -> _state.update { it.copy(reorderTasks = pref) } }
+                    .launchIn(this)
 
-                settingsDatastore.getNotificationsFlow().onEach { pref ->
-                    _state.update { it.copy(pauseNotifications = pref) }
-                }.launchIn(this)
+                settingsDatastore
+                    .getNotificationsFlow()
+                    .onEach { pref -> _state.update { it.copy(pauseNotifications = pref) } }
+                    .launchIn(this)
 
-                themeDatastore.getAppThemeFlow().onEach { theme ->
-                    _state.update { it.copy(theme = it.theme.copy(appTheme = theme)) }
-                }.launchIn(this)
+                themeDatastore
+                    .getAppThemeFlow()
+                    .onEach { theme ->
+                        _state.update { it.copy(theme = it.theme.copy(appTheme = theme)) }
+                    }
+                    .launchIn(this)
 
-                themeDatastore.getFontPrefFlow().onEach { font ->
-                    _state.update { it.copy(theme = it.theme.copy(font = font)) }
-                }.launchIn(this)
+                themeDatastore
+                    .getFontPrefFlow()
+                    .onEach { font ->
+                        _state.update { it.copy(theme = it.theme.copy(font = font)) }
+                    }
+                    .launchIn(this)
 
-                themeDatastore.getSeedColorFlow().onEach { seedColor ->
-                    _state.update { it.copy(theme = it.theme.copy(seedColor = seedColor)) }
-                }.launchIn(this)
+                themeDatastore
+                    .getSeedColorFlow()
+                    .onEach { seedColor ->
+                        _state.update { it.copy(theme = it.theme.copy(seedColor = seedColor)) }
+                    }
+                    .launchIn(this)
 
-                themeDatastore.getAmoledPref().onEach { isAmoled ->
-                    _state.update { it.copy(theme = it.theme.copy(isAmoled = isAmoled)) }
-                }.launchIn(this)
+                themeDatastore
+                    .getAmoledPref()
+                    .onEach { isAmoled ->
+                        _state.update { it.copy(theme = it.theme.copy(isAmoled = isAmoled)) }
+                    }
+                    .launchIn(this)
 
-                themeDatastore.getMaterialYouFlow().onEach { isMaterialYou ->
-                    _state.update { it.copy(theme = it.theme.copy(isMaterialYou = isMaterialYou)) }
-                }.launchIn(this)
+                themeDatastore
+                    .getMaterialYouFlow()
+                    .onEach { isMaterialYou ->
+                        _state.update {
+                            it.copy(theme = it.theme.copy(isMaterialYou = isMaterialYou))
+                        }
+                    }
+                    .launchIn(this)
 
-                themeDatastore.getPaletteStyle().onEach { paletteStyle ->
-                    _state.update { it.copy(theme = it.theme.copy(paletteStyle = paletteStyle)) }
-                }.launchIn(this)
+                themeDatastore
+                    .getPaletteStyle()
+                    .onEach { paletteStyle ->
+                        _state.update {
+                            it.copy(theme = it.theme.copy(paletteStyle = paletteStyle))
+                        }
+                    }
+                    .launchIn(this)
 
-                settingsDatastore.getIs24Hr().onEach { is24Hr ->
-                    _state.update { it.copy(is24Hr = is24Hr) }
-                }.launchIn(this)
+                settingsDatastore
+                    .getIs24Hr()
+                    .onEach { is24Hr -> _state.update { it.copy(is24Hr = is24Hr) } }
+                    .launchIn(this)
 
-                settingsDatastore.getStartingSectionPref().onEach { startingPage ->
-                    _state.update { it.copy(startingPage = startingPage) }
-                }.launchIn(this)
+                settingsDatastore
+                    .getStartingSectionPref()
+                    .onEach { startingPage ->
+                        _state.update { it.copy(startingPage = startingPage) }
+                    }
+                    .launchIn(this)
 
-                settingsDatastore.getStartOfTheWeekPref().onEach { startOfTheWeek ->
-                    _state.update { it.copy(startOfTheWeek = startOfTheWeek) }
-                }.launchIn(this)
+                settingsDatastore
+                    .getStartOfTheWeekPref()
+                    .onEach { startOfTheWeek ->
+                        _state.update { it.copy(startOfTheWeek = startOfTheWeek) }
+                    }
+                    .launchIn(this)
 
-                settingsDatastore.getBiometricLockPref().onEach { isBiometricLockOn ->
-                    _state.update { it.copy(isBiometricLockOn = isBiometricLockOn) }
-                }.launchIn(this)
+                settingsDatastore
+                    .getBiometricLockPref()
+                    .onEach { isBiometricLockOn ->
+                        _state.update { it.copy(isBiometricLockOn = isBiometricLockOn) }
+                    }
+                    .launchIn(this)
             }
     }
 }

@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 2025-2026 Hexis
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.loc.hexis.shared.ui.habit.ui.component
 
 import androidx.compose.animation.AnimatedContent
@@ -45,9 +62,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.kizitonwose.calendar.compose.WeekCalendar
 import com.kizitonwose.calendar.compose.weekcalendar.rememberWeekCalendarState
-import com.kizitonwose.calendar.core.minusDays
-import com.kizitonwose.calendar.core.plusDays
 import com.loc.hexis.core.habits.HabitWithAnalytics
+import com.loc.hexis.core.habits.StreakPosition
+import com.loc.hexis.core.habits.areConsecutiveEligibleDays
 import com.loc.hexis.core.toFormattedString
 import com.loc.hexis.shared.ui.habit.HabitsAction
 import com.loc.hexis.shared.ui.util.rememberToday
@@ -311,32 +328,61 @@ fun HabitCard(
                             Modifier.fillMaxWidth()
                                 .then(
                                     if (done) {
-                                        val donePrevious =
-                                            habitWithAnalytics.statuses.any {
-                                                it.date == weekDay.date.minusDays(1)
+                                        val completedDates =
+                                            remember(habitWithAnalytics.statuses, target) {
+                                                habitWithAnalytics.statuses
+                                                    .filter { it.value >= target }
+                                                    .map { it.date }
+                                                    .toSet()
                                             }
-                                        val doneAfter =
-                                            habitWithAnalytics.statuses.any {
-                                                it.date == weekDay.date.plusDays(1)
-                                            }
-                                        val shape =
-                                            when {
-                                                donePrevious && doneAfter ->
-                                                    RoundedCornerShape(0.dp)
+                                        val eligibleDays = habitWithAnalytics.habit.days
 
-                                                donePrevious ->
-                                                    RoundedCornerShape(
-                                                        topEnd = 20.dp,
-                                                        bottomEnd = 20.dp,
+                                        val hasPreviousEligibleCompleted =
+                                            completedDates.any { completedDate ->
+                                                completedDate < weekDay.date &&
+                                                    completedDate.dayOfWeek in eligibleDays &&
+                                                    areConsecutiveEligibleDays(
+                                                        completedDate,
+                                                        weekDay.date,
+                                                        eligibleDays,
                                                     )
+                                            }
 
-                                                doneAfter ->
+                                        val hasNextEligibleCompleted =
+                                            completedDates.any { completedDate ->
+                                                completedDate > weekDay.date &&
+                                                    completedDate.dayOfWeek in eligibleDays &&
+                                                    areConsecutiveEligibleDays(
+                                                        weekDay.date,
+                                                        completedDate,
+                                                        eligibleDays,
+                                                    )
+                                            }
+
+                                        val streakPosition: StreakPosition =
+                                            when {
+                                                hasPreviousEligibleCompleted &&
+                                                    hasNextEligibleCompleted ->
+                                                    StreakPosition.MIDDLE
+                                                hasPreviousEligibleCompleted -> StreakPosition.END
+                                                hasNextEligibleCompleted -> StreakPosition.START
+                                                else -> StreakPosition.ISOLATED
+                                            }
+
+                                        val shape =
+                                            when (streakPosition) {
+                                                StreakPosition.ISOLATED -> RoundedCornerShape(20.dp)
+                                                StreakPosition.START ->
                                                     RoundedCornerShape(
                                                         topStart = 20.dp,
                                                         bottomStart = 20.dp,
                                                     )
-
-                                                else -> RoundedCornerShape(20.dp)
+                                                StreakPosition.END ->
+                                                    RoundedCornerShape(
+                                                        topEnd = 20.dp,
+                                                        bottomEnd = 20.dp,
+                                                    )
+                                                StreakPosition.MIDDLE -> RoundedCornerShape(0.dp)
                                             }
 
                                         Modifier.background(
@@ -346,7 +392,7 @@ fun HabitCard(
                                     } else Modifier
                                 )
                                 .then(
-                                    if (weekDay.date == startDate) {
+                                    if (weekDay.date == startDate && done) {
                                         Modifier.border(
                                             width = 1.dp,
                                             color = Color(0xFFFFD700),

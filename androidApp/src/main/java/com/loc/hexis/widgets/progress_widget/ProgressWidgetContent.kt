@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 2025-2026 Hexis
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.loc.hexis.widgets.progress_widget
 
 import android.os.Build
@@ -34,11 +51,11 @@ import com.loc.hexis.core.habits.OverallAnalytics
 import com.loc.hexis.core.habits.PointsTrend
 import com.loc.hexis.core.now
 import com.loc.hexis.widgets.WidgetSize
+import kotlin.math.abs
+import kotlin.math.roundToInt
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.minus
-import kotlin.math.abs
-import kotlin.math.roundToInt
 
 @Composable
 @GlanceComposable
@@ -73,9 +90,7 @@ fun ProgressWidgetContent(
             WidgetTitleBar(size.width >= WidgetSize.Width4, onRefresh)
         }
 
-        Box(
-            modifier = GlanceModifier.fillMaxWidth().defaultWeight()
-        ) {
+        Box(modifier = GlanceModifier.fillMaxWidth().defaultWeight()) {
             val graphHeightDp = if (size.height < 100.dp) size.height else size.height - 48.dp
             ProgressLineGraph(
                 dailyData = dailyData(analytics.heatMapData),
@@ -93,7 +108,7 @@ fun ProgressWidgetContent(
             if (size.height >= 200.dp) {
                 Box(
                     modifier = GlanceModifier.fillMaxSize().padding(start = 10.dp, bottom = 4.dp),
-                    contentAlignment = Alignment.BottomStart
+                    contentAlignment = Alignment.BottomStart,
                 ) {
                     StatsFooter(analytics)
                 }
@@ -130,8 +145,7 @@ private fun WidgetTitleBar(showRefresh: Boolean, onRefresh: () -> Unit) {
 /**
  * Large primary number + coloured delta — replaces the 3-card layout.
  *
- * Compact:  [  47  +12↑  pts this week ]  — one line
- * Full:     same but slightly larger pts
+ * Compact: [ 47 +12↑ pts this week ] — one line Full: same but slightly larger pts
  */
 @Composable
 @GlanceComposable
@@ -149,11 +163,12 @@ private fun PtsHeader(trend: PointsTrend, compact: Boolean) {
         // Primary number
         Text(
             text = trend.currentPartialPoints.toString(),
-            style = TextStyle(
-                fontSize = ptsFontSize,
-                fontWeight = FontWeight.Bold,
-                color = GlanceTheme.colors.onSurface,
-            ),
+            style =
+                TextStyle(
+                    fontSize = ptsFontSize,
+                    fontWeight = FontWeight.Bold,
+                    color = GlanceTheme.colors.onSurface,
+                ),
         )
         Spacer(GlanceModifier.width(4.dp))
         Column(horizontalAlignment = Alignment.Start) {
@@ -170,31 +185,29 @@ private fun PtsHeader(trend: PointsTrend, compact: Boolean) {
         // Delta pill — no box, just coloured text with arrow
         Text(
             text = "$deltaText ($pctText ${if (netUp) "↑" else "↓"})",
-            style = TextStyle(
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Bold,
-                color = deltaColor,
-            ),
+            style = TextStyle(fontSize = 13.sp, fontWeight = FontWeight.Bold, color = deltaColor),
         )
 
         // WoW Avg and Best stats (consistent partial-week numbers)
         Spacer(GlanceModifier.width(12.dp))
         Text(
             text = "avg ${trend.averageWeeklyPoints.roundToInt()}",
-            style = TextStyle(
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                color = GlanceTheme.colors.onSurfaceVariant,
-            ),
+            style =
+                TextStyle(
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = GlanceTheme.colors.onSurfaceVariant,
+                ),
         )
         Spacer(GlanceModifier.width(8.dp))
         Text(
             text = "best ${trend.bestWeekPoints}",
-            style = TextStyle(
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                color = GlanceTheme.colors.onSurfaceVariant,
-            ),
+            style =
+                TextStyle(
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = GlanceTheme.colors.onSurfaceVariant,
+                ),
         )
 
         Spacer(GlanceModifier.defaultWeight())
@@ -202,19 +215,20 @@ private fun PtsHeader(trend: PointsTrend, compact: Boolean) {
         if (trend.currentStreakWeeks > 0) {
             Text(
                 text = "streak: ${trend.currentStreakWeeks}w",
-                style = TextStyle(
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = GlanceTheme.colors.onSurfaceVariant,
-                ),
+                style =
+                    TextStyle(
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = GlanceTheme.colors.onSurfaceVariant,
+                    ),
             )
         }
     }
 }
 
 /**
- * One-line footer strip — dense, no cards, no repeated info.
- * Shows consistency blocks at the bottom left.
+ * One-line footer strip — dense, no cards, no repeated info. Shows consistency blocks at the bottom
+ * left.
  */
 @Composable
 @GlanceComposable
@@ -223,16 +237,18 @@ private fun StatsFooter(analytics: OverallAnalytics) {
     val filledBlocks = (analytics.consistency * 5).roundToInt().coerceIn(0, 5)
     val emptyBlocks = 5 - filledBlocks
 
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
         Text(
-            text = "■".repeat(filledBlocks) + "□".repeat(emptyBlocks) + " $consistencyPct% consistency",
-            style = TextStyle(
-                fontSize = 10.sp,
-                fontWeight = FontWeight.Bold,
-                color = GlanceTheme.colors.primary,
-            ),
+            text =
+                "■".repeat(filledBlocks) +
+                    "□".repeat(emptyBlocks) +
+                    " $consistencyPct% consistency",
+            style =
+                TextStyle(
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = GlanceTheme.colors.primary,
+                ),
         )
     }
 }

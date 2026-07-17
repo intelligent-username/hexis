@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 2025-2026 Hexis
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.loc.hexis.shared.ui.habit.ui.component.stats
 
 import androidx.compose.foundation.layout.Arrangement
@@ -28,21 +45,9 @@ fun PointsStatCards(pointsSummary: PointsSummary, modifier: Modifier = Modifier)
     val current = pointsSummary.currentWeekPoints
 
     Row(modifier = modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        StatCard(
-            label = "This Week So Far",
-            value = current,
-            modifier = Modifier.weight(1f),
-        )
-        StatCard(
-            label = "Same Time Last Week",
-            value = previous,
-            modifier = Modifier.weight(1f),
-        )
-        StatChangeCard(
-            previous = previous,
-            current = current,
-            modifier = Modifier.weight(1f),
-        )
+        StatCard(label = "This Week So Far", value = current, modifier = Modifier.weight(1f))
+        StatCard(label = "Same Time Last Week", value = previous, modifier = Modifier.weight(1f))
+        StatChangeCard(previous = previous, current = current, modifier = Modifier.weight(1f))
     }
 }
 
@@ -64,7 +69,8 @@ private fun StatChangeCard(previous: Int, current: Int, modifier: Modifier = Mod
     Card(
         modifier = modifier,
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+        colors =
+            CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
     ) {
         Column(
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 10.dp),
@@ -72,10 +78,11 @@ private fun StatChangeCard(previous: Int, current: Int, modifier: Modifier = Mod
         ) {
             Text(
                 text = displayText,
-                style = MaterialTheme.typography.titleLarge.copy(
-                    fontFamily = flexFontEmphasis(),
-                    fontWeight = FontWeight.Bold,
-                ),
+                style =
+                    MaterialTheme.typography.titleLarge.copy(
+                        fontFamily = flexFontEmphasis(),
+                        fontWeight = FontWeight.Bold,
+                    ),
                 color = displayColor,
             )
             Spacer(modifier = Modifier.height(2.dp))
@@ -93,7 +100,8 @@ private fun StatCard(label: String, value: Int, modifier: Modifier = Modifier) {
     Card(
         modifier = modifier,
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+        colors =
+            CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
     ) {
         Column(
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 10.dp),
@@ -101,10 +109,11 @@ private fun StatCard(label: String, value: Int, modifier: Modifier = Modifier) {
         ) {
             Text(
                 text = value.toString(),
-                style = MaterialTheme.typography.titleLarge.copy(
-                    fontFamily = flexFontEmphasis(),
-                    fontWeight = FontWeight.Bold,
-                ),
+                style =
+                    MaterialTheme.typography.titleLarge.copy(
+                        fontFamily = flexFontEmphasis(),
+                        fontWeight = FontWeight.Bold,
+                    ),
                 color = MaterialTheme.colorScheme.onSurface,
             )
             Spacer(modifier = Modifier.height(2.dp))

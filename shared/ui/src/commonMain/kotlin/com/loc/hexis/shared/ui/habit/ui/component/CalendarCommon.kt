@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 2025-2026 Hexis
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.loc.hexis.shared.ui.habit.ui.component
 
 import androidx.compose.foundation.Canvas
@@ -31,11 +48,11 @@ import androidx.compose.ui.unit.sp
 import com.kizitonwose.calendar.core.CalendarDay
 import com.kizitonwose.calendar.core.CalendarMonth
 import com.kizitonwose.calendar.core.DayPosition
-import com.kizitonwose.calendar.core.minusDays
 import com.kizitonwose.calendar.core.plusDays
 import com.loc.hexis.core.habits.DisplayMode
 import com.loc.hexis.core.habits.HabitStatus
 import com.loc.hexis.core.habits.StreakPosition
+import com.loc.hexis.core.habits.areConsecutiveEligibleDays
 import com.loc.hexis.shared.ui.calendarMapStreakShape
 import com.loc.hexis.shared.ui.theme.flexFontRounded
 import kotlinx.datetime.DayOfWeek
@@ -119,13 +136,23 @@ fun YearlyCalendarDayContent(
         }
     val done = day.date in doneDates
 
-    val donePrevious = day.date.minusDays(1) in doneDates
-    val doneAfter = day.date.plusDays(1) in doneDates
+    val hasPreviousEligibleCompleted =
+        doneDates.any { completedDate ->
+            completedDate < day.date &&
+                completedDate.dayOfWeek in habitDays &&
+                areConsecutiveEligibleDays(completedDate, day.date, habitDays)
+        }
+    val hasNextEligibleCompleted =
+        doneDates.any { completedDate ->
+            completedDate > day.date &&
+                completedDate.dayOfWeek in habitDays &&
+                areConsecutiveEligibleDays(day.date, completedDate, habitDays)
+        }
     val streakPosition: StreakPosition =
         when {
-            donePrevious && doneAfter -> MIDDLE
-            donePrevious -> END
-            doneAfter -> START
+            hasPreviousEligibleCompleted && hasNextEligibleCompleted -> MIDDLE
+            hasPreviousEligibleCompleted -> END
+            hasNextEligibleCompleted -> START
             else -> ISOLATED
         }
 
@@ -191,7 +218,7 @@ fun YearlyCalendarDayContent(
             )
         }
 
-        if (day.date == startDate) {
+        if (day.date == startDate && done && streakPosition != ISOLATED) {
             Box(
                 modifier =
                     Modifier.matchParentSize()
@@ -247,13 +274,24 @@ fun MonthlyCalendarDayContent(
             statuses.filter { it.value >= targetValue }.map { it.date }.toSet()
         }
     val done = day.date in doneDates
-    val donePrevious = day.date.minusDays(1) in doneDates
-    val doneAfter = day.date.plusDays(1) in doneDates
+
+    val hasPreviousEligibleCompleted =
+        doneDates.any { completedDate ->
+            completedDate < day.date &&
+                completedDate.dayOfWeek in habitDays &&
+                areConsecutiveEligibleDays(completedDate, day.date, habitDays)
+        }
+    val hasNextEligibleCompleted =
+        doneDates.any { completedDate ->
+            completedDate > day.date &&
+                completedDate.dayOfWeek in habitDays &&
+                areConsecutiveEligibleDays(day.date, completedDate, habitDays)
+        }
     val streakPosition: StreakPosition =
         when {
-            donePrevious && doneAfter -> MIDDLE
-            donePrevious -> END
-            doneAfter -> START
+            hasPreviousEligibleCompleted && hasNextEligibleCompleted -> MIDDLE
+            hasPreviousEligibleCompleted -> END
+            hasNextEligibleCompleted -> START
             else -> ISOLATED
         }
 
@@ -323,7 +361,7 @@ fun MonthlyCalendarDayContent(
             )
         }
 
-        if (day.date == startDate) {
+        if (day.date == startDate && done && streakPosition != ISOLATED) {
             Box(
                 modifier =
                     Modifier.matchParentSize()
@@ -349,7 +387,7 @@ private fun ProgressDayCell(
     val isStart = day.date == startDate
 
     val borderMod: (Modifier) -> Modifier = { m ->
-        if (isStart) m.border(width = 1.dp, color = Color(0xFFFFD700), shape = CircleShape) else m
+        if (isStart && isCompleted) m.border(width = 1.dp, color = Color(0xFFFFD700), shape = CircleShape) else m
     }
 
     Box(

@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 2025-2026 Hexis
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.loc.hexis.shared.ui.habit.ui.component.stats
 
 import androidx.compose.foundation.Canvas
@@ -36,12 +53,11 @@ import com.kizitonwose.calendar.compose.HeatMapCalendar
 import com.kizitonwose.calendar.compose.heatmapcalendar.HeatMapCalendarState
 import com.kizitonwose.calendar.compose.heatmapcalendar.rememberHeatMapCalendarState
 import com.kizitonwose.calendar.core.CalendarDay
-import com.kizitonwose.calendar.core.minusDays
 import com.kizitonwose.calendar.core.now
-import com.kizitonwose.calendar.core.plusDays
 import com.loc.hexis.core.habits.DisplayMode
 import com.loc.hexis.core.habits.HabitStatus
 import com.loc.hexis.core.habits.StreakPosition
+import com.loc.hexis.core.habits.areConsecutiveEligibleDays
 import com.loc.hexis.shared.ui.HexisPreviewWrapper
 import com.loc.hexis.shared.ui.components.endItemShape
 import com.loc.hexis.shared.ui.components.leadingItemShape
@@ -185,13 +201,23 @@ fun WeeklyBooleanHeatMap(
 
                         val done = day.date in doneDates
 
-                        val donePrevious = day.date.minusDays(1) in doneDates
-                        val doneAfter = day.date.plusDays(1) in doneDates
+                        val hasPreviousEligibleCompleted =
+                            doneDates.any { completedDate ->
+                                completedDate < day.date &&
+                                    completedDate.dayOfWeek in days &&
+                                    areConsecutiveEligibleDays(completedDate, day.date, days)
+                            }
+                        val hasNextEligibleCompleted =
+                            doneDates.any { completedDate ->
+                                completedDate > day.date &&
+                                    completedDate.dayOfWeek in days &&
+                                    areConsecutiveEligibleDays(day.date, completedDate, days)
+                            }
                         val streakPosition: StreakPosition =
                             when {
-                                donePrevious && doneAfter -> MIDDLE
-                                donePrevious -> END
-                                doneAfter -> START
+                                hasPreviousEligibleCompleted && hasNextEligibleCompleted -> MIDDLE
+                                hasPreviousEligibleCompleted -> END
+                                hasNextEligibleCompleted -> START
                                 else -> ISOLATED
                             }
 
@@ -221,7 +247,7 @@ fun WeeklyBooleanHeatMap(
                                         streakPosition == StreakPosition.START ||
                                             streakPosition == StreakPosition.END
                                     val innerMod =
-                                        if (day.date == startDate)
+                                        if (day.date == startDate && streakPosition != ISOLATED)
                                             Modifier.border(
                                                 1.dp,
                                                 Color(0xFFFFD700),
@@ -260,15 +286,6 @@ fun WeeklyBooleanHeatMap(
                                     }
                                 }
                             } else {
-                                val textMod =
-                                    if (day.date == startDate)
-                                        Modifier.border(
-                                                1.dp,
-                                                Color(0xFFFFD700),
-                                                MaterialShapes.Circle.toShape(),
-                                            )
-                                            .padding(4.dp)
-                                    else Modifier.padding(4.dp)
                                 Text(
                                     text = day.date.day.toString(),
                                     style =
@@ -279,7 +296,7 @@ fun WeeklyBooleanHeatMap(
                                         if (!validDay)
                                             MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                                         else MaterialTheme.colorScheme.onSurface,
-                                    modifier = textMod,
+                                    modifier = Modifier.padding(4.dp),
                                 )
                             }
                         }
@@ -309,7 +326,7 @@ private fun HeatMapProgressCell(
     val circleShape = MaterialShapes.Circle.toShape()
 
     val borderMod: (Modifier) -> Modifier = { m ->
-        if (isStart) m.border(width = 1.dp, color = Color(0xFFFFD700), shape = circleShape) else m
+        if (isStart && completed) m.border(width = 1.dp, color = Color(0xFFFFD700), shape = circleShape) else m
     }
 
     Box(
@@ -369,15 +386,6 @@ private fun HeatMapProgressCell(
                 )
             }
         } else {
-            val textMod =
-                if (isStart)
-                    Modifier.border(
-                            width = 1.dp,
-                            color = Color(0xFFFFD700),
-                            shape = MaterialShapes.Circle.toShape(),
-                        )
-                        .padding(4.dp)
-                else Modifier.padding(4.dp)
             Text(
                 text = day.date.day.toString(),
                 style =
@@ -385,7 +393,7 @@ private fun HeatMapProgressCell(
                         fontFamily = flexFontRounded(),
                         color = if (!validDay) onSurface.copy(alpha = 0.5f) else onSurface,
                     ),
-                modifier = textMod,
+                modifier = Modifier.padding(4.dp),
             )
         }
     }

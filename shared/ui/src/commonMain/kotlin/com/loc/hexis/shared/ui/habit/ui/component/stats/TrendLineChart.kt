@@ -24,7 +24,6 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -67,8 +66,8 @@ import com.loc.hexis.shared.ui.habit.ui.component.AnalyticsCard
 import com.loc.hexis.shared.ui.habit.ui.component.NotEnoughData
 import com.loc.hexis.shared.ui.theme.flexFontRounded
 import hexis.shared.ui.generated.resources.*
-import org.jetbrains.compose.resources.stringResource
 import kotlin.math.abs
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun TrendLineChart(weeklyPointsHistory: List<Int>, modifier: Modifier = Modifier) {
@@ -101,7 +100,8 @@ fun TrendLineChart(weeklyPointsHistory: List<Int>, modifier: Modifier = Modifier
         if (maxVal != null) {
             Row(
                 modifier = Modifier.padding(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
+                horizontalArrangement =
+                    Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
             ) {
                 WeeklyTimePeriod.entries.forEach { period ->
                     ToggleButton(
@@ -113,8 +113,10 @@ fun TrendLineChart(weeklyPointsHistory: List<Int>, modifier: Modifier = Modifier
                         },
                         shapes =
                             when (period) {
-                                WeeklyTimePeriod.MONTHS_2 -> ButtonGroupDefaults.connectedLeadingButtonShapes()
-                                WeeklyTimePeriod.YEARS_1 -> ButtonGroupDefaults.connectedTrailingButtonShapes()
+                                WeeklyTimePeriod.MONTHS_2 ->
+                                    ButtonGroupDefaults.connectedLeadingButtonShapes()
+                                WeeklyTimePeriod.YEARS_1 ->
+                                    ButtonGroupDefaults.connectedTrailingButtonShapes()
                                 else -> ButtonGroupDefaults.connectedMiddleButtonShapes()
                             },
                         modifier = Modifier.weight(1f),
@@ -136,7 +138,9 @@ fun TrendLineChart(weeklyPointsHistory: List<Int>, modifier: Modifier = Modifier
                 contentAlignment = Alignment.CenterStart,
             ) {
                 val tooltipVal =
-                    if (selectedIndex >= 0 && selectedIndex < visibleData.size) visibleData[selectedIndex] else null
+                    if (selectedIndex >= 0 && selectedIndex < visibleData.size)
+                        visibleData[selectedIndex]
+                    else null
                 if (tooltipVal != null) {
                     Surface(
                         shape = RoundedCornerShape(8.dp),
@@ -175,7 +179,7 @@ fun TrendLineChart(weeklyPointsHistory: List<Int>, modifier: Modifier = Modifier
                         .padding(horizontal = 16.dp, vertical = 4.dp)
                         .pointerInput(visibleData) {
                             detectTapGestures { offset -> touchX = offset.x }
-                        },
+                        }
             ) {
                 val w = size.width
                 val h = size.height
@@ -227,8 +231,11 @@ fun TrendLineChart(weeklyPointsHistory: List<Int>, modifier: Modifier = Modifier
                                 val p0 = if (i > 0) pts[i - 1] else pts[i]
                                 val p1 = pts[i]
                                 val p2 = pts[(i + 1).coerceAtMost(n - 1)]
-                                val p3 = if (i < n - 2) pts[i + 2] else pts[(i + 1).coerceAtMost(n - 1)]
-                                val segFrac = if (i == cutIndex) ((clamp * (n - 1)) - i).coerceIn(0f, 1f) else 1f
+                                val p3 =
+                                    if (i < n - 2) pts[i + 2] else pts[(i + 1).coerceAtMost(n - 1)]
+                                val segFrac =
+                                    if (i == cutIndex) ((clamp * (n - 1)) - i).coerceIn(0f, 1f)
+                                    else 1f
                                 val tx = p1.x + (p2.x - p0.x) / 6f
                                 val ty = p1.y + (p2.y - p0.y) / 6f
                                 val ux = p2.x - (p3.x - p1.x) / 6f
@@ -261,7 +268,12 @@ fun TrendLineChart(weeklyPointsHistory: List<Int>, modifier: Modifier = Modifier
                     drawPath(
                         path = sp,
                         color = lineColor,
-                        style = Stroke(width = 2.5.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round),
+                        style =
+                            Stroke(
+                                width = 2.5.dp.toPx(),
+                                cap = StrokeCap.Round,
+                                join = StrokeJoin.Round,
+                            ),
                     )
 
                     // Dots
@@ -277,11 +289,19 @@ fun TrendLineChart(weeklyPointsHistory: List<Int>, modifier: Modifier = Modifier
                                 strokeWidth = 1f,
                                 pathEffect = PathEffect.dashPathEffect(floatArrayOf(4f, 4f)),
                             )
-                            drawCircle(color = lineColor.copy(alpha = 0.15f), center = pt, radius = 8.dp.toPx())
+                            drawCircle(
+                                color = lineColor.copy(alpha = 0.15f),
+                                center = pt,
+                                radius = 8.dp.toPx(),
+                            )
                             drawCircle(color = lineColor, center = pt, radius = 4.dp.toPx())
                             drawCircle(color = surfaceColor, center = pt, radius = 2.dp.toPx())
                         } else {
-                            drawCircle(color = lineColor.copy(alpha = 0.55f), center = pt, radius = 2.5.dp.toPx())
+                            drawCircle(
+                                color = lineColor.copy(alpha = 0.55f),
+                                center = pt,
+                                radius = 2.5.dp.toPx(),
+                            )
                             drawCircle(color = surfaceColor, center = pt, radius = 1.2.dp.toPx())
                         }
                     }
@@ -302,7 +322,11 @@ fun TrendLineChart(weeklyPointsHistory: List<Int>, modifier: Modifier = Modifier
                         )
                     }
                 } else if (pts.size == 1) {
-                    drawCircle(color = lineColor.copy(alpha = 0.8f), center = pts.first(), radius = 4.dp.toPx())
+                    drawCircle(
+                        color = lineColor.copy(alpha = 0.8f),
+                        center = pts.first(),
+                        radius = 4.dp.toPx(),
+                    )
                     drawCircle(color = surfaceColor, center = pts.first(), radius = 2.dp.toPx())
                 }
             }
@@ -315,12 +339,14 @@ fun TrendLineChart(weeklyPointsHistory: List<Int>, modifier: Modifier = Modifier
             ) {
                 Text(
                     text = "${visibleData.size}w ago",
-                    style = MaterialTheme.typography.labelSmall.copy(fontFamily = flexFontRounded()),
+                    style =
+                        MaterialTheme.typography.labelSmall.copy(fontFamily = flexFontRounded()),
                     color = outlineVariantColor,
                 )
                 Text(
                     text = "now",
-                    style = MaterialTheme.typography.labelSmall.copy(fontFamily = flexFontRounded()),
+                    style =
+                        MaterialTheme.typography.labelSmall.copy(fontFamily = flexFontRounded()),
                     color = outlineVariantColor,
                 )
             }
