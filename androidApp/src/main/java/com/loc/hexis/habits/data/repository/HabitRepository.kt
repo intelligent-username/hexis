@@ -270,8 +270,9 @@ class HabitRepository(
                     else 0f
 
                 val offsetDays = weekStart.daysUntil(today)
+                val activeHistoricalWeeks = weeklyPoints.dropLast(1).filter { it.totalPossiblePoints > 0 }
                 val historicalPartials =
-                    weeklyPoints.dropLast(1).map { wp ->
+                    activeHistoricalWeeks.map { wp ->
                         computePointsForPeriod(
                             habits,
                             statuses,
@@ -505,8 +506,9 @@ class HabitRepository(
             else 0f
 
         val totalAllTime = weeklyPoints.sumOf { it.pointsEarned }
+        val activeWeeks = weeklyPoints.filter { it.totalPossiblePoints > 0 }
         val avgWeekly =
-            if (weeklyPoints.isNotEmpty()) totalAllTime.toFloat() / weeklyPoints.size else 0f
+            if (activeWeeks.isNotEmpty()) totalAllTime.toFloat() / activeWeeks.size else 0f
         val bestWeek = weeklyPoints.maxByOrNull { it.pointsEarned }?.pointsEarned ?: 0
 
         var streakWeeks = 0
