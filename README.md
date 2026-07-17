@@ -6,6 +6,8 @@ Hexis is a Kotlin app that's both pleasant to use and functional. I made this ap
 
 ## Features
 
+![Features Banner](fastlane/metadata/android/en-US/images/features-banner.png)
+
 - Habit tracking: binary and quantity-based, pomodoro-linked, with reminders.
 - Tasks with categories, pomodoro timer, and filtering.
 - Notes: write notes in the `Tasks` app to keep up with protocols and more.
