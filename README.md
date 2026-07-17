@@ -2,21 +2,33 @@
 
 ![Hexis Banner](fastlane/metadata/android/en-US/images/banner.png)
 
+Hexis is a Kotlin app that's both pleasant to use and functional. I made this app in hopes of improving my own habits, since none of the other habit trackers were comprehensive enough for me. I also wanted to try out some new ideas. The inspiration for the app is from the cliché saying of "Excellence is not an act but a habit", inspired from Aristotle. The word he uses for habit is "Ἕξις", which is pronounced "Hexis", and so that was the inspiration for this app. It's supposed to be the habit builder that helps you lead yourself to excellence, Ἀρετή.
+
 ## Features
 
-- Habit tracking: binary and quantity-based, pomodoro-linked, with reminders
-- Tasks with categories, pomodoro timer, and filtering
-- Analytics: streaks, weekly charts, heat maps, consistency scores
-- Widgets: habit overview, streak display, week chart, all tasks
-- Backup and restore, Material You theming, 8 font options
+- Habit tracking: binary and quantity-based, pomodoro-linked, with reminders.
+- Tasks with categories, pomodoro timer, and filtering.
+- Notes: write notes in the `Tasks` app to keep up with protocols and more.
+- Analytics: streaks, weekly charts, heat maps, consistency scores.
+- Widgets: habit overview, streak display, week chart, progress analytics, all tasks.
+- Backup and restore, Material You theming, 8 font options.
+- No adds, trackers, limitations, or anything of that sort.
+
+The goal with most of these features was to bring in the most excellent version of all of the features I've seen of the few different habit trackers that I've tried, in addition to some of the custom things I personally need.
 
 ## Usage
 
+>Note that, for now, Hexis is Android-only. If I get enough request, I'll consider making a iOS version.
+
 ### Download
 
-Grab the latest APK from the [release page](https://github.com/intelligent-username/hexis/releases).
+Download the latest APK from the [release page](https://github.com/intelligent-username/hexis/releases).
+
+Find the file you downloaded and click on it to run it. Android will prompt with a security warning since we're not downloading from the Play Store. Just click on "Install Anyway" and you should be good to go.
 
 ### Build from source
+
+If you want to modify the app and build it yourself, take the following steps. Note that you can't download the APK(s) that I've uploaded and then update them with your own build since the signing keys are different (for security reasons), if you try to download anyway it'll create two versions of the same app.
 
 #### Prerequisites
 
@@ -57,3 +69,5 @@ Want your own signature? Create a keystore and pass it to Gradle:
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the code of conduct and pull request process.
+
+This project is licensed under the GNU General Public License v3.0. See [LICENSE](LICENSE) for more information.
