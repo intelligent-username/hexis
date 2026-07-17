@@ -17,14 +17,10 @@
 
 package com.loc.hexis.shared.ui.habit.ui.component.stats
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
@@ -34,7 +30,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.loc.hexis.core.habits.PointsSummary
@@ -46,20 +41,63 @@ import kotlin.math.max
 fun PointsStatCards(pointsSummary: PointsSummary, modifier: Modifier = Modifier) {
     Row(modifier = modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         StatCard(
-            label = "This Week",
+            label = "This Week So Far",
             value = pointsSummary.currentWeekPoints,
             modifier = Modifier.weight(1f),
         )
         StatCard(
-            label = "Last Week",
+            label = "Same Time Last Week",
             value = pointsSummary.lastWeekPoints,
             modifier = Modifier.weight(1f),
         )
-        StatCard(
-            label = "Total",
-            value = pointsSummary.totalPoints,
+        StatChangeCard(
+            previous = pointsSummary.lastWeekPoints,
+            current = pointsSummary.currentWeekPoints,
             modifier = Modifier.weight(1f),
         )
+    }
+}
+
+@Composable
+private fun StatChangeCard(previous: Int, current: Int, modifier: Modifier = Modifier) {
+    val (displayText, displayColor) =
+        if (previous == 0 && current == 0) {
+            "—" to MaterialTheme.colorScheme.onSurface
+        } else {
+            val percent = ((current - previous).toFloat() / max(previous, 1)) * 100
+            val intPercent = percent.toInt()
+            when {
+                intPercent > 0 -> "▲ +${intPercent}%" to MaterialTheme.colorScheme.tertiary
+                intPercent < 0 -> "▼ ${intPercent}%" to MaterialTheme.colorScheme.error
+                else -> "0%" to MaterialTheme.colorScheme.onSurface
+            }
+        }
+
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(16.dp),
+        colors =
+            CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 10.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                text = displayText,
+                style =
+                    MaterialTheme.typography.titleLarge.copy(
+                        fontFamily = flexFontEmphasis(),
+                        fontWeight = FontWeight.Bold,
+                    ),
+                color = displayColor,
+            )
+            Text(
+                text = "Change",
+                style = MaterialTheme.typography.labelSmall.copy(fontFamily = flexFontRounded()),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
 }
 

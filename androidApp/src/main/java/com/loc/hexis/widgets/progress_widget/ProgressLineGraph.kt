@@ -143,11 +143,11 @@ fun ProgressLineGraph(
             // --- tiny dots ---
             paint.style = Paint.Style.FILL
             paint.strokeWidth = 0f
-            val dotR = 3.5f
-            paint.color = colorInt
+            val dotR = 10f
+            paint.color = colorInt and 0xCCFFFFFF.toInt()
             pts.forEach { canvas.drawCircle(it.x, it.y, dotR, paint) }
             paint.color = -0x1 // white outline dot
-            pts.forEach { canvas.drawCircle(it.x, it.y, dotR * 0.5f, paint) }
+            pts.forEach { canvas.drawCircle(it.x, it.y, dotR * 0.4f, paint) }
 
             // --- last value label ---
             paint.style = Paint.Style.FILL
@@ -158,8 +158,12 @@ fun ProgressLineGraph(
             val lastLabel = "${data.last()}"
             val labelW = paint.measureText(lastLabel)
             val lastPt = pts.last()
-            val labelX = (lastPt.x - labelW / 2f).coerceIn(padL, w - padR - labelW)
-            val labelY = lastPt.y - 14f
+            val labelX = if (lastPt.x + labelW + 10f <= w - padR) {
+                lastPt.x + 10f
+            } else {
+                lastPt.x - labelW - 10f
+            }
+            val labelY = lastPt.y - 6f
             // subtle bg behind label
             paint.style = Paint.Style.FILL
             paint.color = -0x1 // white bg

@@ -201,26 +201,28 @@ fun TrendLineChart(weeklyPointsHistory: List<Int>, modifier: Modifier = Modifier
 
                     // Dots
                     pts.forEach { pt ->
-                        drawCircle(color = lineColor, center = pt, radius = 5.dp.toPx())
-                        drawCircle(color = surfaceColor, center = pt, radius = 2.5.dp.toPx())
+                        drawCircle(color = lineColor.copy(alpha = 0.8f), center = pt, radius = 4.dp.toPx())
+                        drawCircle(color = surfaceColor, center = pt, radius = 2.dp.toPx())
                     }
 
                     // Last value label
                     val lastPt = pts.last()
                     val label = "${visibleData.last()}"
                     val labelResult = textMeasurer.measure(text = label, style = textStyle)
-                    val labelX =
-                        (lastPt.x - labelResult.size.width / 2f)
-                            .coerceIn(padL, width - padR - labelResult.size.width)
+                    val labelX = if (lastPt.x + labelResult.size.width + 8.dp.toPx() <= width - padR) {
+                        lastPt.x + 8.dp.toPx()
+                    } else {
+                        lastPt.x - labelResult.size.width - 8.dp.toPx()
+                    }
                     drawText(
                         textLayoutResult = labelResult,
-                        topLeft = Offset(labelX, lastPt.y - labelResult.size.height - 6.dp.toPx()),
+                        topLeft = Offset(labelX, lastPt.y - labelResult.size.height / 2f),
                         color = lineColor,
                     )
                 } else if (pts.size == 1) {
                     val pt = pts.first()
-                    drawCircle(color = lineColor, center = pt, radius = 5.dp.toPx())
-                    drawCircle(color = surfaceColor, center = pt, radius = 2.5.dp.toPx())
+                    drawCircle(color = lineColor.copy(alpha = 0.8f), center = pt, radius = 4.dp.toPx())
+                    drawCircle(color = surfaceColor, center = pt, radius = 2.dp.toPx())
                 }
             }
         } else NotEnoughData()
