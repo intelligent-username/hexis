@@ -1,20 +1,3 @@
-/*
- * Copyright (C) 2025-2026 Hexis
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- */
-
 package com.loc.hexis.shared.ui.note.ui
 
 import androidx.compose.ui.text.AnnotatedString
@@ -110,7 +93,7 @@ class NoteVisualTransformation : VisualTransformation {
             if (visualPrefix.isNotEmpty()) {
                 builder.append(visualPrefix)
                 for (i in visualPrefix.indices) {
-                    // visual prefix chars don't exist in original → map to line start in original
+                    // visual prefix chars don't exist in original â†’ map to line start in original
                     val mapTo = (ip - contentText.length).coerceAtLeast(lineStart)
                     outToOrig.add(mapTo)
                 }
@@ -154,7 +137,7 @@ class NoteVisualTransformation : VisualTransformation {
                     if (offset >= origLen) return annotated.length
                     val t = origToOut[offset]
                     if (t >= 0) return t
-                    // hidden char — find next visible
+                    // hidden char â€” find next visible
                     var next = offset + 1
                     while (next < origLen && origToOut[next] < 0) next++
                     return if (next >= origLen) annotated.length else origToOut[next]

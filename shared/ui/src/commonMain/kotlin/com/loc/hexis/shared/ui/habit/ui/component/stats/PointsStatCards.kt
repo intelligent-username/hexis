@@ -1,26 +1,11 @@
-/*
- * Copyright (C) 2025-2026 Hexis
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- */
-
 package com.loc.hexis.shared.ui.habit.ui.component.stats
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
@@ -39,20 +24,23 @@ import kotlin.math.max
 
 @Composable
 fun PointsStatCards(pointsSummary: PointsSummary, modifier: Modifier = Modifier) {
+    val previous = pointsSummary.lastWeekPoints
+    val current = pointsSummary.currentWeekPoints
+
     Row(modifier = modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         StatCard(
             label = "This Week So Far",
-            value = pointsSummary.currentWeekPoints,
+            value = current,
             modifier = Modifier.weight(1f),
         )
         StatCard(
             label = "Same Time Last Week",
-            value = pointsSummary.lastWeekPoints,
+            value = previous,
             modifier = Modifier.weight(1f),
         )
         StatChangeCard(
-            previous = pointsSummary.lastWeekPoints,
-            current = pointsSummary.currentWeekPoints,
+            previous = previous,
+            current = current,
             modifier = Modifier.weight(1f),
         )
     }
@@ -67,8 +55,8 @@ private fun StatChangeCard(previous: Int, current: Int, modifier: Modifier = Mod
             val percent = ((current - previous).toFloat() / max(previous, 1)) * 100
             val intPercent = percent.toInt()
             when {
-                intPercent > 0 -> "▲ +${intPercent}%" to MaterialTheme.colorScheme.tertiary
-                intPercent < 0 -> "▼ ${intPercent}%" to MaterialTheme.colorScheme.error
+                intPercent > 0 -> "+${intPercent}%" to MaterialTheme.colorScheme.tertiary
+                intPercent < 0 -> "${intPercent}%" to MaterialTheme.colorScheme.error
                 else -> "0%" to MaterialTheme.colorScheme.onSurface
             }
         }
@@ -76,8 +64,7 @@ private fun StatChangeCard(previous: Int, current: Int, modifier: Modifier = Mod
     Card(
         modifier = modifier,
         shape = RoundedCornerShape(16.dp),
-        colors =
-            CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
     ) {
         Column(
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 10.dp),
@@ -85,13 +72,13 @@ private fun StatChangeCard(previous: Int, current: Int, modifier: Modifier = Mod
         ) {
             Text(
                 text = displayText,
-                style =
-                    MaterialTheme.typography.titleLarge.copy(
-                        fontFamily = flexFontEmphasis(),
-                        fontWeight = FontWeight.Bold,
-                    ),
+                style = MaterialTheme.typography.titleLarge.copy(
+                    fontFamily = flexFontEmphasis(),
+                    fontWeight = FontWeight.Bold,
+                ),
                 color = displayColor,
             )
+            Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = "Change",
                 style = MaterialTheme.typography.labelSmall.copy(fontFamily = flexFontRounded()),
@@ -106,8 +93,7 @@ private fun StatCard(label: String, value: Int, modifier: Modifier = Modifier) {
     Card(
         modifier = modifier,
         shape = RoundedCornerShape(16.dp),
-        colors =
-            CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
     ) {
         Column(
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 10.dp),
@@ -115,13 +101,13 @@ private fun StatCard(label: String, value: Int, modifier: Modifier = Modifier) {
         ) {
             Text(
                 text = value.toString(),
-                style =
-                    MaterialTheme.typography.titleLarge.copy(
-                        fontFamily = flexFontEmphasis(),
-                        fontWeight = FontWeight.Bold,
-                    ),
+                style = MaterialTheme.typography.titleLarge.copy(
+                    fontFamily = flexFontEmphasis(),
+                    fontWeight = FontWeight.Bold,
+                ),
                 color = MaterialTheme.colorScheme.onSurface,
             )
+            Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelSmall.copy(fontFamily = flexFontRounded()),
