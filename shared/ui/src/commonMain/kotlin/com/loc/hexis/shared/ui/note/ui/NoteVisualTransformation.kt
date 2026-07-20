@@ -221,7 +221,13 @@ class NoteVisualTransformation(
                     applyHeaderStyle(builder, level, bodyStartTrans, currentTransformedLen)
                 } else {
                     val startLineTrans = currentTransformedLen
-                    builder.append(line)
+                    val isRule = trimmed.matches(Regex("""^[-*_]{3,}\s*$"""))
+                    val displayLine = if (isRule) {
+                        line.replace('-', '\u2501').replace('*', '\u2501').replace('_', '\u2501')
+                    } else {
+                        line
+                    }
+                    builder.append(displayLine)
                     for (chIdx in 0 until lineLen) {
                         if (origPos + chIdx <= original.length) {
                             origToTrans[origPos + chIdx] = startLineTrans + chIdx
@@ -355,8 +361,7 @@ class NoteVisualTransformation(
             trimmed.matches(Regex("""^[-*_]{3,}\s*$""")) -> {
                 builder.addStyle(
                     SpanStyle(
-                        color = primaryColor.copy(alpha = 0.5f),
-                        textDecoration = TextDecoration.LineThrough,
+                        color = primaryColor.copy(alpha = 0.7f),
                         fontWeight = FontWeight.Bold,
                     ),
                     prefixStart,

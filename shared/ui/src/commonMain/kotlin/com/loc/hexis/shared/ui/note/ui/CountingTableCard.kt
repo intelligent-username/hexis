@@ -10,8 +10,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -21,7 +19,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -29,7 +26,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -74,7 +70,7 @@ fun CountingTableCard(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         } else {
-            tableData.rows.forEachIndexed { index, row ->
+            tableData.rows.take(5).forEachIndexed { index, row ->
                 if (index > 0) {
                     HorizontalDivider(
                         modifier = Modifier.padding(vertical = 5.dp),
@@ -93,8 +89,8 @@ fun CountingTableCard(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.weight(1f, fill = false).padding(end = 4.dp),
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
+                        maxLines = 1,
+                        overflow = TextOverflow.Clip,
                     )
 
                     // Counter Controls measuring exact required width
@@ -116,10 +112,6 @@ fun ScrollAndTypeCounter(
     modifier: Modifier = Modifier,
 ) {
     val haptic = LocalHapticFeedback.current
-    var isEditing by remember { mutableStateOf(false) }
-    var textInput by remember(row.value) {
-        mutableStateOf(if (row.isInteger) row.value.toLong().toString() else row.value.toString())
-    }
     var dragAccumulator by remember { mutableFloatStateOf(0f) }
     val dragThresholdPx = 24f
 
@@ -154,77 +146,43 @@ fun ScrollAndTypeCounter(
             shape = RoundedCornerShape(8.dp),
             color = MaterialTheme.colorScheme.surfaceContainerHighest,
             modifier =
-                Modifier.pointerInput(row.id, isEditing, row.value) {
-                    if (!isEditing) {
-                        detectVerticalDragGestures(
-                            onVerticalDrag = { change, dragAmount ->
-                                change.consume()
-                                dragAccumulator -= dragAmount
+                Modifier.pointerInput(row.id, row.value) {
+                    detectVerticalDragGestures(
+                        onVerticalDrag = { change, dragAmount ->
+                            change.consume()
+                            dragAccumulator -= dragAmount
 
-                                if (dragAccumulator >= dragThresholdPx) {
-                                    val steps = (dragAccumulator / dragThresholdPx).toInt()
-                                    dragAccumulator %= dragThresholdPx
-                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                    onValueChange(row.value + (steps * row.step))
-                                } else if (dragAccumulator <= -dragThresholdPx) {
-                                    val steps = (-dragAccumulator / dragThresholdPx).toInt()
-                                    dragAccumulator %= dragThresholdPx
-                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                    onValueChange((row.value - (steps * row.step)).coerceAtLeast(0.0))
-                                }
+                            if (dragAccumulator >= dragThresholdPx) {
+                                val steps = (dragAccumulator / dragThresholdPx).toInt()
+                                dragAccumulator %= dragThresholdPx
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                onValueChange(row.value + (steps * row.step))
+                            } else if (dragAccumulator <= -dragThresholdPx) {
+                                val steps = (-dragAccumulator / dragThresholdPx).toInt()
+                                dragAccumulator %= dragThresholdPx
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                onValueChange((row.value - (steps * row.step)).coerceAtLeast(0.0))
                             }
-                        )
-                    }
+                        }
+                    )
                 },
         ) {
             Box(
                 contentAlignment = Alignment.CenterEnd,
                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
             ) {
-                if (isEditing) {
-                    BasicTextField(
-                        value = textInput,
-                        onValueChange = { input ->
-                            textInput = input
-                            input.toDoubleOrNull()?.let { parsed ->
-                                onValueChange(parsed.coerceAtLeast(0.0))
-                            }
-                        },
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        textStyle =
-                            MaterialTheme.typography.labelSmall.copy(
-                                fontFamily = flexFontRounded(),
-                                color = MaterialTheme.colorScheme.primary,
-                                textAlign = TextAlign.End,
-                                fontSize = 12.sp,
-                            ),
-                    )
-                } else {
-                    val formattedVal =
-                        if (row.isInteger) row.value.toLong().toString() else row.value.toString()
-                    Text(
-                        text = if (!row.unit.isNullOrBlank()) "$formattedVal ${row.unit}" else formattedVal,
-                        style =
-                            MaterialTheme.typography.labelSmall.copy(
-                                fontFamily = flexFontRounded(),
-                                fontSize = 12.sp,
-                            ),
-                        color = MaterialTheme.colorScheme.primary,
-                        textAlign = TextAlign.End,
-                        modifier =
-                            Modifier.pointerInput(Unit) {
-                                awaitPointerEventScope {
-                                    while (true) {
-                                        val event = awaitPointerEvent()
-                                        if (event.changes.any { it.pressed }) {
-                                            isEditing = true
-                                        }
-                                    }
-                                }
-                            },
-                    )
-                }
+                val formattedVal =
+                    if (row.isInteger) row.value.toLong().toString() else row.value.toString()
+                Text(
+                    text = if (!row.unit.isNullOrBlank()) "$formattedVal ${row.unit}" else formattedVal,
+                    style =
+                        MaterialTheme.typography.labelSmall.copy(
+                            fontFamily = flexFontRounded(),
+                            fontSize = 12.sp,
+                        ),
+                    color = MaterialTheme.colorScheme.primary,
+                    textAlign = TextAlign.End,
+                )
             }
         }
 

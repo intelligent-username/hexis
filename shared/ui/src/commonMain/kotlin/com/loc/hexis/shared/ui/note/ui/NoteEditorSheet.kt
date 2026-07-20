@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -50,13 +51,23 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.waitForUpOrCancellation
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.PointerEventTimeoutCancellationException
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalViewConfiguration
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.withTimeout
 import com.loc.hexis.core.note.CounterRow
 import com.loc.hexis.core.note.CountingTableData
 import com.loc.hexis.core.note.Note
@@ -149,26 +160,8 @@ fun NoteEditorSheet(
     }
     val charCount = remember(contentValue.text) { contentValue.text.length }
     var collapsedHeaderLines by remember { mutableStateOf(setOf<Int>()) }
-    var lastToggledHeaderLine by remember { mutableStateOf(-1) }
-    LaunchedEffect(contentValue.selection.start) {
-        val cursor = contentValue.selection.start
-        val text = contentValue.text
-        if (text.isNotEmpty() && cursor <= text.length) {
-            val lineIndex = text.substring(0, cursor).count { it == '\n' }
-            val lines = text.lines()
-            val trimmed = lines.getOrNull(lineIndex)?.trimStart() ?: ""
-            if (trimmed.startsWith("# ") || trimmed.startsWith("## ") || trimmed.startsWith("### ")) {
-                if (lastToggledHeaderLine != lineIndex) {
-                    lastToggledHeaderLine = lineIndex
-                    collapsedHeaderLines =
-                        if (lineIndex in collapsedHeaderLines) collapsedHeaderLines - lineIndex
-                        else collapsedHeaderLines + lineIndex
-                }
-            } else {
-                lastToggledHeaderLine = -1
-            }
-        }
-    }
+    val viewConfiguration = LocalViewConfiguration.current
+    val density = LocalDensity.current
 
     fun getCurrentLine(text: String, cursor: Int): String {
         val before = text.substring(0, cursor.coerceAtMost(text.length))
@@ -202,13 +195,7 @@ fun NoteEditorSheet(
         modifier =
             Modifier.fillMaxSize()
                 .statusBarsPadding()
-                .imePadding()
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null,
-                ) {
-                    focusManager.clearFocus()
-                },
+                .imePadding(),
         color = MaterialTheme.colorScheme.surface,
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
@@ -373,6 +360,30 @@ fun NoteEditorSheet(
                         modifier =
                             Modifier.fillMaxWidth()
                                 .focusRequester(contentFocusRequester)
+                                .pointerInput(contentValue.text) {
+                                    awaitEachGesture {
+                                        val down = awaitFirstDown(pass = PointerEventPass.Initial)
+                                        var isLongPress = false
+                                        try {
+                                            withTimeout(viewConfiguration.longPressTimeoutMillis) {
+                                                waitForUpOrCancellation(pass = PointerEventPass.Initial)
+                                            }
+                                        } catch (_: PointerEventTimeoutCancellationException) {
+                                            isLongPress = true
+                                        }
+                                        if (isLongPress) {
+                                            val linePx = with(density) { 24.sp.toPx() }
+                                            val lines = contentValue.text.lines()
+                                            val lineIndex = (down.position.y / linePx).toInt().coerceIn(0, (lines.size - 1).coerceAtLeast(0))
+                                            val lineText = lines.getOrNull(lineIndex)?.trimStart() ?: ""
+                                            if (lineText.startsWith("# ") || lineText.startsWith("## ") || lineText.startsWith("### ")) {
+                                                collapsedHeaderLines =
+                                                    if (lineIndex in collapsedHeaderLines) collapsedHeaderLines - lineIndex
+                                                    else collapsedHeaderLines + lineIndex
+                                            }
+                                        }
+                                    }
+                                }
                                 .onPreviewKeyEvent { event ->
                                     if (event.type == KeyEventType.KeyDown && event.key == Key.Enter) {
                                         val text = contentValue.text
@@ -545,7 +556,7 @@ fun NoteEditorSheet(
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                         contentPadding = PaddingValues(top = 4.dp, bottom = 180.dp),
                     ) {
-                        itemsIndexed(counterRows, key = { _, row -> row.id }) { index, row ->
+                        items(counterRows, key = { it.id }) { row ->
                             Surface(
                                 shape = RoundedCornerShape(14.dp),
                                 color = MaterialTheme.colorScheme.surfaceContainerHigh,
@@ -559,7 +570,10 @@ fun NoteEditorSheet(
                                         FloatingLabelTextField(
                                             value = row.label,
                                             onValueChange = { newLabel ->
-                                                counterRows[index] = row.copy(label = newLabel)
+                                                val targetIdx = counterRows.indexOfFirst { it.id == row.id }
+                                                if (targetIdx != -1) {
+                                                    counterRows[targetIdx] = counterRows[targetIdx].copy(label = newLabel)
+                                                }
                                             },
                                             labelText = "Label",
                                             placeholderText = "e.g. Water Glass",
@@ -569,7 +583,7 @@ fun NoteEditorSheet(
                                         )
 
                                         IconButton(
-                                            onClick = { counterRows.removeAt(index) },
+                                            onClick = { counterRows.removeAll { it.id == row.id } },
                                             modifier = Modifier.padding(start = 4.dp),
                                         ) {
                                             Icon(
@@ -594,7 +608,10 @@ fun NoteEditorSheet(
                                                 value = if (row.value == 0.0) "" else if (row.isInteger) row.value.toLong().toString() else row.value.toString(),
                                                 onValueChange = { valStr ->
                                                     val parsed = valStr.toDoubleOrNull() ?: 0.0
-                                                    counterRows[index] = row.copy(value = parsed)
+                                                    val targetIdx = counterRows.indexOfFirst { it.id == row.id }
+                                                    if (targetIdx != -1) {
+                                                        counterRows[targetIdx] = counterRows[targetIdx].copy(value = parsed)
+                                                    }
                                                 },
                                                 labelText = "Value",
                                                 singleLine = true,
@@ -605,7 +622,10 @@ fun NoteEditorSheet(
                                             FloatingLabelTextField(
                                                 value = row.unit ?: "",
                                                 onValueChange = { u ->
-                                                    counterRows[index] = row.copy(unit = u.ifBlank { null })
+                                                    val targetIdx = counterRows.indexOfFirst { it.id == row.id }
+                                                    if (targetIdx != -1) {
+                                                        counterRows[targetIdx] = counterRows[targetIdx].copy(unit = u.ifBlank { null })
+                                                    }
                                                 },
                                                 labelText = "Unit",
                                                 singleLine = true,

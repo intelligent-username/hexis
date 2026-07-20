@@ -1,6 +1,6 @@
 package com.loc.hexis.shared.ui.note.ui
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -39,6 +39,7 @@ import hexis.shared.ui.generated.resources.untitled
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.resources.vectorResource
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun BaseNoteCard(
     note: Note,
@@ -60,7 +61,19 @@ fun BaseNoteCard(
                     if (showArchived) MaterialTheme.colorScheme.surfaceContainerLow
                     else MaterialTheme.colorScheme.surfaceContainerHigh
             ),
-        modifier = modifier.fillMaxWidth(),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .then(
+                    if (onLongClick != null) {
+                        Modifier.combinedClickable(
+                            onClick = onClick,
+                            onLongClick = onLongClick,
+                        )
+                    } else {
+                        Modifier.combinedClickable(onClick = onClick)
+                    }
+                ),
     ) {
         Column(modifier = Modifier.padding(14.dp).fillMaxWidth()) {
             Row(
