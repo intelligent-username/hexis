@@ -1,5 +1,17 @@
 [
   {
+    "version": "1.3.0",
+    "changes": [
+      "Smoother note drag-and-drop reordering with long-press selection intent",
+      "Guarded pin & archive action buttons in note selection mode",
+      "Tripled horizontal divider (---) length in markdown notes",
+      "Direct deep-link navigation for app shortcuts & home screen widgets",
+      "Fixed Habit Archive view filtering and counter accuracy",
+      "Renamed 'AMOLED Palette' and moved under Material You settings",
+      "Moved 'Pause Notifications' to the bottom of UX settings"
+    ]
+  },
+  {
     "version": "1.2.3",
     "changes": [
       "New Progress Analytic",

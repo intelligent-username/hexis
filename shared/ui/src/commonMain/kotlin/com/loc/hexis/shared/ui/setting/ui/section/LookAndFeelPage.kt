@@ -154,6 +154,26 @@ fun LookAndFeelPage(
                         onClick = { onAction(SettingsAction.ChangeMaterialYou(it)) },
                     )
 
+                    if (!state.theme.isMaterialYou) {
+                        // amoled toggle
+                        ListItem(
+                            headlineContent = {
+                                Text(text = stringResource(Res.string.use_amoled))
+                            },
+                            supportingContent = {
+                                Text(text = stringResource(Res.string.use_amoled_desc))
+                            },
+                            trailingContent = {
+                                ExpressiveSwitch(
+                                    checked = state.theme.isAmoled,
+                                    onCheckedChange = { onAction(SettingsAction.ChangeAmoled(it)) },
+                                )
+                            },
+                            colors = listItemColors(),
+                            modifier = Modifier.clip(middleItemShape()),
+                        )
+                    }
+
                     // font picker
                     Column(
                         modifier =
@@ -203,23 +223,6 @@ fun LookAndFeelPage(
                     }
 
                     if (!state.theme.isMaterialYou) {
-                        // amoled toggle
-                        ListItem(
-                            headlineContent = {
-                                Text(text = stringResource(Res.string.use_amoled))
-                            },
-                            supportingContent = {
-                                Text(text = stringResource(Res.string.use_amoled_desc))
-                            },
-                            trailingContent = {
-                                ExpressiveSwitch(
-                                    checked = state.theme.isAmoled,
-                                    onCheckedChange = { onAction(SettingsAction.ChangeAmoled(it)) },
-                                )
-                            },
-                            colors = listItemColors(),
-                            modifier = Modifier.clip(middleItemShape()),
-                        )
 
                         // seed color picker
                         ListItem(

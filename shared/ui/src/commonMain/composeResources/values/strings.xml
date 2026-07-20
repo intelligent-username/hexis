@@ -25,7 +25,7 @@
     <string name="add">Add</string>
     <string name="habit_map">Habit Heat Map</string>
     <string name="look_and_feel">Look and Feel</string>
-    <string name="use_amoled">Amoled palette</string>
+    <string name="use_amoled">AMOLED Palette</string>
     <string name="use_amoled_desc">Best experienced on AMOLED displays</string>
     <string name="select_seed">Select Seed color</string>
     <string name="select_seed_desc">Select color to generate palette from</string>

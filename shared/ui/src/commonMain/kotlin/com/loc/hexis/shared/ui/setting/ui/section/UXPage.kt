@@ -63,25 +63,6 @@ fun UXPage(state: SettingsState, onAction: (SettingsAction) -> Unit, onNavigateB
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     ListItem(
-                        headlineContent = {
-                            Text(text = stringResource(Res.string.pause_notifications))
-                        },
-                        supportingContent = {
-                            Text(text = stringResource(Res.string.pause_notifications_desc))
-                        },
-                        trailingContent = {
-                            ExpressiveSwitch(
-                                checked = state.pauseNotifications,
-                                onCheckedChange = {
-                                    onAction(SettingsAction.ChangePauseNotifications(it))
-                                },
-                            )
-                        },
-                        colors = listItemColors(),
-                        modifier = Modifier.clip(leadingItemShape()),
-                    )
-
-                    ListItem(
                         headlineContent = { Text(text = stringResource(Res.string.reorder_tasks)) },
                         supportingContent = {
                             Text(text = stringResource(Res.string.reorder_tasks_desc))
@@ -95,7 +76,7 @@ fun UXPage(state: SettingsState, onAction: (SettingsAction) -> Unit, onNavigateB
                             )
                         },
                         colors = listItemColors(),
-                        modifier = Modifier.clip(middleItemShape()),
+                        modifier = Modifier.clip(leadingItemShape()),
                     )
 
                     ListItem(
@@ -187,6 +168,25 @@ fun UXPage(state: SettingsState, onAction: (SettingsAction) -> Unit, onNavigateB
                             ExpressiveSwitch(
                                 checked = state.is24Hr,
                                 onCheckedChange = { onAction(SettingsAction.ChangeIs24Hr(it)) },
+                            )
+                        },
+                        colors = listItemColors(),
+                        modifier = Modifier.clip(middleItemShape()),
+                    )
+
+                    ListItem(
+                        headlineContent = {
+                            Text(text = stringResource(Res.string.pause_notifications))
+                        },
+                        supportingContent = {
+                            Text(text = stringResource(Res.string.pause_notifications_desc))
+                        },
+                        trailingContent = {
+                            ExpressiveSwitch(
+                                checked = state.pauseNotifications,
+                                onCheckedChange = {
+                                    onAction(SettingsAction.ChangePauseNotifications(it))
+                                },
                             )
                         },
                         colors = listItemColors(),
