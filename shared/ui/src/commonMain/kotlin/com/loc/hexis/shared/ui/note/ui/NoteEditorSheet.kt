@@ -50,6 +50,7 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
@@ -174,8 +175,19 @@ fun NoteEditorSheet(
         contentValue = TextFieldValue(newText, TextRange(newCursor))
     }
 
+    val focusManager = LocalFocusManager.current
+
     Surface(
-        modifier = Modifier.fillMaxSize().statusBarsPadding().imePadding(),
+        modifier =
+            Modifier.fillMaxSize()
+                .statusBarsPadding()
+                .imePadding()
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                ) {
+                    focusManager.clearFocus()
+                },
         color = MaterialTheme.colorScheme.surface,
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
@@ -499,7 +511,7 @@ fun NoteEditorSheet(
                                             onValueChange = { newLabel ->
                                                 counterRows[index] = row.copy(label = newLabel)
                                             },
-                                            labelText = "Item Label",
+                                            labelText = "Label",
                                             placeholderText = "e.g. Water Glass",
                                             singleLine = true,
                                             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words),
@@ -534,7 +546,7 @@ fun NoteEditorSheet(
                                                     val parsed = valStr.toDoubleOrNull() ?: 0.0
                                                     counterRows[index] = row.copy(value = parsed)
                                                 },
-                                                labelText = "Initial Value",
+                                                labelText = "Value",
                                                 singleLine = true,
                                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                                 modifier = Modifier.weight(1f),
@@ -545,7 +557,7 @@ fun NoteEditorSheet(
                                                 onValueChange = { u ->
                                                     counterRows[index] = row.copy(unit = u.ifBlank { null })
                                                 },
-                                                labelText = "Unit (opt)",
+                                                labelText = "Unit",
                                                 singleLine = true,
                                                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words),
                                                 modifier = Modifier.weight(1f),

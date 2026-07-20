@@ -35,6 +35,8 @@ import hexis.shared.ui.generated.resources.archive
 import hexis.shared.ui.generated.resources.delete
 import hexis.shared.ui.generated.resources.flag
 import hexis.shared.ui.generated.resources.unarchive
+import hexis.shared.ui.generated.resources.untitled
+import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.resources.vectorResource
 
 @Composable

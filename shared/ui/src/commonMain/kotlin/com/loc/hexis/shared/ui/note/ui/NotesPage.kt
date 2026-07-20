@@ -206,7 +206,7 @@ fun NotesPage(onDismiss: () -> Unit, repo: NoteRepo = koinInject()) {
         ) {
             // Top bar
             Row(
-                modifier = Modifier.fillMaxWidth().padding(start = 4.dp, end = 8.dp, top = 32.dp),
+                modifier = Modifier.fillMaxWidth().padding(start = 4.dp, end = 8.dp, top = 40.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
@@ -327,30 +327,28 @@ fun NotesPage(onDismiss: () -> Unit, repo: NoteRepo = koinInject()) {
                             )
                         }
 
-                        if (notes.isNotEmpty()) {
-                            FilledTonalIconButton(
-                                onClick = {
-                                    showSearch = !showSearch
-                                    if (!showSearch) searchQuery = ""
-                                },
-                                modifier = Modifier.size(40.dp),
-                                colors =
-                                    IconButtonDefaults.filledTonalIconButtonColors(
-                                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    ),
-                                shapes =
-                                    IconButtonShapes(
-                                        shape = RoundedCornerShape(12.dp),
-                                        pressedShape = MaterialTheme.shapes.small,
-                                    ),
-                            ) {
-                                Icon(
-                                    imageVector = vectorResource(Res.drawable.search),
-                                    contentDescription = "Search",
-                                    modifier = Modifier.size(18.dp),
-                                )
-                            }
+                        FilledTonalIconButton(
+                            onClick = {
+                                showSearch = !showSearch
+                                if (!showSearch) searchQuery = ""
+                            },
+                            modifier = Modifier.size(40.dp),
+                            colors =
+                                IconButtonDefaults.filledTonalIconButtonColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                ),
+                            shapes =
+                                IconButtonShapes(
+                                    shape = RoundedCornerShape(12.dp),
+                                    pressedShape = MaterialTheme.shapes.small,
+                                ),
+                        ) {
+                            Icon(
+                                imageVector = vectorResource(Res.drawable.search),
+                                contentDescription = "Search",
+                                modifier = Modifier.size(18.dp),
+                            )
                         }
 
                         FilledTonalIconToggleButton(

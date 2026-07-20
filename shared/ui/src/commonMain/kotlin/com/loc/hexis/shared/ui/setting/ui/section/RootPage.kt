@@ -20,6 +20,7 @@ import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.tooling.preview.PreviewWrapper
 import androidx.compose.ui.unit.dp
 import com.loc.hexis.shared.ui.HexisPreviewWrapper
+import com.loc.hexis.shared.ui.components.MainTabHeader
 import com.loc.hexis.shared.ui.components.detachedItemShape
 import com.loc.hexis.shared.ui.components.endItemShape
 import com.loc.hexis.shared.ui.components.leadingItemShape
@@ -44,20 +45,16 @@ fun RootPage(
 ) {
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     Column(modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection).fillMaxSize()) {
-        LargeFlexibleTopAppBar(
-            scrollBehavior = scrollBehavior,
-            title = {
-                Text(text = stringResource(Res.string.settings), fontFamily = flexFontEmphasis())
-            },
-            colors =
-                TopAppBarDefaults.topAppBarColors(
-                    scrolledContainerColor = MaterialTheme.colorScheme.surface
-                ),
-        )
+    MainTabHeader(
+        title = stringResource(Res.string.settings),
+        subtitle = "Preferences & Customization",
+        yOffset = 0.dp,
+        scrollBehavior = scrollBehavior,
+    )
 
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 16.dp, bottom = 60.dp),
+            contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 0.dp, bottom = 60.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             // UX settings

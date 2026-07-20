@@ -51,6 +51,7 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
 import androidx.savedstate.serialization.SavedStateConfiguration
 import com.loc.hexis.shared.ui.LocalWindowSizeClass
+import com.loc.hexis.shared.ui.components.MainTabHeader
 import com.loc.hexis.shared.ui.components.PageFill
 import com.loc.hexis.shared.ui.habit.HabitState
 import com.loc.hexis.shared.ui.habit.HabitsAction
@@ -510,28 +511,16 @@ private fun HabitsTopAppBar(
     modifier: Modifier = Modifier,
     scrollBehavior: TopAppBarScrollBehavior? = null,
 ) {
-    LargeFlexibleTopAppBar(
+    val completedDisplayed =
+        state.habitsWithAnalytics.count {
+            it.habit.id in state.completedHabitIds
+        }
+    MainTabHeader(
+        title = stringResource(Res.string.habits),
+        subtitle = "$completedDisplayed/${state.habitsWithAnalytics.size} " + stringResource(Res.string.completed),
         modifier = modifier,
+        yOffset = 0.dp,
         scrollBehavior = scrollBehavior,
-        colors =
-            TopAppBarDefaults.topAppBarColors(
-                scrolledContainerColor = MaterialTheme.colorScheme.surface
-            ),
-        title = { Text(text = stringResource(Res.string.habits), fontFamily = flexFontEmphasis()) },
-        subtitle = {
-            val completedDisplayed =
-                state.habitsWithAnalytics.count {
-                    it.habit.id in state.completedHabitIds
-                }
-            Column {
-                Text(
-                    text =
-                        "$completedDisplayed/${state.habitsWithAnalytics.size} " +
-                            stringResource(Res.string.completed),
-                    fontFamily = flexFontRounded(),
-                )
-            }
-        },
         actions = {
             AnimatedVisibility(
                 visible =

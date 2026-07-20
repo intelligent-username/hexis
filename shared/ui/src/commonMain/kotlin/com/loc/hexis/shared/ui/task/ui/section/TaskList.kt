@@ -75,6 +75,7 @@ import com.loc.hexis.core.tasks.Task
 import com.loc.hexis.shared.ui.LocalWindowSizeClass
 import com.loc.hexis.shared.ui.components.Empty
 import com.loc.hexis.shared.ui.components.HexisDialog
+import com.loc.hexis.shared.ui.components.MainTabHeader
 import com.loc.hexis.shared.ui.components.PageFill
 import com.loc.hexis.shared.ui.components.detachedItemShape
 import com.loc.hexis.shared.ui.components.endItemShape
@@ -264,19 +265,11 @@ private fun TaskListTopBar(
     onNotesClick: () -> Unit,
     isExpanded: Boolean,
 ) {
-    LargeFlexibleTopAppBar(
-        colors =
-            TopAppBarDefaults.topAppBarColors(
-                scrolledContainerColor = MaterialTheme.colorScheme.surface
-            ),
+    MainTabHeader(
+        title = stringResource(Res.string.tasks),
+        subtitle = "${state.completedTasks.size} " + stringResource(Res.string.items_completed),
+        yOffset = 0.dp,
         scrollBehavior = scrollBehavior,
-        title = { Text(text = stringResource(Res.string.tasks), fontFamily = flexFontEmphasis()) },
-        subtitle = {
-            Text(
-                text = "${state.completedTasks.size} " + stringResource(Res.string.items_completed),
-                fontFamily = flexFontRounded(),
-            )
-        },
         actions = {
             val motionScheme = MaterialTheme.motionScheme
             AnimatedVisibility(
