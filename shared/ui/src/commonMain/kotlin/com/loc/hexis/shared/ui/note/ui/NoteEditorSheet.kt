@@ -517,7 +517,7 @@ fun NoteEditorSheet(
                             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
                         ) {
                             Text(
-                                text = "\u2501\u2501",
+                                text = "\u2501\u2501\u2501\u2501\u2501\u2501",
                                 style = MaterialTheme.typography.labelMedium.copy(fontFamily = flexFontRounded()),
                             )
                         }

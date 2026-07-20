@@ -111,17 +111,32 @@ fun HabitsGraph(
 
     val filteredState =
         remember(state) {
-            if (state.selectedTimeDivisionId == null) {
-                state
-            } else {
-                state.copy(
-                    habitsWithAnalytics =
-                        state.habitsWithAnalytics.filter {
-                            state.habitTimeDivisionMap[it.habit.id] == state.selectedTimeDivisionId
-                        }
-                )
+            val divisionFiltered =
+                if (state.selectedTimeDivisionId == null) {
+                    state.habitsWithAnalytics
+                } else {
+                    state.habitsWithAnalytics.filter {
+                        state.habitTimeDivisionMap[it.habit.id] == state.selectedTimeDivisionId
+                    }
+                }
+            val archivedFiltered =
+                divisionFiltered.filter {
+                    (it.habit.id in state.archivedHabitIds) == state.showArchivedHabits
+                }
+            state.copy(habitsWithAnalytics = archivedFiltered)
+        }
+
+    LaunchedEffect(state.showOverallAnalytics) {
+        if (state.showOverallAnalytics) {
+            if (backstack.lastOrNull() != HabitRoutes.OverallAnalytics) {
+                backstack.add(HabitRoutes.OverallAnalytics)
+            }
+        } else {
+            if (backstack.lastOrNull() == HabitRoutes.OverallAnalytics && backstack.size > 1) {
+                backstack.removeLastOrNull()
             }
         }
+    }
 
     if (windowSizeClass.widthSizeClass == WindowWidthSizeClass.Compact) {
         NavDisplay(
@@ -189,6 +204,7 @@ fun HabitsGraph(
                         OverallAnalytics(
                             state = state,
                             onNavigateBack = {
+                                onAction(HabitsAction.ToggleOverallAnalytics(false))
                                 if (backstack.size != 1) backstack.removeLastOrNull()
                             },
                             onAction = onAction,

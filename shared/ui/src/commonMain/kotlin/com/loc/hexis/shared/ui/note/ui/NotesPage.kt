@@ -139,6 +139,8 @@ fun NotesPage(onDismiss: () -> Unit, repo: NoteRepo = koinInject()) {
     var startItemSize by remember { mutableStateOf(IntSize.Zero) }
     var startItemListOffset by remember { mutableStateOf(0) }
     var startItemListSize by remember { mutableStateOf(0) }
+    var stopped_move by remember { mutableStateOf(false) }
+    var hasMoved by remember { mutableStateOf(false) }
 
     // Undo state
     var undoMessage by remember { mutableStateOf("") }
@@ -477,6 +479,7 @@ fun NotesPage(onDismiss: () -> Unit, repo: NoteRepo = koinInject()) {
                                                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                                     draggingNoteId = note.id
                                                     totalDragOffset = Offset.Zero
+                                                    hasMoved = false
                                                     val info = gridState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == index }
                                                     if (info != null) {
                                                         startItemOffset = info.offset
@@ -484,9 +487,15 @@ fun NotesPage(onDismiss: () -> Unit, repo: NoteRepo = koinInject()) {
                                                     }
                                                 },
                                                 onDragEnd = {
-                                                    if (draggingNoteId != null) {
-                                                        val orderMap = notes.mapIndexed { i, n -> n.id to i }.toMap()
-                                                        scope.launch { repo.updateSortOrders(orderMap) }
+                                                    draggingNoteId?.let { targetId ->
+                                                        if (hasMoved) {
+                                                            stopped_move = false
+                                                            val orderMap = notes.mapIndexed { i, n -> n.id to i }.toMap()
+                                                            scope.launch { repo.updateSortOrders(orderMap) }
+                                                        } else {
+                                                            stopped_move = true
+                                                            toggleSelectNote(targetId)
+                                                        }
                                                     }
                                                     draggingNoteId = null
                                                     totalDragOffset = Offset.Zero
@@ -514,6 +523,7 @@ fun NotesPage(onDismiss: () -> Unit, repo: NoteRepo = koinInject()) {
                                                                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                                                 val item = notes.removeAt(currentIdx)
                                                                 notes.add(hitItem.index, item)
+                                                                hasMoved = true
                                                             }
                                                         }
                                                     }
@@ -543,14 +553,22 @@ fun NotesPage(onDismiss: () -> Unit, repo: NoteRepo = koinInject()) {
                                         scope.launch { repo.upsertNote(updatedNote) }
                                     },
                                     onTogglePin = {
-                                        scope.launch { repo.upsertNote(note.copy(pinned = !note.pinned)) }
+                                        if (!isSelectionMode) {
+                                            scope.launch { repo.upsertNote(note.copy(pinned = !note.pinned)) }
+                                        } else {
+                                            toggleSelectNote(note.id)
+                                        }
                                     },
                                     onArchive = {
-                                        scope.launch {
-                                            repo.upsertNote(note.copy(archived = true))
-                                            showUndo(msgNoteArchived) {
-                                                scope.launch { repo.upsertNote(note.copy(archived = false)) }
+                                        if (!isSelectionMode) {
+                                            scope.launch {
+                                                repo.upsertNote(note.copy(archived = true))
+                                                showUndo(msgNoteArchived) {
+                                                    scope.launch { repo.upsertNote(note.copy(archived = false)) }
+                                                }
                                             }
+                                        } else {
+                                            toggleSelectNote(note.id)
                                         }
                                     },
                                     onUnarchive = {
@@ -583,16 +601,24 @@ fun NotesPage(onDismiss: () -> Unit, repo: NoteRepo = koinInject()) {
                                         }
                                     },
                                     onTogglePin = {
-                                        scope.launch { repo.upsertNote(note.copy(pinned = !note.pinned)) }
+                                        if (!isSelectionMode) {
+                                            scope.launch { repo.upsertNote(note.copy(pinned = !note.pinned)) }
+                                        } else {
+                                            toggleSelectNote(note.id)
+                                        }
                                     },
                                     onArchive = {
-                                        scope.launch {
-                                            repo.upsertNote(note.copy(archived = true))
-                                            showUndo(msgNoteArchived) {
-                                                scope.launch {
-                                                    repo.upsertNote(note.copy(archived = false))
+                                        if (!isSelectionMode) {
+                                            scope.launch {
+                                                repo.upsertNote(note.copy(archived = true))
+                                                showUndo(msgNoteArchived) {
+                                                    scope.launch {
+                                                        repo.upsertNote(note.copy(archived = false))
+                                                    }
                                                 }
                                             }
+                                        } else {
+                                            toggleSelectNote(note.id)
                                         }
                                     },
                                     onUnarchive = {
@@ -695,6 +721,7 @@ fun NotesPage(onDismiss: () -> Unit, repo: NoteRepo = koinInject()) {
                                                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                                     draggingNoteId = note.id
                                                     totalDragOffset = Offset.Zero
+                                                    hasMoved = false
                                                     val info = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == index }
                                                     if (info != null) {
                                                         startItemListOffset = info.offset
@@ -702,9 +729,15 @@ fun NotesPage(onDismiss: () -> Unit, repo: NoteRepo = koinInject()) {
                                                     }
                                                 },
                                                 onDragEnd = {
-                                                    if (draggingNoteId != null) {
-                                                        val orderMap = notes.mapIndexed { i, n -> n.id to i }.toMap()
-                                                        scope.launch { repo.updateSortOrders(orderMap) }
+                                                    draggingNoteId?.let { targetId ->
+                                                        if (hasMoved) {
+                                                            stopped_move = false
+                                                            val orderMap = notes.mapIndexed { i, n -> n.id to i }.toMap()
+                                                            scope.launch { repo.updateSortOrders(orderMap) }
+                                                        } else {
+                                                            stopped_move = true
+                                                            toggleSelectNote(targetId)
+                                                        }
                                                     }
                                                     draggingNoteId = null
                                                     totalDragOffset = Offset.Zero
@@ -730,6 +763,7 @@ fun NotesPage(onDismiss: () -> Unit, repo: NoteRepo = koinInject()) {
                                                                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                                                 val item = notes.removeAt(currentIdx)
                                                                 notes.add(hitItem.index, item)
+                                                                hasMoved = true
                                                             }
                                                         }
                                                     }

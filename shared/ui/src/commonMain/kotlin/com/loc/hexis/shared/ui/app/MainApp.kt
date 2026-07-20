@@ -48,6 +48,8 @@ import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
+import com.loc.hexis.core.settings.Sections
+
 @Composable
 fun MainApp(state: MainAppState) {
     val windowSizeClass = LocalWindowSizeClass.current
@@ -68,8 +70,8 @@ fun MainApp(state: MainAppState) {
             "add_task" -> taskPage
             else ->
                 when (state.startingSection) {
-                    Tasks -> taskPage
-                    Habits -> habitPage
+                    Sections.Tasks -> taskPage
+                    Sections.Habits -> habitPage
                 }
         }
 
@@ -85,6 +87,19 @@ fun MainApp(state: MainAppState) {
     var showPomodoro by remember { mutableStateOf(false) }
     var pomodoroLinkedHabitId by remember { mutableStateOf<Long?>(null) }
     var showNotes by remember { mutableStateOf(false) }
+
+    androidx.compose.runtime.LaunchedEffect(state.startingSection) {
+        if (state.shortcutAction == null && state.launchSource == LaunchSource.LAUNCHER) {
+            val targetPage =
+                when (state.startingSection) {
+                    Sections.Tasks -> taskPage
+                    Sections.Habits -> habitPage
+                }
+            if (pagerState.currentPage != targetPage) {
+                pagerState.scrollToPage(targetPage)
+            }
+        }
+    }
 
     androidx.compose.runtime.LaunchedEffect(state.shortcutAction) {
         state.shortcutAction?.let { action ->

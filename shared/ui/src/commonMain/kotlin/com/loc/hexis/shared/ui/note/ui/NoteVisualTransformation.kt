@@ -222,22 +222,42 @@ class NoteVisualTransformation(
                 } else {
                     val startLineTrans = currentTransformedLen
                     val isRule = trimmed.matches(Regex("""^[-*_]{3,}\s*$"""))
-                    val displayLine = if (isRule) {
-                        line.replace('-', '\u2501').replace('*', '\u2501').replace('_', '\u2501')
-                    } else {
-                        line
-                    }
-                    builder.append(displayLine)
-                    for (chIdx in 0 until lineLen) {
-                        if (origPos + chIdx <= original.length) {
-                            origToTrans[origPos + chIdx] = startLineTrans + chIdx
+                    if (isRule) {
+                        val ruleDisplay = buildString {
+                            for (ch in line) {
+                                if (ch == '-' || ch == '*' || ch == '_') {
+                                    append("\u2501\u2501\u2501")
+                                } else {
+                                    append(ch)
+                                }
+                            }
                         }
-                        transToOrig.add(origPos + chIdx)
-                    }
-                    currentTransformedLen += lineLen
-                    origPos += lineLen
+                        builder.append(ruleDisplay)
+                        for (chIdx in 0 until lineLen) {
+                            if (origPos + chIdx <= original.length) {
+                                origToTrans[origPos + chIdx] = startLineTrans + (chIdx * 3).coerceAtMost(ruleDisplay.length)
+                            }
+                        }
+                        for (i in 0 until ruleDisplay.length) {
+                            transToOrig.add((origPos + (i / 3)).coerceAtMost(original.length))
+                        }
+                        currentTransformedLen += ruleDisplay.length
+                        origPos += lineLen
 
-                    applyLineStyles(line, builder, startLineTrans, currentTransformedLen)
+                        applyLineStyles(line, builder, startLineTrans, currentTransformedLen)
+                    } else {
+                        builder.append(line)
+                        for (chIdx in 0 until lineLen) {
+                            if (origPos + chIdx <= original.length) {
+                                origToTrans[origPos + chIdx] = startLineTrans + chIdx
+                            }
+                            transToOrig.add(origPos + chIdx)
+                        }
+                        currentTransformedLen += lineLen
+                        origPos += lineLen
+
+                        applyLineStyles(line, builder, startLineTrans, currentTransformedLen)
+                    }
                 }
 
                 if (lineIdx < lines.size - 1) {
