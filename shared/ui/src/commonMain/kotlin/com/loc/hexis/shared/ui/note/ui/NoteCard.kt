@@ -1,7 +1,5 @@
 package com.loc.hexis.shared.ui.note.ui
 
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -39,13 +37,11 @@ import hexis.shared.ui.generated.resources.untitled
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.resources.vectorResource
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun BaseNoteCard(
     note: Note,
     showArchived: Boolean,
     onClick: () -> Unit,
-    onLongClick: (() -> Unit)? = null,
     onTogglePin: () -> Unit = {},
     onArchive: () -> Unit = {},
     onUnarchive: () -> Unit = {},
@@ -54,6 +50,7 @@ fun BaseNoteCard(
     body: @Composable ColumnScope.() -> Unit,
 ) {
     Card(
+        onClick = onClick,
         shape = RoundedCornerShape(20.dp),
         colors =
             CardDefaults.cardColors(
@@ -61,19 +58,7 @@ fun BaseNoteCard(
                     if (showArchived) MaterialTheme.colorScheme.surfaceContainerLow
                     else MaterialTheme.colorScheme.surfaceContainerHigh
             ),
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .then(
-                    if (onLongClick != null) {
-                        Modifier.combinedClickable(
-                            onClick = onClick,
-                            onLongClick = onLongClick,
-                        )
-                    } else {
-                        Modifier.combinedClickable(onClick = onClick)
-                    }
-                ),
+        modifier = modifier.fillMaxWidth(),
     ) {
         Column(modifier = Modifier.padding(14.dp).fillMaxWidth()) {
             Row(
@@ -194,7 +179,6 @@ fun NoteCard(
     note: Note,
     showArchived: Boolean,
     onClick: () -> Unit,
-    onLongClick: (() -> Unit)? = null,
     onTogglePin: () -> Unit = {},
     onArchive: () -> Unit = {},
     onUnarchive: () -> Unit = {},
@@ -205,7 +189,6 @@ fun NoteCard(
         note = note,
         showArchived = showArchived,
         onClick = onClick,
-        onLongClick = onLongClick,
         onTogglePin = onTogglePin,
         onArchive = onArchive,
         onUnarchive = onUnarchive,

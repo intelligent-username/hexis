@@ -5,23 +5,23 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -68,7 +68,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.style.TextAlign
@@ -90,7 +89,6 @@ import hexis.shared.ui.generated.resources.archived_notes
 import hexis.shared.ui.generated.resources.check
 import hexis.shared.ui.generated.resources.close
 import hexis.shared.ui.generated.resources.delete
-import hexis.shared.ui.generated.resources.drag_indicator
 import hexis.shared.ui.generated.resources.new_note
 import hexis.shared.ui.generated.resources.no_notes_found
 import hexis.shared.ui.generated.resources.note_archived
@@ -112,7 +110,7 @@ import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.resources.vectorResource
 import org.koin.compose.koinInject
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun NotesPage(onDismiss: () -> Unit, repo: NoteRepo = koinInject()) {
     val scope = rememberCoroutineScope()
@@ -452,181 +450,187 @@ fun NotesPage(onDismiss: () -> Unit, repo: NoteRepo = koinInject()) {
                                         translationY = if (isDragging) dragOffset.y else 0f
                                         alpha = if (isDragging) 0.88f else 1.0f
                                     }
-                        ) {
-                            Row {
-                                // Dedicated drag grip — immediate drag, no long-press delay
-                                if (!showArchived && !isSelectionMode && searchQuery.isEmpty()) {
-                                    DragGrip(
-                                        onDragStart = {
-                                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                            draggingIndex = index
-                                            dragOffset = Offset.Zero
-                                        },
-                                        onDrag = { change, amount ->
-                                            change.consume()
-                                            dragOffset += amount
-                                            draggingIndex?.let { currentIdx ->
-                                                val targetIdx =
-                                                    findHitItemIndex(
-                                                        gridState = gridState,
-                                                        draggedIndex = currentIdx,
-                                                        currentOffset = dragOffset,
-                                                    )
-                                                if (targetIdx != null && targetIdx != currentIdx) {
-                                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                                    val item = notes.removeAt(currentIdx)
-                                                    notes.add(targetIdx, item)
-                                                    draggingIndex = targetIdx
-                                                    dragOffset = Offset.Zero
-                                                }
-                                            }
-                                        },
-                                        onDragEnd = {
-                                            draggingIndex?.let {
-                                                val orderMap = notes.mapIndexed { i, n -> n.id to i }.toMap()
-                                                scope.launch { repo.updateSortOrders(orderMap) }
-                                            }
-                                            draggingIndex = null
-                                            dragOffset = Offset.Zero
-                                        },
-                                        onDragCancel = {
-                                            draggingIndex = null
-                                            dragOffset = Offset.Zero
-                                        },
-                                    )
-                                }
-
-                                Box(modifier = Modifier.weight(1f)) {
-                                    if (note.type == NoteType.COUNTING_TABLE) {
-                                        CountingTableCard(
-                                            note = note,
-                                            showArchived = showArchived,
-                                            onClick = {
-                                                if (isSelectionMode) toggleSelectNote(note.id)
-                                                else {
+                                    .pointerInput(note.id, isSelectionMode) {
+                                        detectTapGestures(
+                                            onTap = {
+                                                if (isSelectionMode) {
+                                                    toggleSelectNote(note.id)
+                                                } else {
                                                     editingNote = note
                                                     showEditor = true
                                                 }
                                             },
-                                            onLongClick = {
-                                                if (!isSelectionMode) toggleSelectNote(note.id)
-                                            },
-                                            onValueChange = { rowId, newValue ->
-                                                val data = note.parseCountingTable()
-                                                val updatedRows =
-                                                    data.rows.map { r ->
-                                                        if (r.id == rowId) r.copy(value = newValue) else r
-                                                    }
-                                                val updatedNote = note.withCountingTable(CountingTableData(updatedRows))
-                                                scope.launch { repo.upsertNote(updatedNote) }
-                                            },
-                                            onTogglePin = {
-                                                scope.launch { repo.upsertNote(note.copy(pinned = !note.pinned)) }
-                                            },
-                                            onArchive = {
-                                                scope.launch {
-                                                    repo.upsertNote(note.copy(archived = true))
-                                                    showUndo(msgNoteArchived) {
-                                                        scope.launch { repo.upsertNote(note.copy(archived = false)) }
-                                                    }
-                                                }
-                                            },
-                                            onUnarchive = {
-                                                scope.launch {
-                                                    repo.upsertNote(note.copy(archived = false))
-                                                    showUndo(msgNoteUnarchived) {
-                                                        scope.launch { repo.upsertNote(note.copy(archived = true)) }
-                                                    }
-                                                }
-                                            },
-                                            onDelete = {
-                                                scope.launch {
-                                                    val deleted = note
-                                                    repo.deleteNote(note.id)
-                                                    showUndo(msgNoteDeleted) {
-                                                        scope.launch { repo.upsertNote(deleted) }
-                                                    }
-                                                }
-                                            },
-                                        )
-                                    } else {
-                                        NoteCard(
-                                            note = note,
-                                            showArchived = showArchived,
-                                            onClick = {
-                                                if (isSelectionMode) toggleSelectNote(note.id)
-                                                else {
-                                                    editingNote = note
-                                                    showEditor = true
-                                                }
-                                            },
-                                            onLongClick = {
-                                                if (!isSelectionMode) toggleSelectNote(note.id)
-                                            },
-                                            onTogglePin = {
-                                                scope.launch { repo.upsertNote(note.copy(pinned = !note.pinned)) }
-                                            },
-                                            onArchive = {
-                                                scope.launch {
-                                                    repo.upsertNote(note.copy(archived = true))
-                                                    showUndo(msgNoteArchived) {
-                                                        scope.launch {
-                                                            repo.upsertNote(note.copy(archived = false))
-                                                        }
-                                                    }
-                                                }
-                                            },
-                                            onUnarchive = {
-                                                scope.launch {
-                                                    repo.upsertNote(note.copy(archived = false))
-                                                    showUndo(msgNoteUnarchived) {
-                                                        scope.launch { repo.upsertNote(note.copy(archived = true)) }
-                                                    }
-                                                }
-                                            },
-                                            onDelete = {
-                                                scope.launch {
-                                                    val deleted = note
-                                                    repo.deleteNote(note.id)
-                                                    showUndo(msgNoteDeleted) {
-                                                        scope.launch { repo.upsertNote(deleted) }
-                                                    }
+                                            onLongPress = {
+                                                if (!isSelectionMode && !showArchived) {
+                                                    toggleSelectNote(note.id)
                                                 }
                                             },
                                         )
                                     }
-
-                                    // Selection Checkbox Overlay
-                                    if (isSelectionMode) {
-                                        Box(
-                                            modifier =
-                                                Modifier.align(Alignment.TopEnd)
-                                                    .padding(8.dp)
-                                                    .size(24.dp)
-                                                    .background(
-                                                        color =
-                                                            if (isSelected) MaterialTheme.colorScheme.primary
-                                                            else MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.8f),
-                                                        shape = CircleShape,
-                                                    )
-                                                    .border(
-                                                        width = 2.dp,
-                                                        color =
-                                                            if (isSelected) MaterialTheme.colorScheme.primary
-                                                            else MaterialTheme.colorScheme.outline,
-                                                        shape = CircleShape,
-                                                    ),
-                                            contentAlignment = Alignment.Center,
-                                        ) {
-                                            if (isSelected) {
-                                                Icon(
-                                                    imageVector = vectorResource(Res.drawable.check),
-                                                    contentDescription = "Selected",
-                                                    tint = MaterialTheme.colorScheme.onPrimary,
-                                                    modifier = Modifier.size(14.dp),
-                                                )
+                                    .pointerInput(note.id, showArchived, searchQuery) {
+                                        if (!showArchived && searchQuery.isEmpty()) {
+                                            detectDragGestures(
+                                                onDragStart = {
+                                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                                    draggingIndex = index
+                                                },
+                                                onDragEnd = {
+                                                    draggingIndex?.let {
+                                                        val orderMap = notes.mapIndexed { i, n -> n.id to i }.toMap()
+                                                        scope.launch { repo.updateSortOrders(orderMap) }
+                                                    }
+                                                    draggingIndex = null
+                                                    dragOffset = Offset.Zero
+                                                },
+                                                onDragCancel = {
+                                                    draggingIndex = null
+                                                    dragOffset = Offset.Zero
+                                                },
+                                                onDrag = { change, amount ->
+                                                    change.consume()
+                                                    dragOffset += amount
+                                                    draggingIndex?.let { currentIdx ->
+                                                        val targetIdx =
+                                                            findHitItemIndex(
+                                                                gridState = gridState,
+                                                                draggedIndex = currentIdx,
+                                                                currentOffset = dragOffset,
+                                                            )
+                                                        if (targetIdx != null && targetIdx != currentIdx) {
+                                                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                                            val item = notes.removeAt(currentIdx)
+                                                            notes.add(targetIdx, item)
+                                                            draggingIndex = targetIdx
+                                                            dragOffset = Offset.Zero
+                                                        }
+                                                    }
+                                                },
+                                            )
+                                        }
+                                    }
+                        ) {
+                            if (note.type == NoteType.COUNTING_TABLE) {
+                                CountingTableCard(
+                                    note = note,
+                                    showArchived = showArchived,
+                                    onClick = {
+                                        if (isSelectionMode) toggleSelectNote(note.id)
+                                        else {
+                                            editingNote = note
+                                            showEditor = true
+                                        }
+                                    },
+                                    onValueChange = { rowId, newValue ->
+                                        val data = note.parseCountingTable()
+                                        val updatedRows =
+                                            data.rows.map { r ->
+                                                if (r.id == rowId) r.copy(value = newValue) else r
+                                            }
+                                        val updatedNote = note.withCountingTable(CountingTableData(updatedRows))
+                                        scope.launch { repo.upsertNote(updatedNote) }
+                                    },
+                                    onTogglePin = {
+                                        scope.launch { repo.upsertNote(note.copy(pinned = !note.pinned)) }
+                                    },
+                                    onArchive = {
+                                        scope.launch {
+                                            repo.upsertNote(note.copy(archived = true))
+                                            showUndo(msgNoteArchived) {
+                                                scope.launch { repo.upsertNote(note.copy(archived = false)) }
                                             }
                                         }
+                                    },
+                                    onUnarchive = {
+                                        scope.launch {
+                                            repo.upsertNote(note.copy(archived = false))
+                                            showUndo(msgNoteUnarchived) {
+                                                scope.launch { repo.upsertNote(note.copy(archived = true)) }
+                                            }
+                                        }
+                                    },
+                                    onDelete = {
+                                        scope.launch {
+                                            val deleted = note
+                                            repo.deleteNote(note.id)
+                                            showUndo(msgNoteDeleted) {
+                                                scope.launch { repo.upsertNote(deleted) }
+                                            }
+                                        }
+                                    },
+                                )
+                            } else {
+                                NoteCard(
+                                    note = note,
+                                    showArchived = showArchived,
+                                    onClick = {
+                                        if (isSelectionMode) toggleSelectNote(note.id)
+                                        else {
+                                            editingNote = note
+                                            showEditor = true
+                                        }
+                                    },
+                                    onTogglePin = {
+                                        scope.launch { repo.upsertNote(note.copy(pinned = !note.pinned)) }
+                                    },
+                                    onArchive = {
+                                        scope.launch {
+                                            repo.upsertNote(note.copy(archived = true))
+                                            showUndo(msgNoteArchived) {
+                                                scope.launch {
+                                                    repo.upsertNote(note.copy(archived = false))
+                                                }
+                                            }
+                                        }
+                                    },
+                                    onUnarchive = {
+                                        scope.launch {
+                                            repo.upsertNote(note.copy(archived = false))
+                                            showUndo(msgNoteUnarchived) {
+                                                scope.launch { repo.upsertNote(note.copy(archived = true)) }
+                                            }
+                                        }
+                                    },
+                                    onDelete = {
+                                        scope.launch {
+                                            val deleted = note
+                                            repo.deleteNote(note.id)
+                                            showUndo(msgNoteDeleted) {
+                                                scope.launch { repo.upsertNote(deleted) }
+                                            }
+                                        }
+                                    },
+                                )
+                            }
+
+                            // Selection Checkbox Overlay
+                            if (isSelectionMode) {
+                                Box(
+                                    modifier =
+                                        Modifier.align(Alignment.TopEnd)
+                                            .padding(8.dp)
+                                            .size(24.dp)
+                                            .background(
+                                                color =
+                                                    if (isSelected) MaterialTheme.colorScheme.primary
+                                                    else MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.8f),
+                                                shape = CircleShape,
+                                            )
+                                            .border(
+                                                width = 2.dp,
+                                                color =
+                                                    if (isSelected) MaterialTheme.colorScheme.primary
+                                                    else MaterialTheme.colorScheme.outline,
+                                                shape = CircleShape,
+                                            ),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    if (isSelected) {
+                                        Icon(
+                                            imageVector = vectorResource(Res.drawable.check),
+                                            contentDescription = "Selected",
+                                            tint = MaterialTheme.colorScheme.onPrimary,
+                                            modifier = Modifier.size(14.dp),
+                                        )
                                     }
                                 }
                             }
@@ -654,181 +658,187 @@ fun NotesPage(onDismiss: () -> Unit, repo: NoteRepo = koinInject()) {
                                         translationY = if (isDragging) dragOffset.y else 0f
                                         alpha = if (isDragging) 0.88f else 1.0f
                                     }
-                        ) {
-                            Row {
-                                // Dedicated drag grip — immediate drag, no long-press delay
-                                if (!showArchived && !isSelectionMode && searchQuery.isEmpty()) {
-                                    DragGrip(
-                                        onDragStart = {
-                                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                            draggingIndex = index
-                                            dragOffset = Offset.Zero
-                                        },
-                                        onDrag = { change, amount ->
-                                            change.consume()
-                                            dragOffset += amount
-                                            draggingIndex?.let { currentIdx ->
-                                                val targetIdx =
-                                                    findHitItemIndexList(
-                                                        listState = listState,
-                                                        draggedIndex = currentIdx,
-                                                        currentOffset = dragOffset,
-                                                    )
-                                                if (targetIdx != null && targetIdx != currentIdx) {
-                                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                                    val item = notes.removeAt(currentIdx)
-                                                    notes.add(targetIdx, item)
-                                                    draggingIndex = targetIdx
-                                                    dragOffset = Offset.Zero
-                                                }
-                                            }
-                                        },
-                                        onDragEnd = {
-                                            draggingIndex?.let {
-                                                val orderMap = notes.mapIndexed { i, n -> n.id to i }.toMap()
-                                                scope.launch { repo.updateSortOrders(orderMap) }
-                                            }
-                                            draggingIndex = null
-                                            dragOffset = Offset.Zero
-                                        },
-                                        onDragCancel = {
-                                            draggingIndex = null
-                                            dragOffset = Offset.Zero
-                                        },
-                                    )
-                                }
-
-                                Box(modifier = Modifier.weight(1f)) {
-                                    if (note.type == NoteType.COUNTING_TABLE) {
-                                        CountingTableCard(
-                                            note = note,
-                                            showArchived = showArchived,
-                                            onClick = {
-                                                if (isSelectionMode) toggleSelectNote(note.id)
-                                                else {
+                                    .pointerInput(note.id, isSelectionMode) {
+                                        detectTapGestures(
+                                            onTap = {
+                                                if (isSelectionMode) {
+                                                    toggleSelectNote(note.id)
+                                                } else {
                                                     editingNote = note
                                                     showEditor = true
                                                 }
                                             },
-                                            onLongClick = {
-                                                if (!isSelectionMode) toggleSelectNote(note.id)
-                                            },
-                                            onValueChange = { rowId, newValue ->
-                                                val data = note.parseCountingTable()
-                                                val updatedRows =
-                                                    data.rows.map { r ->
-                                                        if (r.id == rowId) r.copy(value = newValue) else r
-                                                    }
-                                                val updatedNote = note.withCountingTable(CountingTableData(updatedRows))
-                                                scope.launch { repo.upsertNote(updatedNote) }
-                                            },
-                                            onTogglePin = {
-                                                scope.launch { repo.upsertNote(note.copy(pinned = !note.pinned)) }
-                                            },
-                                            onArchive = {
-                                                scope.launch {
-                                                    repo.upsertNote(note.copy(archived = true))
-                                                    showUndo(msgNoteArchived) {
-                                                        scope.launch { repo.upsertNote(note.copy(archived = false)) }
-                                                    }
-                                                }
-                                            },
-                                            onUnarchive = {
-                                                scope.launch {
-                                                    repo.upsertNote(note.copy(archived = false))
-                                                    showUndo(msgNoteUnarchived) {
-                                                        scope.launch { repo.upsertNote(note.copy(archived = true)) }
-                                                    }
-                                                }
-                                            },
-                                            onDelete = {
-                                                scope.launch {
-                                                    val deleted = note
-                                                    repo.deleteNote(note.id)
-                                                    showUndo(msgNoteDeleted) {
-                                                        scope.launch { repo.upsertNote(deleted) }
-                                                    }
-                                                }
-                                            },
-                                        )
-                                    } else {
-                                        NoteCard(
-                                            note = note,
-                                            showArchived = showArchived,
-                                            onClick = {
-                                                if (isSelectionMode) toggleSelectNote(note.id)
-                                                else {
-                                                    editingNote = note
-                                                    showEditor = true
-                                                }
-                                            },
-                                            onLongClick = {
-                                                if (!isSelectionMode) toggleSelectNote(note.id)
-                                            },
-                                            onTogglePin = {
-                                                scope.launch { repo.upsertNote(note.copy(pinned = !note.pinned)) }
-                                            },
-                                            onArchive = {
-                                                scope.launch {
-                                                    repo.upsertNote(note.copy(archived = true))
-                                                    showUndo(msgNoteArchived) {
-                                                        scope.launch {
-                                                            repo.upsertNote(note.copy(archived = false))
-                                                        }
-                                                    }
-                                                }
-                                            },
-                                            onUnarchive = {
-                                                scope.launch {
-                                                    repo.upsertNote(note.copy(archived = false))
-                                                    showUndo(msgNoteUnarchived) {
-                                                        scope.launch { repo.upsertNote(note.copy(archived = true)) }
-                                                    }
-                                                }
-                                            },
-                                            onDelete = {
-                                                scope.launch {
-                                                    val deleted = note
-                                                    repo.deleteNote(note.id)
-                                                    showUndo(msgNoteDeleted) {
-                                                        scope.launch { repo.upsertNote(deleted) }
-                                                    }
+                                            onLongPress = {
+                                                if (!isSelectionMode && !showArchived) {
+                                                    toggleSelectNote(note.id)
                                                 }
                                             },
                                         )
                                     }
-
-                                    // Selection Checkbox Overlay
-                                    if (isSelectionMode) {
-                                        Box(
-                                            modifier =
-                                                Modifier.align(Alignment.TopEnd)
-                                                    .padding(10.dp)
-                                                    .size(24.dp)
-                                                    .background(
-                                                        color =
-                                                            if (isSelected) MaterialTheme.colorScheme.primary
-                                                            else MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.8f),
-                                                        shape = CircleShape,
-                                                    )
-                                                    .border(
-                                                        width = 2.dp,
-                                                        color =
-                                                            if (isSelected) MaterialTheme.colorScheme.primary
-                                                            else MaterialTheme.colorScheme.outline,
-                                                        shape = CircleShape,
-                                                    ),
-                                            contentAlignment = Alignment.Center,
-                                        ) {
-                                            if (isSelected) {
-                                                Icon(
-                                                    imageVector = vectorResource(Res.drawable.check),
-                                                    contentDescription = "Selected",
-                                                    tint = MaterialTheme.colorScheme.onPrimary,
-                                                    modifier = Modifier.size(14.dp),
-                                                )
+                                    .pointerInput(note.id, showArchived, searchQuery) {
+                                        if (!showArchived && searchQuery.isEmpty()) {
+                                            detectDragGestures(
+                                                onDragStart = {
+                                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                                    draggingIndex = index
+                                                },
+                                                onDragEnd = {
+                                                    draggingIndex?.let {
+                                                        val orderMap = notes.mapIndexed { i, n -> n.id to i }.toMap()
+                                                        scope.launch { repo.updateSortOrders(orderMap) }
+                                                    }
+                                                    draggingIndex = null
+                                                    dragOffset = Offset.Zero
+                                                },
+                                                onDragCancel = {
+                                                    draggingIndex = null
+                                                    dragOffset = Offset.Zero
+                                                },
+                                                onDrag = { change, amount ->
+                                                    change.consume()
+                                                    dragOffset += amount
+                                                    draggingIndex?.let { currentIdx ->
+                                                        val targetIdx =
+                                                            findHitItemIndexList(
+                                                                listState = listState,
+                                                                draggedIndex = currentIdx,
+                                                                currentOffset = dragOffset,
+                                                            )
+                                                        if (targetIdx != null && targetIdx != currentIdx) {
+                                                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                                            val item = notes.removeAt(currentIdx)
+                                                            notes.add(targetIdx, item)
+                                                            draggingIndex = targetIdx
+                                                            dragOffset = Offset.Zero
+                                                        }
+                                                    }
+                                                },
+                                            )
+                                        }
+                                    }
+                        ) {
+                            if (note.type == NoteType.COUNTING_TABLE) {
+                                CountingTableCard(
+                                    note = note,
+                                    showArchived = showArchived,
+                                    onClick = {
+                                        if (isSelectionMode) toggleSelectNote(note.id)
+                                        else {
+                                            editingNote = note
+                                            showEditor = true
+                                        }
+                                    },
+                                    onValueChange = { rowId, newValue ->
+                                        val data = note.parseCountingTable()
+                                        val updatedRows =
+                                            data.rows.map { r ->
+                                                if (r.id == rowId) r.copy(value = newValue) else r
+                                            }
+                                        val updatedNote = note.withCountingTable(CountingTableData(updatedRows))
+                                        scope.launch { repo.upsertNote(updatedNote) }
+                                    },
+                                    onTogglePin = {
+                                        scope.launch { repo.upsertNote(note.copy(pinned = !note.pinned)) }
+                                    },
+                                    onArchive = {
+                                        scope.launch {
+                                            repo.upsertNote(note.copy(archived = true))
+                                            showUndo(msgNoteArchived) {
+                                                scope.launch { repo.upsertNote(note.copy(archived = false)) }
                                             }
                                         }
+                                    },
+                                    onUnarchive = {
+                                        scope.launch {
+                                            repo.upsertNote(note.copy(archived = false))
+                                            showUndo(msgNoteUnarchived) {
+                                                scope.launch { repo.upsertNote(note.copy(archived = true)) }
+                                            }
+                                        }
+                                    },
+                                    onDelete = {
+                                        scope.launch {
+                                            val deleted = note
+                                            repo.deleteNote(note.id)
+                                            showUndo(msgNoteDeleted) {
+                                                scope.launch { repo.upsertNote(deleted) }
+                                            }
+                                        }
+                                    },
+                                )
+                            } else {
+                                NoteCard(
+                                    note = note,
+                                    showArchived = showArchived,
+                                    onClick = {
+                                        if (isSelectionMode) toggleSelectNote(note.id)
+                                        else {
+                                            editingNote = note
+                                            showEditor = true
+                                        }
+                                    },
+                                    onTogglePin = {
+                                        scope.launch { repo.upsertNote(note.copy(pinned = !note.pinned)) }
+                                    },
+                                    onArchive = {
+                                        scope.launch {
+                                            repo.upsertNote(note.copy(archived = true))
+                                            showUndo(msgNoteArchived) {
+                                                scope.launch {
+                                                    repo.upsertNote(note.copy(archived = false))
+                                                }
+                                            }
+                                        }
+                                    },
+                                    onUnarchive = {
+                                        scope.launch {
+                                            repo.upsertNote(note.copy(archived = false))
+                                            showUndo(msgNoteUnarchived) {
+                                                scope.launch { repo.upsertNote(note.copy(archived = true)) }
+                                            }
+                                        }
+                                    },
+                                    onDelete = {
+                                        scope.launch {
+                                            val deleted = note
+                                            repo.deleteNote(note.id)
+                                            showUndo(msgNoteDeleted) {
+                                                scope.launch { repo.upsertNote(deleted) }
+                                            }
+                                        }
+                                    },
+                                )
+                            }
+
+                            // Selection Checkbox Overlay
+                            if (isSelectionMode) {
+                                Box(
+                                    modifier =
+                                        Modifier.align(Alignment.TopEnd)
+                                            .padding(10.dp)
+                                            .size(24.dp)
+                                            .background(
+                                                color =
+                                                    if (isSelected) MaterialTheme.colorScheme.primary
+                                                    else MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.8f),
+                                                shape = CircleShape,
+                                            )
+                                            .border(
+                                                width = 2.dp,
+                                                color =
+                                                    if (isSelected) MaterialTheme.colorScheme.primary
+                                                    else MaterialTheme.colorScheme.outline,
+                                                shape = CircleShape,
+                                            ),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    if (isSelected) {
+                                        Icon(
+                                            imageVector = vectorResource(Res.drawable.check),
+                                            contentDescription = "Selected",
+                                            tint = MaterialTheme.colorScheme.onPrimary,
+                                            modifier = Modifier.size(14.dp),
+                                        )
                                     }
                                 }
                             }
@@ -1048,42 +1058,6 @@ fun NotesPage(onDismiss: () -> Unit, repo: NoteRepo = koinInject()) {
                     }
                 }
             },
-        )
-    }
-}
-
-/**
- * A narrow drag grip that uses [detectDragGestures] (immediate, no long-press delay).
- * Sits on the left edge of each note card and communicates drag events back to the caller.
- */
-@Composable
-private fun DragGrip(
-    onDragStart: () -> Unit,
-    onDrag: (change: PointerInputChange, dragAmount: Offset) -> Unit,
-    onDragEnd: () -> Unit,
-    onDragCancel: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Box(
-        modifier =
-            modifier
-                .width(28.dp)
-                .fillMaxHeight()
-                .pointerInput(Unit) {
-                    detectDragGestures(
-                        onDragStart = { onDragStart() },
-                        onDrag = onDrag,
-                        onDragEnd = onDragEnd,
-                        onDragCancel = onDragCancel,
-                    )
-                },
-        contentAlignment = Alignment.Center,
-    ) {
-        Icon(
-            imageVector = vectorResource(Res.drawable.drag_indicator),
-            contentDescription = "Drag to reorder",
-            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-            modifier = Modifier.size(18.dp),
         )
     }
 }
