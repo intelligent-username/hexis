@@ -6,11 +6,13 @@ import com.loc.hexis.core.habits.HabitStatus
 import com.loc.hexis.habits.data.database.HabitEntity
 import com.loc.hexis.habits.data.database.HabitStatusEntity
 
+private val LINE_BREAK_REGEX = Regex("\\r?\\n|\\r")
+
 fun HabitEntity.toHabit(): Habit {
     return Habit(
         id = id,
-        title = title,
-        description = description,
+        title = title.trim().replace(LINE_BREAK_REGEX, " "),
+        description = description.trim().replace(LINE_BREAK_REGEX, " "),
         time = time,
         days = days,
         index = index,
@@ -34,8 +36,8 @@ fun HabitStatusEntity.toHabitStatus(): HabitStatus {
 fun Habit.toHabitEntity(): HabitEntity {
     return HabitEntity(
         id = id,
-        title = title,
-        description = description,
+        title = title.trim().replace(LINE_BREAK_REGEX, " "),
+        description = description.trim().replace(LINE_BREAK_REGEX, " "),
         time = time,
         index = index,
         days = days,

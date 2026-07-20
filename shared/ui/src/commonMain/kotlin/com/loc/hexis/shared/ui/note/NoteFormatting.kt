@@ -138,10 +138,20 @@ fun removePrefix(text: String): String {
 }
 
 fun getContentPreview(content: String, maxChars: Int = 120): String {
-    return parseContentLines(content)
-        .joinToString(" ") { it.text }
-        .replace("\n", " ")
-        .replace(Regex("\\s+"), " ")
+    val lines = parseContentLines(content)
+    val previewParts = lines.mapNotNull { line ->
+        when (line.type) {
+            LineType.HEADER, LineType.SUB_HEADER, LineType.SUB_SUB_HEADER -> line.text.ifEmpty { null }
+            LineType.BULLET_LIST -> if (line.text.isNotEmpty()) "• ${line.text}" else null
+            LineType.NUMBERED_LIST -> if (line.text.isNotEmpty()) "${line.number ?: 1}. ${line.text}" else null
+            LineType.CHECKLIST -> if (line.text.isNotEmpty()) "${if (line.isChecked) "☑" else "☐"} ${line.text}" else null
+            LineType.QUOTE -> if (line.text.isNotEmpty()) "│ ${line.text}" else null
+            LineType.HORIZONTAL_RULE -> null
+            LineType.REGULAR -> line.text.ifEmpty { null }
+        }
+    }
+    return previewParts
+        .joinToString("\n")
         .trim()
         .take(maxChars)
 }

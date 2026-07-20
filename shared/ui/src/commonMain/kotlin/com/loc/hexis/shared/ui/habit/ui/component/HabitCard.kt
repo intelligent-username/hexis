@@ -226,7 +226,7 @@ fun HabitCard(
                         Text(
                             text = habitWithAnalytics.habit.description,
                             style = MaterialTheme.typography.bodyMedium,
-                            maxLines = 2,
+                            maxLines = 1,
                             modifier = Modifier.padding(bottom = 2.dp),
                             color = cardContent.copy(alpha = 0.8f),
                         )

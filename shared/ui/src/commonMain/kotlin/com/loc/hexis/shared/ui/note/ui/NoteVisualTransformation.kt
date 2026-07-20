@@ -8,6 +8,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.sp
 import com.loc.hexis.shared.ui.note.LineType
 import com.loc.hexis.shared.ui.note.parseContentLines
@@ -111,12 +112,13 @@ class NoteVisualTransformation(
                     origPos += rawLine.length
                     builder.pushStyle(
                         SpanStyle(
-                            color = primaryColor.copy(alpha = 0.6f),
-                            background = primaryColor.copy(alpha = 0.15f),
+                            color = primaryColor.copy(alpha = 0.5f),
+                            textDecoration = TextDecoration.LineThrough,
                         )
                     )
-                    builder.append('\u2501')
-                    outToOrig.add((origPos - 1).coerceAtLeast(0))
+                    val ruleLine = "\u00A0".repeat(45)
+                    builder.append(ruleLine)
+                    repeat(ruleLine.length) { outToOrig.add((origPos - 1).coerceAtLeast(0)) }
                     builder.pop()
                 }
 

@@ -114,7 +114,7 @@ fun AnalyticsPage(
                     scrolledContainerColor = Color.Transparent,
                     containerColor = Color.Transparent,
                 ),
-            title = { Text(text = currentHabit.habit.title, fontFamily = flexFontEmphasis()) },
+            title = { Text(text = currentHabit.habit.title, maxLines = 1, fontFamily = flexFontEmphasis()) },
             subtitle = {
                 if (currentHabit.habit.description.isNotEmpty()) {
                     Text(
