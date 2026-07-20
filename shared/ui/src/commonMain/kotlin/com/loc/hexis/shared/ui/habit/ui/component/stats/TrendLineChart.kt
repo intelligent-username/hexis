@@ -1,20 +1,3 @@
-/*
- * Copyright (C) 2025-2026 Hexis
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- */
-
 package com.loc.hexis.shared.ui.habit.ui.component.stats
 
 import androidx.compose.animation.core.Animatable
@@ -253,7 +236,7 @@ fun TrendLineChart(weeklyPointsHistory: List<Int>, modifier: Modifier = Modifier
 
                     val sp = buildPath(progress)
 
-                    // Flat fill under the curve — single alpha, no gradient
+                    // fill under curve
                     val fillPath =
                         Path().apply {
                             addPath(sp)
@@ -264,7 +247,7 @@ fun TrendLineChart(weeklyPointsHistory: List<Int>, modifier: Modifier = Modifier
                         }
                     drawPath(path = fillPath, color = lineColor.copy(alpha = 0.08f))
 
-                    // Single clean stroke — no glow, no gradient
+                    // stroke
                     drawPath(
                         path = sp,
                         color = lineColor,

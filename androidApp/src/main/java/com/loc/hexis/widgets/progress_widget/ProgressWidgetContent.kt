@@ -1,20 +1,3 @@
-/*
- * Copyright (C) 2025-2026 Hexis
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- */
-
 package com.loc.hexis.widgets.progress_widget
 
 import android.os.Build
@@ -142,11 +125,7 @@ private fun WidgetTitleBar(showRefresh: Boolean, onRefresh: () -> Unit) {
     )
 }
 
-/**
- * Large primary number + coloured delta — replaces the 3-card layout.
- *
- * Compact: [ 47 +12↑ pts this week ] — one line Full: same but slightly larger pts
- */
+/** Large primary number with delta. Compact: one line. Full: slightly larger. */
 @Composable
 @GlanceComposable
 private fun PtsHeader(trend: PointsTrend, compact: Boolean) {
@@ -182,7 +161,7 @@ private fun PtsHeader(trend: PointsTrend, compact: Boolean) {
             )
         }
         Spacer(GlanceModifier.width(10.dp))
-        // Delta pill — no box, just coloured text with arrow
+        // delta
         Text(
             text = "$deltaText ($pctText ${if (netUp) "↑" else "↓"})",
             style = TextStyle(fontSize = 13.sp, fontWeight = FontWeight.Bold, color = deltaColor),
@@ -211,7 +190,7 @@ private fun PtsHeader(trend: PointsTrend, compact: Boolean) {
         )
 
         Spacer(GlanceModifier.defaultWeight())
-        // Streak badge — right-aligned, understated
+        // streak
         if (trend.currentStreakWeeks > 0) {
             Text(
                 text = "streak: ${trend.currentStreakWeeks}w",

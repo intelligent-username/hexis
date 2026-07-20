@@ -1,20 +1,3 @@
-/*
- * Copyright (C) 2025-2026 Hexis
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- */
-
 package com.loc.hexis.shared.ui.app
 
 import androidx.compose.foundation.background
@@ -72,8 +55,7 @@ fun MainApp(state: MainAppState) {
     val habitPage = AppSections.mainRoutes.indexOf(AppSections.HabitPages).coerceAtLeast(0)
     val taskPage = AppSections.mainRoutes.indexOf(AppSections.TaskPages).coerceAtLeast(0)
 
-    // Widget/shortcut actions override the default starting section so the pager never
-    // starts on the wrong tab and then scrolls — the initial page is already correct.
+    // Widget/shortcut actions set the initial page directly, no scroll needed.
     val initialPage =
         when (state.shortcutAction) {
             WidgetActions.OPEN_HABITS,
@@ -106,9 +88,7 @@ fun MainApp(state: MainAppState) {
 
     androidx.compose.runtime.LaunchedEffect(state.shortcutAction) {
         state.shortcutAction?.let { action ->
-            // Use scrollToPage (instant) not animateScrollToPage — the initial page was
-            // already set correctly so this is a no-op for the tab, but the subsequent
-            // VM actions (open sheet, open analytics) still need to fire.
+            // scrollToPage (instant): the correct page is already set; VM actions still fire.
             when (action) {
                 "add_habit" -> {
                     pagerState.scrollToPage(habitPage)

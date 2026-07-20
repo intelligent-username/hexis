@@ -1,20 +1,3 @@
-/*
- * Copyright (C) 2025-2026 Hexis
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- */
-
 package com.loc.hexis.widgets.progress_widget
 
 import android.graphics.Bitmap
@@ -45,10 +28,10 @@ import kotlin.math.roundToInt
 /**
  * Bar+line hybrid chart.
  *
- * [dailyData] — 14 daily point values for the trend line [weeklyData] — per-week point totals for
- * bar columns (optional, up to 8 bars) [bestWeek] — all-time best week, used to scale bars (0 =
- * auto-scale from data) [currentPartial] — current partial-week points; if provided, last bar
- * renders as a semi-transparent "in progress" column
+ * @param dailyData 14 daily point values for the trend line
+ * @param weeklyData per-week point totals for bar columns (optional, up to 8 bars)
+ * @param bestWeek all-time best week, used to scale bars (0 = auto-scale from data)
+ * @param currentPartial current partial-week points; if provided, last bar renders as a semi-transparent "in progress" column
  */
 @Composable
 fun ProgressLineGraph(
@@ -122,7 +105,7 @@ fun ProgressLineGraph(
                     Offset(barCenterX, y)
                 }
 
-            // ── BAR COLUMNS ────────────────────────────────────────────────
+            // bars
             bars.forEachIndexed { i, valPoints ->
                 val isLast = i == barCount - 1 && currentPartial > 0
                 val frac = (valPoints.toFloat() / barMax).coerceIn(0f, 1f)
@@ -165,7 +148,7 @@ fun ProgressLineGraph(
                 }
             }
 
-            // ── TREND LINE (smooth curve overlay) ──────────────────────────
+            // trend line
             fun buildSmoothPath(): Path =
                 Path().apply {
                     moveTo(pts[0].x, pts[0].y)
@@ -218,7 +201,7 @@ fun ProgressLineGraph(
             paint.style = Paint.Style.STROKE
             canvas.drawLine(padL, virtualH - padB, virtualW - padR, virtualH - padB, paint)
 
-            // Main line — clean, no glow
+            // main stroke
             paint.style = Paint.Style.STROKE
             paint.strokeWidth = 6f
             paint.color = lineColorInt
@@ -234,7 +217,7 @@ fun ProgressLineGraph(
             paint.color = lineColorInt
             canvas.drawCircle(last.x, last.y, 9f, paint)
 
-            // Last-point value label — floats above the dot
+            // value label above last dot
             paint.textSize = 28f
             paint.typeface = Typeface.DEFAULT_BOLD
             paint.isAntiAlias = true
