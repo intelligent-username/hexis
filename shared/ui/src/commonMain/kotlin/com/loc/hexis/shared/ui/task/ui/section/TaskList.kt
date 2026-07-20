@@ -118,17 +118,11 @@ fun TaskList(
         }
     }
 
-    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
-
     Column(
-        modifier =
-            Modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
+        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
     ) {
         TaskListTopBar(
             state = state,
-            scrollBehavior = scrollBehavior,
             isReorderMode = editState,
             onReorderToggle = { editState = it },
             onDeleteClick = { showDeleteDialog = true },
@@ -257,7 +251,6 @@ fun TaskList(
 @Composable
 private fun TaskListTopBar(
     state: TaskState,
-    scrollBehavior: TopAppBarScrollBehavior,
     isReorderMode: Boolean,
     onReorderToggle: (Boolean) -> Unit,
     onDeleteClick: () -> Unit,
@@ -269,7 +262,6 @@ private fun TaskListTopBar(
         title = stringResource(Res.string.tasks),
         subtitle = "${state.completedTasks.size} " + stringResource(Res.string.items_completed),
         yOffset = 0.dp,
-        scrollBehavior = scrollBehavior,
         actions = {
             val motionScheme = MaterialTheme.motionScheme
             AnimatedVisibility(

@@ -11,6 +11,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -188,8 +189,6 @@ fun NotesPage(onDismiss: () -> Unit, repo: NoteRepo = koinInject()) {
             if (selectedNoteIds.contains(id)) selectedNoteIds - id else selectedNoteIds + id
     }
 
-    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
-
     SystemBackHandler(enabled = true) {
         if (isSelectionMode) {
             selectedNoteIds = emptySet()
@@ -204,9 +203,7 @@ fun NotesPage(onDismiss: () -> Unit, repo: NoteRepo = koinInject()) {
     }
 
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
-        Column(
-            modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection)
-        ) {
+        Column(modifier = Modifier.fillMaxSize()) {
             // Top bar
             Row(
                 modifier = Modifier.fillMaxWidth().padding(start = 4.dp, end = 8.dp, top = 40.dp),
@@ -454,25 +451,29 @@ fun NotesPage(onDismiss: () -> Unit, repo: NoteRepo = koinInject()) {
                                         translationY = if (isDragging) dragOffset.y else 0f
                                         alpha = if (isDragging) 0.88f else 1.0f
                                     }
-                                    .clickable {
-                                        if (isSelectionMode) {
-                                            toggleSelectNote(note.id)
-                                        } else {
-                                            editingNote = note
-                                            showEditor = true
-                                        }
+                                    .pointerInput(note.id, isSelectionMode) {
+                                        detectTapGestures(
+                                            onTap = {
+                                                if (isSelectionMode) {
+                                                    toggleSelectNote(note.id)
+                                                } else {
+                                                    editingNote = note
+                                                    showEditor = true
+                                                }
+                                            }
+                                        )
                                     }
-                                    .pointerInput(note.id, showArchived, isSelectionMode) {
+                                    .pointerInput(note.id, showArchived, searchQuery) {
                                         if (!showArchived && searchQuery.isEmpty()) {
-                                            var isMoved = false
+                                            var hasMoved = false
                                             detectDragGesturesAfterLongPress(
                                                 onDragStart = {
-                                                    isMoved = false
+                                                    hasMoved = false
                                                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                                     draggingIndex = index
                                                 },
                                                 onDragEnd = {
-                                                    if (isMoved) {
+                                                    if (hasMoved) {
                                                         draggingIndex?.let {
                                                             val orderMap =
                                                                 notes
@@ -485,19 +486,17 @@ fun NotesPage(onDismiss: () -> Unit, repo: NoteRepo = koinInject()) {
                                                     }
                                                     draggingIndex = null
                                                     dragOffset = Offset.Zero
-                                                    isMoved = false
+                                                    hasMoved = false
                                                 },
                                                 onDragCancel = {
                                                     draggingIndex = null
                                                     dragOffset = Offset.Zero
-                                                    isMoved = false
+                                                    hasMoved = false
                                                 },
                                                 onDrag = { change, amount ->
                                                     change.consume()
                                                     dragOffset += amount
-                                                    if (dragOffset.getDistanceSquared() > 25f) {
-                                                        isMoved = true
-                                                    }
+                                                    hasMoved = true
 
                                                     draggingIndex?.let { currentIdx ->
                                                         val targetIdx =
@@ -670,25 +669,29 @@ fun NotesPage(onDismiss: () -> Unit, repo: NoteRepo = koinInject()) {
                                         translationY = if (isDragging) dragOffset.y else 0f
                                         alpha = if (isDragging) 0.88f else 1.0f
                                     }
-                                    .clickable {
-                                        if (isSelectionMode) {
-                                            toggleSelectNote(note.id)
-                                        } else {
-                                            editingNote = note
-                                            showEditor = true
-                                        }
+                                    .pointerInput(note.id, isSelectionMode) {
+                                        detectTapGestures(
+                                            onTap = {
+                                                if (isSelectionMode) {
+                                                    toggleSelectNote(note.id)
+                                                } else {
+                                                    editingNote = note
+                                                    showEditor = true
+                                                }
+                                            }
+                                        )
                                     }
-                                    .pointerInput(note.id, showArchived, isSelectionMode) {
+                                    .pointerInput(note.id, showArchived, searchQuery) {
                                         if (!showArchived && searchQuery.isEmpty()) {
-                                            var isMoved = false
+                                            var hasMoved = false
                                             detectDragGesturesAfterLongPress(
                                                 onDragStart = {
-                                                    isMoved = false
+                                                    hasMoved = false
                                                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                                     draggingIndex = index
                                                 },
                                                 onDragEnd = {
-                                                    if (isMoved) {
+                                                    if (hasMoved) {
                                                         draggingIndex?.let {
                                                             val orderMap =
                                                                 notes
@@ -701,19 +704,17 @@ fun NotesPage(onDismiss: () -> Unit, repo: NoteRepo = koinInject()) {
                                                     }
                                                     draggingIndex = null
                                                     dragOffset = Offset.Zero
-                                                    isMoved = false
+                                                    hasMoved = false
                                                 },
                                                 onDragCancel = {
                                                     draggingIndex = null
                                                     dragOffset = Offset.Zero
-                                                    isMoved = false
+                                                    hasMoved = false
                                                 },
                                                 onDrag = { change, amount ->
                                                     change.consume()
                                                     dragOffset += amount
-                                                    if (dragOffset.getDistanceSquared() > 25f) {
-                                                        isMoved = true
-                                                    }
+                                                    hasMoved = true
 
                                                     draggingIndex?.let { currentIdx ->
                                                         val targetIdx =

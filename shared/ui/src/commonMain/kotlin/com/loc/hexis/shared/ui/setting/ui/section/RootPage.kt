@@ -43,14 +43,12 @@ fun RootPage(
     onNavigateToChangelog: () -> Unit,
     onNavigateToAppInfo: () -> Unit,
 ) {
-    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
-    Column(modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection).fillMaxSize()) {
-    MainTabHeader(
-        title = stringResource(Res.string.settings),
-        subtitle = "Preferences & Customization",
-        yOffset = 0.dp,
-        scrollBehavior = scrollBehavior,
-    )
+    Column(modifier = Modifier.fillMaxSize()) {
+        MainTabHeader(
+            title = stringResource(Res.string.settings),
+            subtitle = "Preferences & Customization",
+            yOffset = 0.dp,
+        )
 
         LazyColumn(
             modifier = Modifier.fillMaxSize(),

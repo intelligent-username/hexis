@@ -149,6 +149,26 @@ fun NoteEditorSheet(
     }
     val charCount = remember(contentValue.text) { contentValue.text.length }
     var collapsedHeaderLines by remember { mutableStateOf(setOf<Int>()) }
+    var lastToggledHeaderLine by remember { mutableStateOf(-1) }
+    LaunchedEffect(contentValue.selection.start) {
+        val cursor = contentValue.selection.start
+        val text = contentValue.text
+        if (text.isNotEmpty() && cursor <= text.length) {
+            val lineIndex = text.substring(0, cursor).count { it == '\n' }
+            val lines = text.lines()
+            val trimmed = lines.getOrNull(lineIndex)?.trimStart() ?: ""
+            if (trimmed.startsWith("# ") || trimmed.startsWith("## ") || trimmed.startsWith("### ")) {
+                if (lastToggledHeaderLine != lineIndex) {
+                    lastToggledHeaderLine = lineIndex
+                    collapsedHeaderLines =
+                        if (lineIndex in collapsedHeaderLines) collapsedHeaderLines - lineIndex
+                        else collapsedHeaderLines + lineIndex
+                }
+            } else {
+                lastToggledHeaderLine = -1
+            }
+        }
+    }
 
     fun getCurrentLine(text: String, cursor: Int): String {
         val before = text.substring(0, cursor.coerceAtMost(text.length))
@@ -441,39 +461,6 @@ fun NoteEditorSheet(
                             }
                         }
 
-                        val currentLineIndex = currentText.substring(0, currentCursor.coerceAtMost(currentText.length)).count { it == '\n' }
-                        val trimmedLine = currentLine.trimStart()
-                        val isHeaderLine = trimmedLine.startsWith("# ") || trimmedLine.startsWith("## ") || trimmedLine.startsWith("### ")
-                        if (isHeaderLine) {
-                            val isCollapsed = currentLineIndex in collapsedHeaderLines
-                            FilledTonalButton(
-                                onClick = {
-                                    collapsedHeaderLines =
-                                        if (isCollapsed) collapsedHeaderLines - currentLineIndex
-                                        else collapsedHeaderLines + currentLineIndex
-                                },
-                                modifier = Modifier.height(34.dp),
-                                shape = CircleShape,
-                                colors =
-                                    if (isCollapsed)
-                                        ButtonDefaults.filledTonalButtonColors(
-                                            containerColor = MaterialTheme.colorScheme.primary,
-                                            contentColor = MaterialTheme.colorScheme.onPrimary,
-                                        )
-                                    else
-                                        ButtonDefaults.filledTonalButtonColors(
-                                            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                                            contentColor = MaterialTheme.colorScheme.onSurface,
-                                        ),
-                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
-                            ) {
-                                Text(
-                                    text = if (isCollapsed) "\u25B8 Expand" else "\u25BE Collapse",
-                                    style = MaterialTheme.typography.labelMedium.copy(fontFamily = flexFontRounded()),
-                                )
-                            }
-                        }
-
                         val allHeaderIndices = remember(currentText) {
                             currentText.lines().mapIndexedNotNull { idx, line ->
                                 val trimmed = line.trimStart()
@@ -481,10 +468,10 @@ fun NoteEditorSheet(
                             }
                         }
                         if (allHeaderIndices.isNotEmpty()) {
-                            val areAllCollapsed = allHeaderIndices.all { it in collapsedHeaderLines }
+                            val isAnyCollapsed = collapsedHeaderLines.isNotEmpty()
                             FilledTonalButton(
                                 onClick = {
-                                    collapsedHeaderLines = if (areAllCollapsed) emptySet() else allHeaderIndices.toSet()
+                                    collapsedHeaderLines = if (isAnyCollapsed) emptySet() else allHeaderIndices.toSet()
                                 },
                                 modifier = Modifier.height(34.dp),
                                 shape = CircleShape,
@@ -496,7 +483,7 @@ fun NoteEditorSheet(
                                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
                             ) {
                                 Text(
-                                    text = if (areAllCollapsed) "Expand All" else "Collapse All",
+                                    text = if (isAnyCollapsed) "Expand All" else "Collapse All",
                                     style = MaterialTheme.typography.labelMedium.copy(fontFamily = flexFontRounded()),
                                 )
                             }

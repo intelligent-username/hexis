@@ -107,45 +107,36 @@ fun HabitsGraph(
     modifier: Modifier = Modifier,
 ) {
     val windowSizeClass = LocalWindowSizeClass.current
-
-    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
+    val backstack = rememberNavBackStack(config, HabitRoutes.HabitList)
 
     val filteredState =
-        state.copy(
-            habitsWithAnalytics =
-                state.habitsWithAnalytics.filter {
-                    val matchesArchive =
-                        (it.habit.id in state.archivedHabitIds) == state.showArchivedHabits
-                    val matchesDivision =
-                        state.selectedTimeDivisionId == null ||
+        remember(state) {
+            if (state.selectedTimeDivisionId == null) {
+                state
+            } else {
+                state.copy(
+                    habitsWithAnalytics =
+                        state.habitsWithAnalytics.filter {
                             state.habitTimeDivisionMap[it.habit.id] == state.selectedTimeDivisionId
-                    matchesArchive && matchesDivision
-                }
-        )
-
-    if (windowSizeClass.widthSizeClass != WindowWidthSizeClass.Expanded) {
-        val backstack = rememberNavBackStack(config, HabitRoutes.HabitList)
-
-        LaunchedEffect(state.showOverallAnalytics) {
-            if (state.showOverallAnalytics) {
-                backstack.add(HabitRoutes.OverallAnalytics)
-                onAction(HabitsAction.ToggleOverallAnalytics(false))
+                        }
+                )
             }
         }
 
+    if (windowSizeClass.widthSizeClass == WindowWidthSizeClass.Compact) {
         NavDisplay(
-            modifier = modifier,
             backStack = backstack,
+            modifier = modifier,
             entryProvider =
                 entryProvider {
-                    entry<HabitRoutes.HabitList> {
+                    entry<HabitRoutes.HabitList>(metadata = horizontalTransitionMetadata()) {
                         Column(
-                            modifier = Modifier.background(MaterialTheme.colorScheme.background)
+                            modifier =
+                                Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
                         ) {
                             HabitsTopAppBar(
                                 state = filteredState,
                                 onAction = onAction,
-                                scrollBehavior = scrollBehavior,
                             )
 
                             TimeDivisionSelector(state = state, onAction = onAction)
@@ -166,9 +157,7 @@ fun HabitsGraph(
                                     onNavigateToAnalytics = {
                                         backstack.add(HabitRoutes.HabitAnalytics)
                                     },
-                                    modifier =
-                                        Modifier.fillMaxHeight()
-                                            .nestedScroll(scrollBehavior.nestedScrollConnection),
+                                    modifier = Modifier.fillMaxHeight(),
                                 )
 
                                 HabitListFABs(
@@ -243,7 +232,6 @@ fun HabitsGraph(
             state = filteredState,
             onAction = onAction,
             onPomodoroClick = onPomodoroClick,
-            scrollBehavior = scrollBehavior,
         )
     }
 }
@@ -254,10 +242,9 @@ private fun ExpandedScreen(
     state: HabitState,
     onAction: (HabitsAction) -> Unit,
     onPomodoroClick: (Long?) -> Unit,
-    scrollBehavior: TopAppBarScrollBehavior,
 ) {
     Column(modifier = modifier.background(MaterialTheme.colorScheme.background)) {
-        HabitsTopAppBar(state = state, onAction = onAction, scrollBehavior = scrollBehavior)
+        HabitsTopAppBar(state = state, onAction = onAction)
 
         Row(modifier = Modifier.weight(1f)) {
             Box {
@@ -274,10 +261,7 @@ private fun ExpandedScreen(
                     onAction = onAction,
                     onNavigateToAnalytics = {},
                     lazyListState = lazyListState,
-                    modifier =
-                        Modifier.fillMaxHeight()
-                            .widthIn(max = 400.dp)
-                            .nestedScroll(scrollBehavior.nestedScrollConnection),
+                    modifier = Modifier.fillMaxHeight().widthIn(max = 400.dp),
                 )
 
                 HabitListFABs(
@@ -509,7 +493,6 @@ private fun HabitsTopAppBar(
     state: HabitState,
     onAction: (HabitsAction) -> Unit,
     modifier: Modifier = Modifier,
-    scrollBehavior: TopAppBarScrollBehavior? = null,
 ) {
     val completedDisplayed =
         state.habitsWithAnalytics.count {
@@ -520,7 +503,6 @@ private fun HabitsTopAppBar(
         subtitle = "$completedDisplayed/${state.habitsWithAnalytics.size} " + stringResource(Res.string.completed),
         modifier = modifier,
         yOffset = 0.dp,
-        scrollBehavior = scrollBehavior,
         actions = {
             AnimatedVisibility(
                 visible =

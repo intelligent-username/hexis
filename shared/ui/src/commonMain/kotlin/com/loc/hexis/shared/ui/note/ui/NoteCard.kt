@@ -60,12 +60,7 @@ fun BaseNoteCard(
                     if (showArchived) MaterialTheme.colorScheme.surfaceContainerLow
                     else MaterialTheme.colorScheme.surfaceContainerHigh
             ),
-        modifier =
-            if (onLongClick != null) {
-                modifier.fillMaxWidth().combinedClickable(onClick = onClick, onLongClick = onLongClick)
-            } else {
-                modifier.fillMaxWidth().clickable(onClick = onClick)
-            },
+        modifier = modifier.fillMaxWidth(),
     ) {
         Column(modifier = Modifier.padding(14.dp).fillMaxWidth()) {
             Row(
