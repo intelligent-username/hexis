@@ -111,14 +111,12 @@ class NoteVisualTransformation(
                     origPos += rawLine.length
                     builder.pushStyle(
                         SpanStyle(
-                            color = primaryColor.copy(alpha = 0.4f),
-                            fontWeight = FontWeight.Normal,
-                            background = primaryColor.copy(alpha = 0.1f),
+                            color = primaryColor.copy(alpha = 0.6f),
+                            background = primaryColor.copy(alpha = 0.15f),
                         )
                     )
-                    val dashLine = "\u2015".repeat(30)
-                    builder.append(dashLine)
-                    repeat(dashLine.length) { outToOrig.add((origPos - 1).coerceAtLeast(0)) }
+                    builder.append('\u2501')
+                    outToOrig.add((origPos - 1).coerceAtLeast(0))
                     builder.pop()
                 }
 

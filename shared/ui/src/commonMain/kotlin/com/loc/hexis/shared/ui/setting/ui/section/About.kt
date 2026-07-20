@@ -206,7 +206,7 @@ private fun LazyListScope.aboutApp(versionName: String, uriHandler: UriHandler) 
                     )
                     Text(
                         text =
-                            "The word for excellence is á¼ˆÏÎµÏ„Î® (arete), and the word for habitual practice of excellence is á¼Î¾Î¹Ï‚ (Hexis). The intention of this app is to cultivate excellence in the user.",
+                            "The word for excellence is ἀρετή (arete), and the word for habitual practice of excellence is ἕξις (Hexis). The intention of this app is to cultivate excellence in the user.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
