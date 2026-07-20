@@ -217,7 +217,7 @@ fun HabitUpsertSheetContent(
                         ),
                     modifier = Modifier.fillMaxWidth(),
                     label = {
-                        if (descTextFieldState.text.trimEnd().length <= 50) {
+                        if (descTextFieldState.text.trimEnd().length <= 200) {
                             Text(
                                 text =
                                     stringResource(
@@ -229,7 +229,7 @@ fun HabitUpsertSheetContent(
                             Text(text = stringResource(Res.string.too_long))
                         }
                     },
-                    isError = descTextFieldState.text.trimEnd().length > 50,
+                    isError = descTextFieldState.text.trimEnd().length > 200,
                 )
             }
 
@@ -520,7 +520,7 @@ fun HabitUpsertSheetContent(
                     },
                     modifier = Modifier.padding(bottom = 32.dp).fillMaxWidth(),
                     enabled =
-                        descTextFieldState.text.trimEnd().length <= 50 &&
+                        descTextFieldState.text.trimEnd().length <= 200 &&
                             titleTextFieldState.text.trimEnd().length <= 20 &&
                             titleTextFieldState.text.isNotBlank(),
                 ) {

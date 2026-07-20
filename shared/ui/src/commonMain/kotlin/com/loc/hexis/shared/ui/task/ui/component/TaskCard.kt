@@ -88,6 +88,15 @@ fun TaskCard(
                         },
                 )
 
+                if (task.description.isNotBlank()) {
+                    Text(
+                        text = task.description,
+                        style = MaterialTheme.typography.bodyMedium,
+                        maxLines = 1,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+
                 if (task.reminder != null) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,

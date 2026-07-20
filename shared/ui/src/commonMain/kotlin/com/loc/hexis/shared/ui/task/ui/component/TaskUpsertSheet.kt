@@ -107,6 +107,12 @@ fun TaskUpsertSheetContent(
             initialSelection = TextRange(newTask.title.length),
         )
 
+    val descFieldState =
+        rememberTextFieldState(
+            initialText = newTask.description,
+            initialSelection = TextRange(newTask.description.length),
+        )
+
     val timePickerState = rememberTimePickerState(is24Hour = is24Hr)
     val datePickerState = rememberDatePickerState()
     val isValidDateTime =
@@ -198,6 +204,21 @@ fun TaskUpsertSheetContent(
             }
 
             item {
+                OutlinedTextField(
+                    state = descFieldState,
+                    shape = MaterialTheme.shapes.medium,
+                    placeholder = { Text(text = stringResource(Res.string.description)) },
+                    label = { Text(text = stringResource(Res.string.description)) },
+                    keyboardOptions =
+                        KeyboardOptions.Default.copy(
+                            capitalization = KeyboardCapitalization.Sentences,
+                            imeAction = ImeAction.None,
+                        ),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+
+            item {
                 ListItem(
                     modifier = Modifier.clip(detachedItemShape()),
                     colors = listItemColors(),
@@ -265,7 +286,12 @@ fun TaskUpsertSheetContent(
 
                         Button(
                             onClick = {
-                                onUpsert(newTask.copy(title = textFieldState.text.toString()))
+                                onUpsert(
+                                    newTask.copy(
+                                        title = textFieldState.text.toString(),
+                                        description = descFieldState.text.toString(),
+                                    )
+                                )
                                 onDismissRequest()
                             },
                             shapes =
@@ -280,6 +306,7 @@ fun TaskUpsertSheetContent(
                                     isValidDateTime &&
                                     (newTask.reminder != task.reminder ||
                                         textFieldState.text.toString() != task.title ||
+                                        descFieldState.text.toString() != task.description ||
                                         newTask.categoryId != task.categoryId),
                         ) {
                             Text(
