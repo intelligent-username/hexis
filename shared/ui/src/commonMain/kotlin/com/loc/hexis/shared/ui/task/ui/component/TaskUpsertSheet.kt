@@ -161,7 +161,7 @@ fun TaskUpsertSheetContent(
         LazyColumn(
             modifier = Modifier.fillMaxWidth().clip(MaterialTheme.shapes.large),
             verticalArrangement = Arrangement.spacedBy(8.dp),
-            contentPadding = PaddingValues(horizontal = 16.dp),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 160.dp),
         ) {
             item {
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(2.dp)) {

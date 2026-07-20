@@ -11,5 +11,7 @@ interface NoteRepo {
 
     suspend fun upsertNote(note: Note)
 
+    suspend fun updateSortOrders(orders: Map<Long, Int>)
+
     suspend fun deleteNote(id: Long)
 }

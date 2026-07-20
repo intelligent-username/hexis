@@ -14,7 +14,7 @@ class TaskDbFactory(private val context: Context) {
         val dbfile = appContext.getDatabasePath(TaskDatabase.DB_NAME)
 
         return Room.databaseBuilder<TaskDatabase>(appContext, dbfile.absolutePath)
-            .addMigrations(MIGRATION_2_3, MIGRATION_3_4)
+            .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
     }
 
     companion object {
@@ -26,6 +26,14 @@ class TaskDbFactory(private val context: Context) {
         private val MIGRATION_3_4 =
             Migration(3, 4) { db ->
                 db.execSQL("ALTER TABLE task ADD COLUMN description TEXT NOT NULL DEFAULT ''")
+            }
+
+        private val MIGRATION_4_5 =
+            Migration(4, 5) { db ->
+                db.execSQL("ALTER TABLE notes ADD COLUMN type TEXT NOT NULL DEFAULT 'MARKDOWN'")
+                db.execSQL("ALTER TABLE notes ADD COLUMN payloadJson TEXT DEFAULT NULL")
+                db.execSQL("ALTER TABLE notes ADD COLUMN metadata TEXT DEFAULT NULL")
+                db.execSQL("ALTER TABLE notes ADD COLUMN sortOrder INTEGER NOT NULL DEFAULT 0")
             }
     }
 }

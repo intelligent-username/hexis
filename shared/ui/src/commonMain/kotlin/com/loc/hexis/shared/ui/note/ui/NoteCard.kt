@@ -1,7 +1,10 @@
 package com.loc.hexis.shared.ui.note.ui
 
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -32,23 +35,22 @@ import hexis.shared.ui.generated.resources.archive
 import hexis.shared.ui.generated.resources.delete
 import hexis.shared.ui.generated.resources.flag
 import hexis.shared.ui.generated.resources.unarchive
-import hexis.shared.ui.generated.resources.untitled
-import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.resources.vectorResource
 
 @Composable
-fun NoteCard(
+fun BaseNoteCard(
     note: Note,
     showArchived: Boolean,
     onClick: () -> Unit,
+    onLongClick: (() -> Unit)? = null,
     onTogglePin: () -> Unit = {},
     onArchive: () -> Unit = {},
     onUnarchive: () -> Unit = {},
     onDelete: () -> Unit = {},
     modifier: Modifier = Modifier,
+    body: @Composable ColumnScope.() -> Unit,
 ) {
     Card(
-        onClick = onClick,
         shape = RoundedCornerShape(20.dp),
         colors =
             CardDefaults.cardColors(
@@ -56,9 +58,14 @@ fun NoteCard(
                     if (showArchived) MaterialTheme.colorScheme.surfaceContainerLow
                     else MaterialTheme.colorScheme.surfaceContainerHigh
             ),
-        modifier = modifier.fillMaxWidth(),
+        modifier =
+            if (onLongClick != null) {
+                modifier.fillMaxWidth().combinedClickable(onClick = onClick, onLongClick = onLongClick)
+            } else {
+                modifier.fillMaxWidth().clickable(onClick = onClick)
+            },
     ) {
-        Column(modifier = Modifier.padding(16.dp).fillMaxWidth()) {
+        Column(modifier = Modifier.padding(14.dp).fillMaxWidth()) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -66,8 +73,8 @@ fun NoteCard(
             ) {
                 Text(
                     text = note.title.ifEmpty { stringResource(Res.string.untitled) },
-                    style =
-                        MaterialTheme.typography.titleMedium.copy(fontFamily = flexFontEmphasis()),
+                    style = MaterialTheme.typography.titleMedium.copy(fontFamily = flexFontEmphasis()),
+                    color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f),
@@ -83,18 +90,11 @@ fun NoteCard(
                 }
             }
 
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
-            if (note.content.isNotEmpty()) {
-                Text(
-                    text = getContentPreview(note.content),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-            }
+            body()
+
+            Spacer(modifier = Modifier.height(10.dp))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -103,8 +103,7 @@ fun NoteCard(
             ) {
                 Text(
                     text = formatNoteDate(note.updatedAt),
-                    style =
-                        MaterialTheme.typography.labelSmall.copy(fontFamily = flexFontRounded()),
+                    style = MaterialTheme.typography.labelSmall.copy(fontFamily = flexFontRounded()),
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                 )
 
@@ -125,46 +124,92 @@ fun NoteCard(
                                 ),
                             shapes =
                                 IconButtonShapes(
-                                    shape = RoundedCornerShape(8.dp),
-                                    pressedShape = MaterialTheme.shapes.small,
+                                    shape = RoundedCornerShape(10.dp),
+                                    pressedShape = RoundedCornerShape(10.dp),
                                 ),
                         ) {
                             Icon(
                                 imageVector = vectorResource(Res.drawable.flag),
                                 contentDescription = if (note.pinned) "Unpin" else "Pin",
-                                modifier = Modifier.size(16.dp),
+                                modifier = Modifier.size(14.dp),
                             )
                         }
 
-                        IconButton(onClick = onArchive, modifier = Modifier.size(32.dp)) {
+                        FilledTonalIconButton(
+                            onClick = onArchive,
+                            modifier = Modifier.size(32.dp),
+                            colors =
+                                IconButtonDefaults.filledTonalIconButtonColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                    contentColor = MaterialTheme.colorScheme.error,
+                                ),
+                            shapes =
+                                IconButtonShapes(
+                                    shape = RoundedCornerShape(10.dp),
+                                    pressedShape = RoundedCornerShape(10.dp),
+                                ),
+                        ) {
                             Icon(
                                 imageVector = vectorResource(Res.drawable.archive),
                                 contentDescription = "Archive",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(18.dp),
+                                modifier = Modifier.size(14.dp),
                             )
                         }
                     } else {
                         IconButton(onClick = onUnarchive, modifier = Modifier.size(32.dp)) {
                             Icon(
                                 imageVector = vectorResource(Res.drawable.unarchive),
-                                contentDescription = "Unarchive",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(18.dp),
+                                contentDescription = "Unarchive Note",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(16.dp),
                             )
                         }
-
                         IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
                             Icon(
                                 imageVector = vectorResource(Res.drawable.delete),
-                                contentDescription = stringResource(Res.string.delete),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(18.dp),
+                                contentDescription = "Delete Note",
+                                tint = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.size(16.dp),
                             )
                         }
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun NoteCard(
+    note: Note,
+    showArchived: Boolean,
+    onClick: () -> Unit,
+    onLongClick: (() -> Unit)? = null,
+    onTogglePin: () -> Unit = {},
+    onArchive: () -> Unit = {},
+    onUnarchive: () -> Unit = {},
+    onDelete: () -> Unit = {},
+    modifier: Modifier = Modifier,
+) {
+    BaseNoteCard(
+        note = note,
+        showArchived = showArchived,
+        onClick = onClick,
+        onLongClick = onLongClick,
+        onTogglePin = onTogglePin,
+        onArchive = onArchive,
+        onUnarchive = onUnarchive,
+        onDelete = onDelete,
+        modifier = modifier,
+    ) {
+        if (note.content.isNotEmpty()) {
+            Text(
+                text = getContentPreview(note.content),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis,
+            )
         }
     }
 }

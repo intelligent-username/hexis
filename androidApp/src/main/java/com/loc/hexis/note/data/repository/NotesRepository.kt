@@ -36,6 +36,10 @@ class NotesRepository(private val notesDao: NotesDao) : NoteRepo {
         notesDao.upsertNote(note.toNoteEntity())
     }
 
+    override suspend fun updateSortOrders(orders: Map<Long, Int>) {
+        notesDao.updateSortOrders(orders)
+    }
+
     override suspend fun deleteNote(id: Long) {
         notesDao.deleteNote(id)
     }

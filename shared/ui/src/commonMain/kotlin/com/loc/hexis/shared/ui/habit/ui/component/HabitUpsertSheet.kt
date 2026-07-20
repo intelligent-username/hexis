@@ -175,7 +175,7 @@ fun HabitUpsertSheetContent(
             modifier = Modifier.fillMaxWidth().clip(MaterialTheme.shapes.large),
             verticalArrangement = Arrangement.spacedBy(8.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            contentPadding = PaddingValues(16.dp),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 160.dp),
         ) {
             item {
                 OutlinedTextField(
