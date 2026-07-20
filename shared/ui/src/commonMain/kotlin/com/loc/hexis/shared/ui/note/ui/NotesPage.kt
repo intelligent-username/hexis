@@ -9,7 +9,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -23,10 +23,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.itemsIndexed
@@ -71,7 +69,10 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import com.loc.hexis.core.note.CounterRow
 import com.loc.hexis.core.note.CountingTableData
 import com.loc.hexis.core.note.Note
@@ -132,8 +133,12 @@ fun NotesPage(onDismiss: () -> Unit, repo: NoteRepo = koinInject()) {
     val isSelectionMode = selectedNoteIds.isNotEmpty()
 
     // Drag to reorder state
-    var draggingIndex by remember { mutableStateOf<Int?>(null) }
-    var dragOffset by remember { mutableStateOf(Offset.Zero) }
+    var draggingNoteId by remember { mutableStateOf<Long?>(null) }
+    var totalDragOffset by remember { mutableStateOf(Offset.Zero) }
+    var startItemOffset by remember { mutableStateOf(IntOffset.Zero) }
+    var startItemSize by remember { mutableStateOf(IntSize.Zero) }
+    var startItemListOffset by remember { mutableStateOf(0) }
+    var startItemListSize by remember { mutableStateOf(0) }
 
     // Undo state
     var undoMessage by remember { mutableStateOf("") }
@@ -148,9 +153,11 @@ fun NotesPage(onDismiss: () -> Unit, repo: NoteRepo = koinInject()) {
     LaunchedEffect(showArchived) {
         val flow = if (showArchived) repo.getArchivedNotesFlow() else repo.getNotesFlow()
         flow.collect { list ->
-            notes.clear()
-            notes.addAll(list)
-            notesLoaded = true
+            if (draggingNoteId == null) {
+                notes.clear()
+                notes.addAll(list)
+                notesLoaded = true
+            }
         }
     }
 
@@ -170,17 +177,12 @@ fun NotesPage(onDismiss: () -> Unit, repo: NoteRepo = koinInject()) {
     }
 
     val filteredNotes =
-        remember(notes.toList(), searchQuery, showArchived) {
-            val list =
-                if (searchQuery.isBlank()) notes
-                else
-                    notes.filter {
-                        it.title.contains(searchQuery, ignoreCase = true) ||
-                            it.content.contains(searchQuery, ignoreCase = true)
-                    }
-            if (showArchived) list
-            else list.sortedWith(compareByDescending<Note> { it.pinned }.thenBy { it.sortOrder })
-        }
+        if (searchQuery.isBlank()) notes
+        else
+            notes.filter {
+                it.title.contains(searchQuery, ignoreCase = true) ||
+                    it.content.contains(searchQuery, ignoreCase = true)
+            }
 
     fun toggleSelectNote(id: Long) {
         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -436,19 +438,25 @@ fun NotesPage(onDismiss: () -> Unit, repo: NoteRepo = koinInject()) {
                     verticalItemSpacing = 10.dp,
                 ) {
                     itemsIndexed(filteredNotes, key = { _, note -> note.id }) { index, note ->
-                        val isDragging = draggingIndex == index
+                        val isDragging = draggingNoteId == note.id
                         val isSelected = selectedNoteIds.contains(note.id)
 
+                        val currentInfo = if (isDragging) gridState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == index } else null
+                        val transX = if (isDragging && currentInfo != null) (startItemOffset.x + totalDragOffset.x - currentInfo.offset.x).toFloat() else 0f
+                        val transY = if (isDragging && currentInfo != null) (startItemOffset.y + totalDragOffset.y - currentInfo.offset.y).toFloat() else 0f
+
+                        val modifier = if (isDragging) Modifier else Modifier.animateItem()
                         Box(
                             modifier =
-                                Modifier.animateItem()
+                                modifier
+                                    .zIndex(if (isDragging) 10f else 0f)
                                     .graphicsLayer {
                                         scaleX = if (isDragging) 1.05f else 1.0f
                                         scaleY = if (isDragging) 1.05f else 1.0f
                                         shadowElevation = if (isDragging) 16.dp.toPx() else 0f
-                                        translationX = if (isDragging) dragOffset.x else 0f
-                                        translationY = if (isDragging) dragOffset.y else 0f
-                                        alpha = if (isDragging) 0.88f else 1.0f
+                                        translationX = transX
+                                        translationY = transY
+                                        alpha = if (isDragging) 0.9f else 1.0f
                                     }
                                     .pointerInput(note.id, isSelectionMode) {
                                         detectTapGestures(
@@ -460,48 +468,53 @@ fun NotesPage(onDismiss: () -> Unit, repo: NoteRepo = koinInject()) {
                                                     showEditor = true
                                                 }
                                             },
-                                            onLongPress = {
-                                                if (!isSelectionMode && !showArchived) {
-                                                    toggleSelectNote(note.id)
-                                                }
-                                            },
                                         )
                                     }
                                     .pointerInput(note.id, showArchived, searchQuery) {
                                         if (!showArchived && searchQuery.isEmpty()) {
-                                            detectDragGestures(
+                                            detectDragGesturesAfterLongPress(
                                                 onDragStart = {
                                                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                                    draggingIndex = index
+                                                    draggingNoteId = note.id
+                                                    totalDragOffset = Offset.Zero
+                                                    val info = gridState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == index }
+                                                    if (info != null) {
+                                                        startItemOffset = info.offset
+                                                        startItemSize = info.size
+                                                    }
                                                 },
                                                 onDragEnd = {
-                                                    draggingIndex?.let {
+                                                    if (draggingNoteId != null) {
                                                         val orderMap = notes.mapIndexed { i, n -> n.id to i }.toMap()
                                                         scope.launch { repo.updateSortOrders(orderMap) }
                                                     }
-                                                    draggingIndex = null
-                                                    dragOffset = Offset.Zero
+                                                    draggingNoteId = null
+                                                    totalDragOffset = Offset.Zero
                                                 },
                                                 onDragCancel = {
-                                                    draggingIndex = null
-                                                    dragOffset = Offset.Zero
+                                                    draggingNoteId = null
+                                                    totalDragOffset = Offset.Zero
                                                 },
                                                 onDrag = { change, amount ->
                                                     change.consume()
-                                                    dragOffset += amount
-                                                    draggingIndex?.let { currentIdx ->
-                                                        val targetIdx =
-                                                            findHitItemIndex(
-                                                                gridState = gridState,
-                                                                draggedIndex = currentIdx,
-                                                                currentOffset = dragOffset,
-                                                            )
-                                                        if (targetIdx != null && targetIdx != currentIdx) {
-                                                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                                            val item = notes.removeAt(currentIdx)
-                                                            notes.add(targetIdx, item)
-                                                            draggingIndex = targetIdx
-                                                            dragOffset = Offset.Zero
+                                                    totalDragOffset += amount
+                                                    draggingNoteId?.let { noteId ->
+                                                        val currentIdx = notes.indexOfFirst { it.id == noteId }
+                                                        if (currentIdx != -1) {
+                                                            val visibleItems = gridState.layoutInfo.visibleItemsInfo
+                                                            val fingerX = startItemOffset.x + (startItemSize.width / 2f) + totalDragOffset.x
+                                                            val fingerY = startItemOffset.y + (startItemSize.height / 2f) + totalDragOffset.y
+
+                                                            val hitItem = visibleItems.firstOrNull { item ->
+                                                                item.index != currentIdx &&
+                                                                    fingerX >= item.offset.x && fingerX <= item.offset.x + item.size.width &&
+                                                                    fingerY >= item.offset.y && fingerY <= item.offset.y + item.size.height
+                                                            }
+                                                            if (hitItem != null) {
+                                                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                                                val item = notes.removeAt(currentIdx)
+                                                                notes.add(hitItem.index, item)
+                                                            }
                                                         }
                                                     }
                                                 },
@@ -645,18 +658,23 @@ fun NotesPage(onDismiss: () -> Unit, repo: NoteRepo = koinInject()) {
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     itemsIndexed(filteredNotes, key = { _, note -> note.id }) { index, note ->
-                        val isDragging = draggingIndex == index
+                        val isDragging = draggingNoteId == note.id
                         val isSelected = selectedNoteIds.contains(note.id)
 
+                        val currentInfo = if (isDragging) listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == index } else null
+                        val transY = if (isDragging && currentInfo != null) (startItemListOffset + totalDragOffset.y - currentInfo.offset).toFloat() else 0f
+
+                        val modifier = if (isDragging) Modifier else Modifier.animateItem()
                         Box(
                             modifier =
-                                Modifier.animateItem()
+                                modifier
+                                    .zIndex(if (isDragging) 10f else 0f)
                                     .graphicsLayer {
                                         scaleX = if (isDragging) 1.03f else 1.0f
                                         scaleY = if (isDragging) 1.03f else 1.0f
                                         shadowElevation = if (isDragging) 16.dp.toPx() else 0f
-                                        translationY = if (isDragging) dragOffset.y else 0f
-                                        alpha = if (isDragging) 0.88f else 1.0f
+                                        translationY = transY
+                                        alpha = if (isDragging) 0.9f else 1.0f
                                     }
                                     .pointerInput(note.id, isSelectionMode) {
                                         detectTapGestures(
@@ -668,48 +686,51 @@ fun NotesPage(onDismiss: () -> Unit, repo: NoteRepo = koinInject()) {
                                                     showEditor = true
                                                 }
                                             },
-                                            onLongPress = {
-                                                if (!isSelectionMode && !showArchived) {
-                                                    toggleSelectNote(note.id)
-                                                }
-                                            },
                                         )
                                     }
                                     .pointerInput(note.id, showArchived, searchQuery) {
                                         if (!showArchived && searchQuery.isEmpty()) {
-                                            detectDragGestures(
+                                            detectDragGesturesAfterLongPress(
                                                 onDragStart = {
                                                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                                    draggingIndex = index
+                                                    draggingNoteId = note.id
+                                                    totalDragOffset = Offset.Zero
+                                                    val info = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == index }
+                                                    if (info != null) {
+                                                        startItemListOffset = info.offset
+                                                        startItemListSize = info.size
+                                                    }
                                                 },
                                                 onDragEnd = {
-                                                    draggingIndex?.let {
+                                                    if (draggingNoteId != null) {
                                                         val orderMap = notes.mapIndexed { i, n -> n.id to i }.toMap()
                                                         scope.launch { repo.updateSortOrders(orderMap) }
                                                     }
-                                                    draggingIndex = null
-                                                    dragOffset = Offset.Zero
+                                                    draggingNoteId = null
+                                                    totalDragOffset = Offset.Zero
                                                 },
                                                 onDragCancel = {
-                                                    draggingIndex = null
-                                                    dragOffset = Offset.Zero
+                                                    draggingNoteId = null
+                                                    totalDragOffset = Offset.Zero
                                                 },
                                                 onDrag = { change, amount ->
                                                     change.consume()
-                                                    dragOffset += amount
-                                                    draggingIndex?.let { currentIdx ->
-                                                        val targetIdx =
-                                                            findHitItemIndexList(
-                                                                listState = listState,
-                                                                draggedIndex = currentIdx,
-                                                                currentOffset = dragOffset,
-                                                            )
-                                                        if (targetIdx != null && targetIdx != currentIdx) {
-                                                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                                            val item = notes.removeAt(currentIdx)
-                                                            notes.add(targetIdx, item)
-                                                            draggingIndex = targetIdx
-                                                            dragOffset = Offset.Zero
+                                                    totalDragOffset += amount
+                                                    draggingNoteId?.let { noteId ->
+                                                        val currentIdx = notes.indexOfFirst { it.id == noteId }
+                                                        if (currentIdx != -1) {
+                                                            val visibleItems = listState.layoutInfo.visibleItemsInfo
+                                                            val fingerY = startItemListOffset + (startItemListSize / 2f) + totalDragOffset.y
+
+                                                            val hitItem = visibleItems.firstOrNull { item ->
+                                                                item.index != currentIdx &&
+                                                                    fingerY >= item.offset && fingerY <= item.offset + item.size
+                                                            }
+                                                            if (hitItem != null) {
+                                                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                                                val item = notes.removeAt(currentIdx)
+                                                                notes.add(hitItem.index, item)
+                                                            }
                                                         }
                                                     }
                                                 },
@@ -1062,42 +1083,7 @@ fun NotesPage(onDismiss: () -> Unit, repo: NoteRepo = koinInject()) {
     }
 }
 
-private fun findHitItemIndex(
-    gridState: LazyStaggeredGridState,
-    draggedIndex: Int,
-    currentOffset: Offset,
-): Int? {
-    val visibleItems = gridState.layoutInfo.visibleItemsInfo
-    val draggedItemInfo = visibleItems.firstOrNull { it.index == draggedIndex } ?: return null
 
-    val draggedCenterX = draggedItemInfo.offset.x + (draggedItemInfo.size.width / 2) + currentOffset.x
-    val draggedCenterY = draggedItemInfo.offset.y + (draggedItemInfo.size.height / 2) + currentOffset.y
-
-    return visibleItems.firstOrNull { item ->
-        item.index != draggedIndex &&
-            draggedCenterX >= item.offset.x &&
-            draggedCenterX <= item.offset.x + item.size.width &&
-            draggedCenterY >= item.offset.y &&
-            draggedCenterY <= item.offset.y + item.size.height
-    }?.index
-}
-
-private fun findHitItemIndexList(
-    listState: LazyListState,
-    draggedIndex: Int,
-    currentOffset: Offset,
-): Int? {
-    val visibleItems = listState.layoutInfo.visibleItemsInfo
-    val draggedItemInfo = visibleItems.firstOrNull { it.index == draggedIndex } ?: return null
-
-    val draggedCenterY = draggedItemInfo.offset + (draggedItemInfo.size / 2) + currentOffset.y
-
-    return visibleItems.firstOrNull { item ->
-        item.index != draggedIndex &&
-            draggedCenterY >= item.offset &&
-            draggedCenterY <= item.offset + item.size
-    }?.index
-}
 
 internal fun formatNoteDate(dateTime: LocalDateTime): String {
     val now = LocalDateTime.now()
