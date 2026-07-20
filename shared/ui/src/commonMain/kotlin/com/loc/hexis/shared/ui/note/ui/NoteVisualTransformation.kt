@@ -10,117 +10,309 @@ import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.sp
-import com.loc.hexis.shared.ui.note.LineType
-import com.loc.hexis.shared.ui.note.parseContentLines
 
 class NoteVisualTransformation(
     private val primaryColor: Color = Color(0xFF6750A4),
     private val mutedColor: Color = Color(0xFF79747E),
     private val ruleColor: Color = Color(0xFFE7E0EC),
+    private val collapsedLineIndices: Set<Int> = emptySet(),
 ) : VisualTransformation {
+
+    private data class HeaderInfo(val lineIndex: Int, val level: Int)
 
     override fun filter(text: AnnotatedString): TransformedText {
         val original = text.text
         if (original.isEmpty()) return TransformedText(text, OffsetMapping.Identity)
 
-        val builder = AnnotatedString.Builder(original)
-        var lineStartPos = 0
-
-        original.lines().forEach { line ->
-            val lineEndPos = lineStartPos + line.length
+        val lines = original.lines()
+        val headers = mutableListOf<HeaderInfo>()
+        lines.forEachIndexed { index, line ->
             val trimmed = line.trimStart()
-            val indent = line.length - trimmed.length
-            val prefixStart = lineStartPos + indent
+            val level =
+                when {
+                    trimmed.startsWith("# ") -> 1
+                    trimmed.startsWith("## ") -> 2
+                    trimmed.startsWith("### ") -> 3
+                    else -> 0
+                }
+            if (level > 0) {
+                headers.add(HeaderInfo(index, level))
+            }
+        }
 
-            when {
-                trimmed.startsWith("### ") -> {
-                    // Sub-sub header (### )
-                    builder.addStyle(
-                        SpanStyle(color = mutedColor, fontWeight = FontWeight.Bold),
-                        prefixStart,
-                        prefixStart + 4,
-                    )
-                    builder.addStyle(
-                        SpanStyle(fontSize = 17.sp, fontWeight = FontWeight.SemiBold, color = primaryColor),
-                        prefixStart + 4,
-                        lineEndPos,
-                    )
+        val collapsedRanges = mutableMapOf<Int, Int>()
+        collapsedLineIndices.forEach { hIndex ->
+            val header = headers.firstOrNull { it.lineIndex == hIndex }
+            if (header != null) {
+                val nextHeader =
+                    headers.firstOrNull { it.lineIndex > hIndex && it.level <= header.level }
+                val endLine = (nextHeader?.lineIndex ?: lines.size) - 1
+                if (endLine > hIndex) {
+                    collapsedRanges[hIndex] = endLine
                 }
-                trimmed.startsWith("## ") -> {
-                    // Sub header (## )
-                    builder.addStyle(
-                        SpanStyle(color = mutedColor, fontWeight = FontWeight.Bold),
-                        prefixStart,
-                        prefixStart + 3,
-                    )
-                    builder.addStyle(
-                        SpanStyle(fontSize = 19.sp, fontWeight = FontWeight.Bold, color = primaryColor),
-                        prefixStart + 3,
-                        lineEndPos,
-                    )
+            }
+        }
+
+        val hiddenLines = mutableSetOf<Int>()
+        collapsedRanges.forEach { (startLine, endLine) ->
+            for (i in (startLine + 1)..endLine) {
+                hiddenLines.add(i)
+            }
+        }
+
+        val builder = AnnotatedString.Builder()
+
+        val origToTrans = IntArray(original.length + 1)
+        val transToOrig = mutableListOf<Int>()
+
+        var origPos = 0
+        var currentTransformedLen = 0
+
+        var lineIdx = 0
+        while (lineIdx < lines.size) {
+            val line = lines[lineIdx]
+            val lineLen = line.length
+
+            if (lineIdx in collapsedRanges) {
+                val headerPrefix = "▸ "
+                val headerStartTrans = currentTransformedLen
+                builder.append(headerPrefix)
+                repeat(headerPrefix.length) { transToOrig.add(origPos) }
+                currentTransformedLen += headerPrefix.length
+
+                val startLineTrans = currentTransformedLen
+                builder.append(line)
+                for (chIdx in 0 until lineLen) {
+                    if (origPos + chIdx <= original.length) {
+                        origToTrans[origPos + chIdx] = startLineTrans + chIdx
+                    }
+                    transToOrig.add(origPos + chIdx)
                 }
-                trimmed.startsWith("# ") -> {
-                    // Header (# )
-                    builder.addStyle(
-                        SpanStyle(color = mutedColor, fontWeight = FontWeight.Bold),
-                        prefixStart,
-                        prefixStart + 2,
-                    )
-                    builder.addStyle(
-                        SpanStyle(fontSize = 22.sp, fontWeight = FontWeight.ExtraBold, color = primaryColor),
-                        prefixStart + 2,
-                        lineEndPos,
-                    )
+                currentTransformedLen += lineLen
+                origPos += lineLen
+
+                applyLineStyles(line, builder, startLineTrans, currentTransformedLen)
+
+                if (lineIdx < lines.size - 1) {
+                    builder.append("\n")
+                    if (origPos <= original.length) {
+                        origToTrans[origPos] = currentTransformedLen
+                    }
+                    transToOrig.add(origPos)
+                    origPos += 1
+                    currentTransformedLen += 1
                 }
-                trimmed.startsWith("* ") || trimmed.startsWith("- ") -> {
-                    // Bullet List (* or - )
-                    builder.addStyle(
-                        SpanStyle(color = primaryColor, fontWeight = FontWeight.ExtraBold),
-                        prefixStart,
-                        prefixStart + 2,
-                    )
+
+                val endLine = collapsedRanges[lineIdx]!!
+                val hiddenCount = endLine - lineIdx
+                var hiddenChars = 0
+                for (h in (lineIdx + 1)..endLine) {
+                    hiddenChars += lines[h].length + 1
                 }
-                trimmed.startsWith("> ") -> {
-                    // Quote (> )
-                    builder.addStyle(
-                        SpanStyle(color = primaryColor.copy(alpha = 0.6f), fontWeight = FontWeight.Bold),
-                        prefixStart,
-                        prefixStart + 2,
-                    )
-                    builder.addStyle(
-                        SpanStyle(fontStyle = FontStyle.Italic, color = primaryColor),
-                        prefixStart + 2,
-                        lineEndPos,
-                    )
-                }
-                trimmed.matches(Regex("""^(\d+)[\.\)]\s.*""")) -> {
-                    // Numbered List (1. or 1) )
-                    val spaceIdx = line.indexOf(' ', indent)
-                    if (spaceIdx != -1 && spaceIdx < lineEndPos) {
-                        builder.addStyle(
-                            SpanStyle(color = primaryColor, fontWeight = FontWeight.ExtraBold),
-                            prefixStart,
-                            lineStartPos + spaceIdx + 1,
-                        )
+
+                val placeholder = "  \u2026 $hiddenCount lines hidden"
+                val placeholderStart = currentTransformedLen
+                builder.append(placeholder)
+                builder.addStyle(
+                    SpanStyle(color = mutedColor, fontStyle = FontStyle.Italic, fontSize = 14.sp),
+                    placeholderStart,
+                    placeholderStart + placeholder.length,
+                )
+
+                for (chIdx in 0 until hiddenChars) {
+                    if (origPos + chIdx <= original.length) {
+                        origToTrans[origPos + chIdx] = placeholderStart
                     }
                 }
-                trimmed.matches(Regex("""^[-*_]{3,}\s*$""")) -> {
-                    // Horizontal Rule (---)
-                    builder.addStyle(
-                        SpanStyle(
-                            color = primaryColor.copy(alpha = 0.5f),
-                            textDecoration = TextDecoration.LineThrough,
-                            fontWeight = FontWeight.Bold,
-                        ),
-                        prefixStart,
-                        lineEndPos,
-                    )
+                repeat(placeholder.length) { transToOrig.add(origPos) }
+                currentTransformedLen += placeholder.length
+                origPos += hiddenChars
+
+                if (endLine < lines.size - 1) {
+                    builder.append("\n")
+                    if (origPos <= original.length) {
+                        origToTrans[origPos] = currentTransformedLen
+                    }
+                    transToOrig.add(origPos.coerceAtMost(original.length))
+                    currentTransformedLen += 1
+                }
+
+                lineIdx = endLine + 1
+            } else if (lineIdx in hiddenLines) {
+                lineIdx++
+            } else {
+                val trimmed = line.trimStart()
+                val isHeader =
+                    trimmed.startsWith("# ") ||
+                        trimmed.startsWith("## ") ||
+                        trimmed.startsWith("### ")
+                val hasBodyBelow = isHeader && hasContentBelow(lineIdx, headers, lines.size)
+
+                val prefix = if (hasBodyBelow) "\u25BE " else ""
+                if (prefix.isNotEmpty()) {
+                    builder.append(prefix)
+                    repeat(prefix.length) { transToOrig.add(origPos) }
+                    currentTransformedLen += prefix.length
+                }
+
+                val startLineTrans = currentTransformedLen
+                builder.append(line)
+                for (chIdx in 0 until lineLen) {
+                    if (origPos + chIdx <= original.length) {
+                        origToTrans[origPos + chIdx] = startLineTrans + chIdx
+                    }
+                    transToOrig.add(origPos + chIdx)
+                }
+                currentTransformedLen += lineLen
+                origPos += lineLen
+
+                applyLineStyles(line, builder, startLineTrans, currentTransformedLen)
+
+                if (lineIdx < lines.size - 1) {
+                    builder.append("\n")
+                    if (origPos <= original.length) {
+                        origToTrans[origPos] = currentTransformedLen
+                    }
+                    transToOrig.add(origPos)
+                    origPos += 1
+                    currentTransformedLen += 1
+                }
+
+                lineIdx++
+            }
+        }
+
+        if (original.length < origToTrans.size) {
+            origToTrans[original.length] = currentTransformedLen
+        }
+        transToOrig.add(original.length)
+
+        val transToOrigArray = transToOrig.toIntArray()
+
+        val offsetMapping =
+            object : OffsetMapping {
+                override fun originalToTransformed(offset: Int): Int {
+                    return origToTrans[offset.coerceIn(0, original.length)]
+                }
+
+                override fun transformedToOriginal(offset: Int): Int {
+                    return transToOrigArray[offset.coerceIn(0, transToOrigArray.size - 1)]
                 }
             }
 
-            lineStartPos = lineEndPos + 1 // +1 for '\n'
-        }
+        return TransformedText(builder.toAnnotatedString(), offsetMapping)
+    }
 
-        return TransformedText(builder.toAnnotatedString(), OffsetMapping.Identity)
+    private fun hasContentBelow(lineIdx: Int, headers: List<HeaderInfo>, totalLines: Int): Boolean {
+        val header = headers.firstOrNull { it.lineIndex == lineIdx } ?: return false
+        val nextHeader =
+            headers.firstOrNull { it.lineIndex > lineIdx && it.level <= header.level }
+        val endLine = (nextHeader?.lineIndex ?: totalLines) - 1
+        return endLine > lineIdx
+    }
+
+    private fun applyLineStyles(
+        line: String,
+        builder: AnnotatedString.Builder,
+        lineStartPos: Int,
+        lineEndPos: Int,
+    ) {
+        val trimmed = line.trimStart()
+        val indent = line.length - trimmed.length
+        val prefixStart = lineStartPos + indent
+
+        when {
+            trimmed.startsWith("### ") -> {
+                builder.addStyle(
+                    SpanStyle(color = mutedColor, fontWeight = FontWeight.Bold),
+                    prefixStart,
+                    prefixStart + 4,
+                )
+                builder.addStyle(
+                    SpanStyle(
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = primaryColor,
+                    ),
+                    prefixStart + 4,
+                    lineEndPos,
+                )
+            }
+            trimmed.startsWith("## ") -> {
+                builder.addStyle(
+                    SpanStyle(color = mutedColor, fontWeight = FontWeight.Bold),
+                    prefixStart,
+                    prefixStart + 3,
+                )
+                builder.addStyle(
+                    SpanStyle(
+                        fontSize = 19.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = primaryColor,
+                    ),
+                    prefixStart + 3,
+                    lineEndPos,
+                )
+            }
+            trimmed.startsWith("# ") -> {
+                builder.addStyle(
+                    SpanStyle(color = mutedColor, fontWeight = FontWeight.Bold),
+                    prefixStart,
+                    prefixStart + 2,
+                )
+                builder.addStyle(
+                    SpanStyle(
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = primaryColor,
+                    ),
+                    prefixStart + 2,
+                    lineEndPos,
+                )
+            }
+            trimmed.startsWith("* ") || trimmed.startsWith("- ") -> {
+                builder.addStyle(
+                    SpanStyle(color = primaryColor, fontWeight = FontWeight.ExtraBold),
+                    prefixStart,
+                    prefixStart + 2,
+                )
+            }
+            trimmed.startsWith("> ") -> {
+                builder.addStyle(
+                    SpanStyle(
+                        color = primaryColor.copy(alpha = 0.6f),
+                        fontWeight = FontWeight.Bold,
+                    ),
+                    prefixStart,
+                    prefixStart + 2,
+                )
+                builder.addStyle(
+                    SpanStyle(fontStyle = FontStyle.Italic, color = primaryColor),
+                    prefixStart + 2,
+                    lineEndPos,
+                )
+            }
+            trimmed.matches(Regex("""^(\d+)[\.\)]\s.*""")) -> {
+                val spaceIdx = line.indexOf(' ', indent)
+                if (spaceIdx != -1 && spaceIdx < line.length) {
+                    builder.addStyle(
+                        SpanStyle(color = primaryColor, fontWeight = FontWeight.ExtraBold),
+                        prefixStart,
+                        lineStartPos + spaceIdx + 1,
+                    )
+                }
+            }
+            trimmed.matches(Regex("""^[-*_]{3,}\s*$""")) -> {
+                builder.addStyle(
+                    SpanStyle(
+                        color = primaryColor.copy(alpha = 0.5f),
+                        textDecoration = TextDecoration.LineThrough,
+                        fontWeight = FontWeight.Bold,
+                    ),
+                    prefixStart,
+                    lineEndPos,
+                )
+            }
+        }
     }
 }

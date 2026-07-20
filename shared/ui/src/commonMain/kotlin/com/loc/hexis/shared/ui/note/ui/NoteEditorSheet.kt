@@ -148,6 +148,7 @@ fun NoteEditorSheet(
         else contentValue.text.trim().split(Regex("""\s+""")).size
     }
     val charCount = remember(contentValue.text) { contentValue.text.length }
+    var collapsedHeaderLines by remember { mutableStateOf(setOf<Int>()) }
 
     fun getCurrentLine(text: String, cursor: Int): String {
         val before = text.substring(0, cursor.coerceAtMost(text.length))
@@ -343,6 +344,7 @@ fun NoteEditorSheet(
                                 primaryColor = MaterialTheme.colorScheme.primary,
                                 mutedColor = MaterialTheme.colorScheme.outline,
                                 ruleColor = MaterialTheme.colorScheme.primaryContainer,
+                                collapsedLineIndices = collapsedHeaderLines,
                             ),
                         placeholder = {
                             Text("Start writing\u2026", style = MaterialTheme.typography.bodyLarge)
@@ -434,6 +436,67 @@ fun NoteEditorSheet(
                             ) {
                                 Text(
                                     text = label,
+                                    style = MaterialTheme.typography.labelMedium.copy(fontFamily = flexFontRounded()),
+                                )
+                            }
+                        }
+
+                        val currentLineIndex = currentText.substring(0, currentCursor.coerceAtMost(currentText.length)).count { it == '\n' }
+                        val trimmedLine = currentLine.trimStart()
+                        val isHeaderLine = trimmedLine.startsWith("# ") || trimmedLine.startsWith("## ") || trimmedLine.startsWith("### ")
+                        if (isHeaderLine) {
+                            val isCollapsed = currentLineIndex in collapsedHeaderLines
+                            FilledTonalButton(
+                                onClick = {
+                                    collapsedHeaderLines =
+                                        if (isCollapsed) collapsedHeaderLines - currentLineIndex
+                                        else collapsedHeaderLines + currentLineIndex
+                                },
+                                modifier = Modifier.height(34.dp),
+                                shape = CircleShape,
+                                colors =
+                                    if (isCollapsed)
+                                        ButtonDefaults.filledTonalButtonColors(
+                                            containerColor = MaterialTheme.colorScheme.primary,
+                                            contentColor = MaterialTheme.colorScheme.onPrimary,
+                                        )
+                                    else
+                                        ButtonDefaults.filledTonalButtonColors(
+                                            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                                            contentColor = MaterialTheme.colorScheme.onSurface,
+                                        ),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
+                            ) {
+                                Text(
+                                    text = if (isCollapsed) "\u25B8 Expand" else "\u25BE Collapse",
+                                    style = MaterialTheme.typography.labelMedium.copy(fontFamily = flexFontRounded()),
+                                )
+                            }
+                        }
+
+                        val allHeaderIndices = remember(currentText) {
+                            currentText.lines().mapIndexedNotNull { idx, line ->
+                                val trimmed = line.trimStart()
+                                if (trimmed.startsWith("# ") || trimmed.startsWith("## ") || trimmed.startsWith("### ")) idx else null
+                            }
+                        }
+                        if (allHeaderIndices.isNotEmpty()) {
+                            val areAllCollapsed = allHeaderIndices.all { it in collapsedHeaderLines }
+                            FilledTonalButton(
+                                onClick = {
+                                    collapsedHeaderLines = if (areAllCollapsed) emptySet() else allHeaderIndices.toSet()
+                                },
+                                modifier = Modifier.height(34.dp),
+                                shape = CircleShape,
+                                colors =
+                                    ButtonDefaults.filledTonalButtonColors(
+                                        containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                                        contentColor = MaterialTheme.colorScheme.onSurface,
+                                    ),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
+                            ) {
+                                Text(
+                                    text = if (areAllCollapsed) "Expand All" else "Collapse All",
                                     style = MaterialTheme.typography.labelMedium.copy(fontFamily = flexFontRounded()),
                                 )
                             }
