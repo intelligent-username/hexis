@@ -99,6 +99,23 @@ fun UXPage(state: SettingsState, onAction: (SettingsAction) -> Unit, onNavigateB
                     )
 
                     ListItem(
+                        headlineContent = { Text(text = stringResource(Res.string.reorder_habits)) },
+                        supportingContent = {
+                            Text(text = stringResource(Res.string.reorder_habits_desc))
+                        },
+                        trailingContent = {
+                            ExpressiveSwitch(
+                                checked = state.reorderHabits,
+                                onCheckedChange = {
+                                    onAction(SettingsAction.ChangeReorderHabits(it))
+                                },
+                            )
+                        },
+                        colors = listItemColors(),
+                        modifier = Modifier.clip(middleItemShape()),
+                    )
+
+                    ListItem(
                         headlineContent = { Text(text = stringResource(Res.string.show_habits)) },
                         supportingContent = {
                             Text(text = stringResource(Res.string.show_habits_desc))

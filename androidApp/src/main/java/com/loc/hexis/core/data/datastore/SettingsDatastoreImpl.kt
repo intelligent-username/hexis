@@ -27,6 +27,7 @@ class SettingsDatastoreImpl(private val datastore: DataStore<Preferences>) : Set
         private val notificationsKey = booleanPreferencesKey("notifications")
         private val biometricLockKey = booleanPreferencesKey("biometric")
         private val taskReorderKey = booleanPreferencesKey("task_reorder")
+        private val habitReorderKey = booleanPreferencesKey("habit_reorder")
         private val compactHabitView = booleanPreferencesKey("compact_habit_view")
         private val lastChangelogShownKey = stringPreferencesKey("last_changelog_shown")
         private val archivedHabitIdsKey = stringSetPreferencesKey("archived_habit_ids")
@@ -82,6 +83,13 @@ class SettingsDatastoreImpl(private val datastore: DataStore<Preferences>) : Set
 
     override suspend fun setTaskReorderPref(pref: Boolean) {
         datastore.edit { prefs -> prefs[taskReorderKey] = pref }
+    }
+
+    override fun getHabitReorderPref(): Flow<Boolean> =
+        datastore.data.map { prefs -> prefs[habitReorderKey] ?: false }
+
+    override suspend fun setHabitReorderPref(pref: Boolean) {
+        datastore.edit { prefs -> prefs[habitReorderKey] = pref }
     }
 
     override fun getCompactViewPref(): Flow<Boolean> =

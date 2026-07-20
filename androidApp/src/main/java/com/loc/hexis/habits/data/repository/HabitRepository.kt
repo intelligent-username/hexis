@@ -59,10 +59,12 @@ class HabitRepository(
             .flowOn(Dispatchers.IO)
 
     private val firstDayOfWeek = MutableStateFlow(DayOfWeek.MONDAY)
+    private val archivedHabitIds = MutableStateFlow<Set<Long>>(emptySet())
     private val repoScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     init {
         repoScope.launch { datastore.getStartOfTheWeekPref().collect { firstDayOfWeek.value = it } }
+        repoScope.launch { datastore.getArchivedHabitIds().collect { archivedHabitIds.value = it } }
     }
 
     override suspend fun upsertHabit(habit: Habit) {
@@ -128,8 +130,8 @@ class HabitRepository(
     }
 
     override fun getCompletedHabitIds(): Flow<List<Long>> {
-        return combine(habits, habitStatuses) { habitsFlow, habitStatusesFlow ->
-                habitsFlow.mapNotNull { habit ->
+        return combine(habits, habitStatuses, archivedHabitIds) { habitsFlow, habitStatusesFlow, archived ->
+                habitsFlow.filter { it.id !in archived }.mapNotNull { habit ->
                     val todayStatus =
                         habitStatusesFlow.find {
                             it.habitId == habit.id && it.date == LocalDate.now()
@@ -143,12 +145,15 @@ class HabitRepository(
     }
 
     override fun getOverallAnalytics(): Flow<OverallAnalytics> {
-        return combine(habits, habitStatuses, firstDayOfWeek) {
+        return combine(habits, habitStatuses, firstDayOfWeek, archivedHabitIds) {
                 habitsFlow,
                 habitStatusesFlow,
-                firstDay ->
+                firstDay,
+                archived ->
+                val activeHabits = habitsFlow.filter { it.id !in archived }
+
                 val allCompletedStatuses =
-                    habitsFlow.flatMap { habit ->
+                    activeHabits.flatMap { habit ->
                         filterCompletedStatuses(
                             habit,
                             habitStatusesFlow.filter { it.habitId == habit.id },
@@ -156,7 +161,7 @@ class HabitRepository(
                     }
 
                 val habitConsistencies =
-                    habitsFlow.map { habit ->
+                    activeHabits.map { habit ->
                         val dates =
                             filterCompletedStatuses(
                                     habit,
@@ -178,7 +183,7 @@ class HabitRepository(
                         .map { HabitRanking(it.first, it.second) }
 
                 val allPointsSummaries =
-                    habitsFlow.map { habit ->
+                    activeHabits.map { habit ->
                         val completed =
                             filterCompletedStatuses(
                                 habit,
@@ -197,7 +202,7 @@ class HabitRepository(
                     } else emptyList()
 
                 val habitBestStreaks =
-                    habitsFlow.map { habit ->
+                    activeHabits.map { habit ->
                         val completedDates =
                             filterCompletedStatuses(
                                     habit,
@@ -223,15 +228,16 @@ class HabitRepository(
     }
 
     override fun getWeeklyPointsFlow(): Flow<List<WeeklyPoints>> =
-        combine(habits, habitStatuses, firstDayOfWeek) { habitsFlow, habitStatusesFlow, firstDay ->
-                computeWeeklyPoints(habitsFlow, habitStatusesFlow, firstDay)
+        combine(habits, habitStatuses, firstDayOfWeek, archivedHabitIds) { habitsFlow, habitStatusesFlow, firstDay, archived ->
+                computeWeeklyPoints(habitsFlow.filter { it.id !in archived }, habitStatusesFlow, firstDay)
             }
             .flowOn(Dispatchers.Default)
             .distinctUntilChanged()
 
     override fun getPointsTrend(): Flow<PointsTrend> =
-        combine(habits, habitStatuses, firstDayOfWeek) { habits, statuses, firstDay ->
-                val weeklyPoints = computeWeeklyPoints(habits, statuses, firstDay)
+        combine(habits, habitStatuses, firstDayOfWeek, archivedHabitIds) { habits, statuses, firstDay, archived ->
+                val activeHabits = habits.filter { it.id !in archived }
+                val weeklyPoints = computeWeeklyPoints(activeHabits, statuses, firstDay)
                 val trend = computePointsTrend(weeklyPoints)
 
                 val today = LocalDate.now()
@@ -241,11 +247,11 @@ class HabitRepository(
                     if (todayDow >= firstDow) todayDow - firstDow else 7 + todayDow - firstDow
                 val weekStart = today.minus(diff, DateTimeUnit.DAY)
 
-                val currentPartial = computePointsForPeriod(habits, statuses, weekStart, today)
+                val currentPartial = computePointsForPeriod(activeHabits, statuses, weekStart, today)
                 val prevWeekStart = weekStart.minus(7, DateTimeUnit.DAY)
                 val prevToday = today.minus(7, DateTimeUnit.DAY)
                 val previousPartial =
-                    computePointsForPeriod(habits, statuses, prevWeekStart, prevToday)
+                    computePointsForPeriod(activeHabits, statuses, prevWeekStart, prevToday)
 
                 val partialNetChange = currentPartial - previousPartial
                 val partialNetChangePercent =

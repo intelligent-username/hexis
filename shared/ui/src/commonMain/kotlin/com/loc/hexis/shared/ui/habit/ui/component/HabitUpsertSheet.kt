@@ -54,6 +54,7 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.style.TextOverflow
 import com.loc.hexis.core.habits.DisplayMode
 import com.loc.hexis.core.habits.Habit
 import com.loc.hexis.core.habits.TimeDivision
@@ -485,7 +486,11 @@ fun HabitUpsertSheetContent(
                                         onCheckedChange = { localSelectedDivisionId = div.id },
                                         colors = ToggleButtonDefaults.tonalToggleButtonColors(),
                                     ) {
-                                        Text(text = div.name)
+                                        Text(
+                                            text = div.name,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                        )
                                     }
                                 }
                             }

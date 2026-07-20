@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.3: Analytics & QoL
+
+- New Progress Analytic
+- Habit reordering setting
+- Improved notes. No longer as
+- General UI stuff
+
 ## 1.1.1: Balancing
 
 - New notes feature in Tasks

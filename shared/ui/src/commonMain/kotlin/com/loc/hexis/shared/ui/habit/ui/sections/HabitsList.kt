@@ -59,17 +59,28 @@ fun HabitsList(
             modifier = Modifier.fillMaxHeight(),
         ) {
             // habits
-            itemsIndexed(state.habitsWithAnalytics, key = { _, it -> it.habit.id }) {
+            val displayedHabits =
+                if (state.reorderHabits)
+                    state.habitsWithAnalytics.sortedBy {
+                        it.habit.id in state.completedHabitIds
+                    }
+                else state.habitsWithAnalytics
+            itemsIndexed(displayedHabits, key = { _, it -> it.habit.id }) {
                 index,
                 habitWithAnalytics ->
                 ReorderableItem(reorderableListState, key = habitWithAnalytics.habit.id) {
                     val completed = state.completedHabitIds.contains(habitWithAnalytics.habit.id)
+                    val completedIndices =
+                        displayedHabits.indices.filter {
+                            displayedHabits[it].habit.id in state.completedHabitIds
+                        }
                     val shape =
                         when {
-                            state.habitsWithAnalytics.size == 1 || !completed ->
+                            !completed || completedIndices.size == 1 ->
                                 detachedItemShape(radius = 28)
-                            index == 0 -> leadingItemShape(topRadius = 28, bottomRadius = 8)
-                            index == state.habitsWithAnalytics.size - 1 ->
+                            index == completedIndices.first() ->
+                                leadingItemShape(topRadius = 28, bottomRadius = 8)
+                            index == completedIndices.last() ->
                                 endItemShape(bottomRadius = 28, topRadius = 8)
                             else -> middleItemShape(radius = 8)
                         }
@@ -125,7 +136,7 @@ fun HabitsList(
     }
 
     if (state.showHabitAddSheet) {
-        val newHabitId = remember { Clock.System.now().toEpochMilliseconds() }
+        val newHabitId = requireNotNull(state.newHabitId)
         HabitUpsertSheet(
             habit =
                 Habit(
@@ -141,8 +152,7 @@ fun HabitsList(
             selectedDivisionId = state.selectedTimeDivisionId,
             onDismissRequest = { onAction(HabitsAction.DismissAddHabitDialog) },
             onUpsertHabit = { habit, divId ->
-                onAction(HabitsAction.AddHabit(habit))
-                onAction(HabitsAction.SetHabitTimeDivision(habit.id, divId))
+                onAction(HabitsAction.AddHabitWithDivision(habit, divId))
             },
             onManageTimeDivisions = { showTimeDivisionEditDialog.value = true },
             is24Hr = state.is24Hr,

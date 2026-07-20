@@ -20,6 +20,7 @@ data class SettingsState(
     val theme: Theme = Theme(),
     val is24Hr: Boolean = false,
     val reorderTasks: Boolean = false,
+    val reorderHabits: Boolean = false,
     val startOfTheWeek: DayOfWeek = DayOfWeek.MONDAY,
     val pauseNotifications: Boolean = false,
     val startingPage: Sections = Sections.Tasks,

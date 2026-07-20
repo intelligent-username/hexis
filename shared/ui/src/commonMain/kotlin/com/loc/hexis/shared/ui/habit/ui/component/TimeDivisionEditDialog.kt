@@ -32,6 +32,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.loc.hexis.core.habits.TimeDivision
 import com.loc.hexis.shared.ui.components.Empty
@@ -129,7 +130,13 @@ fun TimeDivisionEditDialog(
                             ListItem(
                                 modifier = Modifier.clip(shape),
                                 colors = listItemColors(),
-                                headlineContent = { Text(text = division.name, maxLines = 1) },
+                                headlineContent = {
+                                    Text(
+                                        text = division.name,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                },
                                 supportingContent = {
                                     val count =
                                         state.habitTimeDivisionMap.values.count {

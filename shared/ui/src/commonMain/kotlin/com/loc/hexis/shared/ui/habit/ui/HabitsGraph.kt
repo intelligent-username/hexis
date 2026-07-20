@@ -44,6 +44,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
@@ -452,6 +453,7 @@ private fun TimeDivisionSelector(state: HabitState, onAction: (HabitsAction) -> 
                                 fontFamily = flexFontRounded(),
                                 style = MaterialTheme.typography.labelLarge,
                                 maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
                                 color =
                                     if (selected) MaterialTheme.colorScheme.onSecondaryContainer
                                     else MaterialTheme.colorScheme.onSurface,
@@ -517,10 +519,14 @@ private fun HabitsTopAppBar(
             ),
         title = { Text(text = stringResource(Res.string.habits), fontFamily = flexFontEmphasis()) },
         subtitle = {
+            val completedDisplayed =
+                state.habitsWithAnalytics.count {
+                    it.habit.id in state.completedHabitIds
+                }
             Column {
                 Text(
                     text =
-                        "${state.completedHabitIds.size}/${state.habitsWithAnalytics.size} " +
+                        "$completedDisplayed/${state.habitsWithAnalytics.size} " +
                             stringResource(Res.string.completed),
                     fontFamily = flexFontRounded(),
                 )

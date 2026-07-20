@@ -60,6 +60,11 @@ class HabitViewModel(
             when (action) {
                 is HabitsAction.AddHabit -> upsertHabit(action.habit)
 
+                is HabitsAction.AddHabitWithDivision -> {
+                    upsertHabit(action.habit)
+                    datastore.setHabitTimeDivision(action.habit.id, action.divisionId)
+                }
+
                 is HabitsAction.DeleteHabit -> deleteHabit(action.habit)
 
                 is HabitsAction.InsertStatus -> toggleHabitProgress(action.habit, action.date)
@@ -96,7 +101,8 @@ class HabitViewModel(
                 }
 
                 HabitsAction.OnAddHabitClicked -> {
-                    _state.update { it.copy(showHabitAddSheet = true) }
+                    val id = LocalDateTime.now().toInstant(TimeZone.currentSystemDefault()).toEpochMilliseconds()
+                    _state.update { it.copy(showHabitAddSheet = true, newHabitId = id, errorMessage = null) }
                 }
 
                 HabitsAction.DismissAddHabitDialog ->
@@ -289,6 +295,11 @@ class HabitViewModel(
                     .launchIn(this)
 
                 datastore
+                    .getHabitReorderPref()
+                    .onEach { pref -> _state.update { it.copy(reorderHabits = pref) } }
+                    .launchIn(this)
+
+                datastore
                     .getStartOfTheWeekPref()
                     .onEach { pref -> _state.update { it.copy(startingDay = pref) } }
                     .launchIn(this)
@@ -320,8 +331,12 @@ class HabitViewModel(
     }
 
     private suspend fun upsertHabit(habit: Habit) {
-        repo.upsertHabit(habit)
-        scheduler.schedule(habit)
+        try {
+            repo.upsertHabit(habit)
+            scheduler.schedule(habit)
+        } catch (e: Exception) {
+            _state.update { it.copy(errorMessage = e.message ?: "Failed to save habit") }
+        }
     }
 
     private suspend fun deleteHabit(habit: Habit) {

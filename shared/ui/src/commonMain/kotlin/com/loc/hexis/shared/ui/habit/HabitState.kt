@@ -41,6 +41,7 @@ data class HabitState(
 
     // datastore
     val compactHabitView: Boolean = false,
+    val reorderHabits: Boolean = false,
     val is24Hr: Boolean = false,
     val startingDay: DayOfWeek = DayOfWeek.MONDAY,
     val archivedHabitIds: Set<Long> = emptySet(),
@@ -50,5 +51,7 @@ data class HabitState(
     val timeDivisions: List<TimeDivision> = emptyList(),
     val habitTimeDivisionMap: Map<Long, Long> = emptyMap(),
     val selectedTimeDivisionId: Long? = null,
+    val newHabitId: Long? = null,
+    val errorMessage: String? = null,
     val pointsTrend: PointsTrend = PointsTrend.empty,
 )

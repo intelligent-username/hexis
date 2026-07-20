@@ -28,6 +28,8 @@ sealed interface HabitsAction {
 
     data class AddHabit(val habit: Habit) : HabitsAction
 
+    data class AddHabitWithDivision(val habit: Habit, val divisionId: Long?) : HabitsAction
+
     data class DeleteHabit(val habit: Habit) : HabitsAction
 
     /** Add/Remove status for [habit] at given [date] */

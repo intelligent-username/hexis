@@ -32,6 +32,10 @@ interface SettingsDatastore {
 
     suspend fun setTaskReorderPref(pref: Boolean)
 
+    fun getHabitReorderPref(): Flow<Boolean>
+
+    suspend fun setHabitReorderPref(pref: Boolean)
+
     fun getCompactViewPref(): Flow<Boolean>
 
     suspend fun setCompactView(pref: Boolean)

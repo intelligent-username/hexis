@@ -22,6 +22,7 @@ import com.loc.hexis.shared.ui.setting.SettingsAction.ChangeIs24Hr
 import com.loc.hexis.shared.ui.setting.SettingsAction.ChangeMaterialYou
 import com.loc.hexis.shared.ui.setting.SettingsAction.ChangePaletteStyle
 import com.loc.hexis.shared.ui.setting.SettingsAction.ChangePauseNotifications
+import com.loc.hexis.shared.ui.setting.SettingsAction.ChangeReorderHabits
 import com.loc.hexis.shared.ui.setting.SettingsAction.ChangeReorderTasks
 import com.loc.hexis.shared.ui.setting.SettingsAction.ChangeSeedColor
 import com.loc.hexis.shared.ui.setting.SettingsAction.ChangeStartOfTheWeek
@@ -135,6 +136,8 @@ class SettingsViewModel(
                 is ChangeBiometricLock -> settingsDatastore.setBiometricPref(action.pref)
 
                 is ChangeReorderTasks -> settingsDatastore.setTaskReorderPref(action.pref)
+
+                is ChangeReorderHabits -> settingsDatastore.setHabitReorderPref(action.pref)
             }
         }
 
@@ -161,6 +164,11 @@ class SettingsViewModel(
                 settingsDatastore
                     .getTaskReorderPref()
                     .onEach { pref -> _state.update { it.copy(reorderTasks = pref) } }
+                    .launchIn(this)
+
+                settingsDatastore
+                    .getHabitReorderPref()
+                    .onEach { pref -> _state.update { it.copy(reorderHabits = pref) } }
                     .launchIn(this)
 
                 settingsDatastore
