@@ -74,6 +74,7 @@ import com.loc.hexis.core.note.JournalEntry
 import com.loc.hexis.core.note.JournalNoteData
 import com.loc.hexis.core.note.Note
 import com.loc.hexis.core.note.NoteType
+import com.loc.hexis.core.note.VaultNote
 import com.loc.hexis.core.now
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.ui.graphics.Color
@@ -130,6 +131,9 @@ fun NoteEditorSheet(
         mutableStateListOf<JournalEntry>().apply { addAll(initialJournalData.entries) }
     }
 
+    val initialVaultData = remember(initialNoteId) { note?.parseVault() ?: VaultNote() }
+    val vaultNote = remember(initialNoteId) { mutableStateOf(initialVaultData) }
+
     var selectedColorHex by remember(initialNoteId) { mutableStateOf(note?.getColorHex()) }
     var colorPickerDialog by remember { mutableStateOf(false) }
 
@@ -155,6 +159,7 @@ fun NoteEditorSheet(
         return when (selectedType) {
             NoteType.COUNTING_TABLE -> baseNote.withCountingTable(CountingTableData(rows = counterRows.toList()))
             NoteType.JOURNAL -> baseNote.withJournal(JournalNoteData(entries = journalEntries.toList()))
+            NoteType.VAULT -> baseNote.withVault(vaultNote.value)
             else -> baseNote.copy(content = contentValue.text)
         }
     }
@@ -165,7 +170,7 @@ fun NoteEditorSheet(
     }
 
     // Auto-save debounce (1500ms)
-    LaunchedEffect(title, selectedType, contentValue.text, counterRows.toList(), journalEntries.toList(), selectedColorHex) {
+    LaunchedEffect(title, selectedType, contentValue.text, counterRows.toList(), journalEntries.toList(), vaultNote.value, selectedColorHex) {
         isSaved = false
         delay(1500)
         val noteToSave = buildCurrentNote()
@@ -274,20 +279,27 @@ fun NoteEditorSheet(
                         style = MaterialTheme.typography.titleLarge.copy(fontFamily = flexFontEmphasis()),
                         color = onSurfaceColor,
                     )
-                    if (selectedType == NoteType.MARKDOWN) {
-                        Text(
+                    when (selectedType) {
+                        NoteType.MARKDOWN -> Text(
                             text = "$wordCount words • $charCount chars",
                             style = MaterialTheme.typography.labelSmall,
                             color = onSurfaceVariantColor,
                         )
-                    } else if (selectedType == NoteType.JOURNAL) {
-                        Text(
+                        NoteType.JOURNAL -> Text(
                             text = "${journalEntries.size} journal entries",
                             style = MaterialTheme.typography.labelSmall,
                             color = onSurfaceVariantColor,
                         )
-                    } else {
-                        Text(
+                        NoteType.VAULT -> Text(
+                            text = when (vaultNote.value.entries.size) {
+                                0 -> "No secrets"
+                                1 -> "1 secret"
+                                else -> "${vaultNote.value.entries.size} secrets"
+                            },
+                            style = MaterialTheme.typography.labelSmall,
+                            color = onSurfaceVariantColor,
+                        )
+                        else -> Text(
                             text = "${counterRows.size} counter items",
                             style = MaterialTheme.typography.labelSmall,
                             color = onSurfaceVariantColor,
@@ -709,6 +721,27 @@ fun NoteEditorSheet(
                         onSurfaceColor = onSurfaceColor,
                         onSurfaceVariantColor = onSurfaceVariantColor,
                         hasEditorCustomColor = hasEditorCustomColor
+                    )
+                }
+            } else if (selectedType == NoteType.VAULT) {
+                val tempVaultNote = remember(vaultNote.value, title, selectedColorHex) {
+                    Note(
+                        id = currentNoteId,
+                        title = title,
+                        createdAt = LocalDateTime.now(),
+                        updatedAt = LocalDateTime.now(),
+                        type = NoteType.VAULT
+                    ).withVault(vaultNote.value).withColorHex(selectedColorHex)
+                }
+                Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
+                    VaultEditor(
+                        note = tempVaultNote,
+                        onSave = { updatedNote ->
+                            vaultNote.value = updatedNote.parseVault()
+                        },
+                        onSurfaceColor = onSurfaceColor,
+                        onSurfaceVariantColor = onSurfaceVariantColor,
+                        hasEditorCustomColor = hasEditorCustomColor,
                     )
                 }
             } else {

@@ -83,6 +83,7 @@ import com.loc.hexis.core.note.JournalNoteData
 import com.loc.hexis.core.note.Note
 import com.loc.hexis.core.note.NoteRepo
 import com.loc.hexis.core.note.NoteType
+import com.loc.hexis.core.note.VaultNote
 import com.loc.hexis.core.now
 import com.loc.hexis.shared.ui.app.SystemBackHandler
 import com.loc.hexis.shared.ui.components.Empty
@@ -193,6 +194,13 @@ fun NotesPage(onDismiss: () -> Unit, repo: NoteRepo = koinInject()) {
                     (note.type == NoteType.COUNTING_TABLE && note.parseCountingTable().rows.any { row ->
                         row.label.contains(searchQuery, ignoreCase = true) ||
                             (row.unit?.contains(searchQuery, ignoreCase = true) == true)
+                    }) ||
+                    (note.type == NoteType.JOURNAL && note.parseJournal().entries.any {
+                        it.text.contains(searchQuery, ignoreCase = true)
+                    }) ||
+                    (note.type == NoteType.VAULT && note.parseVault().entries.any {
+                        it.label.contains(searchQuery, ignoreCase = true) ||
+                            it.notes.contains(searchQuery, ignoreCase = true)
                     })
             }
 
@@ -660,6 +668,54 @@ fun NotesPage(onDismiss: () -> Unit, repo: NoteRepo = koinInject()) {
                                             }
                                         },
                                     )
+                                } else if (note.type == NoteType.VAULT) {
+                                    VaultCard(
+                                        note = note,
+                                        showArchived = showArchived,
+                                        onClick = {
+                                            if (isSelectionMode) toggleSelectNote(note.id)
+                                            else {
+                                                editingNote = note
+                                                showEditor = true
+                                            }
+                                        },
+                                        onTogglePin = {
+                                            if (!isSelectionMode) {
+                                                scope.launch { repo.upsertNote(note.copy(pinned = !note.pinned)) }
+                                            } else {
+                                                toggleSelectNote(note.id)
+                                            }
+                                        },
+                                        onArchive = {
+                                            if (!isSelectionMode) {
+                                                scope.launch {
+                                                    repo.upsertNote(note.copy(archived = true))
+                                                    showUndo(msgNoteArchived) {
+                                                        scope.launch { repo.upsertNote(note.copy(archived = false)) }
+                                                    }
+                                                }
+                                            } else {
+                                                toggleSelectNote(note.id)
+                                            }
+                                        },
+                                        onUnarchive = {
+                                            scope.launch {
+                                                repo.upsertNote(note.copy(archived = false))
+                                                showUndo(msgNoteUnarchived) {
+                                                    scope.launch { repo.upsertNote(note.copy(archived = true)) }
+                                                }
+                                            }
+                                        },
+                                        onDelete = {
+                                            scope.launch {
+                                                val deleted = note
+                                                repo.deleteNote(note.id)
+                                                showUndo(msgNoteDeleted) {
+                                                    scope.launch { repo.upsertNote(deleted) }
+                                                }
+                                            }
+                                        },
+                                    )
                                 } else {
                                     NoteCard(
                                         note = note,
@@ -906,6 +962,46 @@ fun NotesPage(onDismiss: () -> Unit, repo: NoteRepo = koinInject()) {
                                     )
                                 } else if (note.type == NoteType.JOURNAL) {
                                     JournalCard(
+                                        note = note,
+                                        showArchived = showArchived,
+                                        onClick = {
+                                            if (isSelectionMode) toggleSelectNote(note.id)
+                                            else {
+                                                editingNote = note
+                                                showEditor = true
+                                            }
+                                        },
+                                        onTogglePin = {
+                                            scope.launch { repo.upsertNote(note.copy(pinned = !note.pinned)) }
+                                        },
+                                        onArchive = {
+                                            scope.launch {
+                                                repo.upsertNote(note.copy(archived = true))
+                                                showUndo(msgNoteArchived) {
+                                                    scope.launch { repo.upsertNote(note.copy(archived = false)) }
+                                                }
+                                            }
+                                        },
+                                        onUnarchive = {
+                                            scope.launch {
+                                                repo.upsertNote(note.copy(archived = false))
+                                                showUndo(msgNoteUnarchived) {
+                                                    scope.launch { repo.upsertNote(note.copy(archived = true)) }
+                                                }
+                                            }
+                                        },
+                                        onDelete = {
+                                            scope.launch {
+                                                val deleted = note
+                                                repo.deleteNote(note.id)
+                                                showUndo(msgNoteDeleted) {
+                                                    scope.launch { repo.upsertNote(deleted) }
+                                                }
+                                            }
+                                        },
+                                    )
+                                } else if (note.type == NoteType.VAULT) {
+                                    VaultCard(
                                         note = note,
                                         showArchived = showArchived,
                                         onClick = {
@@ -1242,6 +1338,46 @@ fun NotesPage(onDismiss: () -> Unit, repo: NoteRepo = koinInject()) {
                             )
                             Text(
                                 text = "Chronological log of thoughts and mood",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                }
+
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    modifier =
+                        Modifier.fillMaxWidth().clickable {
+                            showCreateTypeSheet = false
+                            val now = LocalDateTime.now()
+                            val newId = Random.nextLong(100_000_000L, 999_999_999L)
+                            editingNote =
+                                Note(
+                                    id = newId,
+                                    title = "",
+                                    content = "",
+                                    type = NoteType.VAULT,
+                                    createdAt = now,
+                                    updatedAt = now,
+                                ).withVault(VaultNote())
+                            showEditor = true
+                        },
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    ) {
+                        Text("🔒", style = MaterialTheme.typography.headlineMedium)
+                        Column {
+                            Text(
+                                text = "Secret Vault",
+                                style = MaterialTheme.typography.titleMedium.copy(fontFamily = flexFontEmphasis()),
+                            )
+                            Text(
+                                text = "Encrypted key-value store for secrets & credentials",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )

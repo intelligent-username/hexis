@@ -20,8 +20,8 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.loc.hexis.core.LocalDate
-import com.loc.hexis.core.LocalDateTime
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalDateTime
 import com.loc.hexis.core.note.JournalEntry
 import com.loc.hexis.core.note.JournalNoteData
 import com.loc.hexis.core.note.Note
@@ -137,10 +137,10 @@ fun JournalEditor(
             } else {
                 groupedEntries.forEach { (date, entriesForDate) ->
                     stickyHeader {
-                        val headerText = when (val days = date.toEpochDays() - today.toEpochDays()) {
-                            0 -> "Today"
-                            -1 -> "Yesterday"
-                            1 -> "Tomorrow"
+                        val headerText = when (date.toEpochDays() - today.toEpochDays()) {
+                            0L -> "Today"
+                            -1L -> "Yesterday"
+                            1L -> "Tomorrow"
                             else -> date.toFormattedString()
                         }
                         Surface(
@@ -203,9 +203,10 @@ fun JournalEditor(
                                                 style = MaterialTheme.typography.labelMedium,
                                                 color = onSurfaceVariantColor
                                             )
-                                            if (!entry.mood.isNullOrBlank()) {
+                                            val mood = entry.mood
+                                            if (!mood.isNullOrBlank()) {
                                                 Text(
-                                                    text = entry.mood,
+                                                    text = mood,
                                                     modifier = Modifier.padding(start = 8.dp),
                                                     fontSize = 14.sp
                                                 )

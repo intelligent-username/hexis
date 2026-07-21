@@ -47,6 +47,20 @@ data class Note(
         )
     }
 
+    fun parseVault(): VaultNote {
+        val json = payloadJson
+        if (type != NoteType.VAULT || json.isNullOrBlank()) return VaultNote()
+        return runCatching { Json.decodeFromString<VaultNote>(json) }
+            .getOrDefault(VaultNote())
+    }
+
+    fun withVault(data: VaultNote): Note {
+        return copy(
+            type = NoteType.VAULT,
+            payloadJson = Json.encodeToString(data),
+        )
+    }
+
     fun getColorHex(): String? {
         val meta = metadata
         if (meta.isNullOrBlank()) return null
