@@ -54,6 +54,7 @@ import androidx.compose.material3.animateFloatingActionButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -85,8 +86,10 @@ import com.loc.hexis.core.note.NoteRepo
 import com.loc.hexis.core.note.NoteType
 import com.loc.hexis.core.note.VaultNote
 import com.loc.hexis.core.now
+import com.loc.hexis.core.interfaces.SettingsDatastore
 import com.loc.hexis.shared.ui.app.SystemBackHandler
 import com.loc.hexis.shared.ui.components.Empty
+import com.loc.hexis.shared.ui.note.ui.component.VaultLockDialog
 import com.loc.hexis.shared.ui.theme.flexFontEmphasis
 import com.loc.hexis.shared.ui.theme.flexFontRounded
 import hexis.shared.ui.generated.resources.Res
@@ -120,7 +123,11 @@ import org.koin.compose.koinInject
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
-fun NotesPage(onDismiss: () -> Unit, repo: NoteRepo = koinInject()) {
+fun NotesPage(
+    onDismiss: () -> Unit,
+    repo: NoteRepo = koinInject(),
+    settingsDatastore: SettingsDatastore = koinInject()
+) {
     val scope = rememberCoroutineScope()
     val haptic = LocalHapticFeedback.current
     val gridState = rememberLazyStaggeredGridState()
@@ -134,6 +141,10 @@ fun NotesPage(onDismiss: () -> Unit, repo: NoteRepo = koinInject()) {
     var isGridMode by remember { mutableStateOf(true) }
     var notesLoaded by remember { mutableStateOf(false) }
     var showArchived by remember { mutableStateOf(false) }
+
+    val isLockVaultNotesOn by settingsDatastore.getLockVaultNotesPref().collectAsState(false)
+    val vaultPasswordHash by settingsDatastore.getVaultPasswordHash().collectAsState(null)
+    var pendingVaultNote by remember { mutableStateOf<Note?>(null) }
 
     // Multi-select state
     var selectedNoteIds by remember { mutableStateOf(emptySet<Long>()) }
@@ -674,7 +685,9 @@ fun NotesPage(onDismiss: () -> Unit, repo: NoteRepo = koinInject()) {
                                         showArchived = showArchived,
                                         onClick = {
                                             if (isSelectionMode) toggleSelectNote(note.id)
-                                            else {
+                                            else if (isLockVaultNotesOn && !vaultPasswordHash.isNullOrBlank()) {
+                                                pendingVaultNote = note
+                                            } else {
                                                 editingNote = note
                                                 showEditor = true
                                             }
@@ -1419,6 +1432,20 @@ fun NotesPage(onDismiss: () -> Unit, repo: NoteRepo = koinInject()) {
                     editingNote = copy
                 }
             },
+        )
+    }
+
+    if (pendingVaultNote != null) {
+        VaultLockDialog(
+            storedPasswordHash = vaultPasswordHash,
+            onUnlocked = {
+                editingNote = pendingVaultNote
+                pendingVaultNote = null
+                showEditor = true
+            },
+            onDismissRequest = {
+                pendingVaultNote = null
+            }
         )
     }
 }

@@ -138,6 +138,10 @@ class SettingsViewModel(
                 is ChangeReorderTasks -> settingsDatastore.setTaskReorderPref(action.pref)
 
                 is ChangeReorderHabits -> settingsDatastore.setHabitReorderPref(action.pref)
+
+                is ChangeLockVaultNotes -> settingsDatastore.setLockVaultNotesPref(action.pref)
+
+                is SetVaultPasswordHash -> settingsDatastore.setVaultPasswordHash(action.hash)
             }
         }
 
@@ -245,6 +249,20 @@ class SettingsViewModel(
                     .getBiometricLockPref()
                     .onEach { isBiometricLockOn ->
                         _state.update { it.copy(isBiometricLockOn = isBiometricLockOn) }
+                    }
+                    .launchIn(this)
+
+                settingsDatastore
+                    .getLockVaultNotesPref()
+                    .onEach { isLockVaultNotesOn ->
+                        _state.update { it.copy(isLockVaultNotesOn = isLockVaultNotesOn) }
+                    }
+                    .launchIn(this)
+
+                settingsDatastore
+                    .getVaultPasswordHash()
+                    .onEach { hash ->
+                        _state.update { it.copy(vaultPasswordHash = hash) }
                     }
                     .launchIn(this)
             }

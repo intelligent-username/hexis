@@ -169,7 +169,7 @@ fun NoteEditorSheet(
 
         return when (selectedType) {
             NoteType.COUNTING_TABLE -> baseNote.withCountingTable(CountingTableData(rows = counterRows.toList()))
-            NoteType.JOURNAL -> baseNote.withJournal(JournalNoteData(entries = journalEntries.toList()))
+            NoteType.JOURNAL -> baseNote.copy(content = contentValue.text).withJournal(JournalNoteData(entries = journalEntries.toList()))
             NoteType.VAULT -> baseNote.withVault(vaultNote.value)
             else -> baseNote.copy(content = contentValue.text)
         }
@@ -562,33 +562,35 @@ fun NoteEditorSheet(
 
 
 
-            // Title Input
-            OutlinedTextField(
-                value = title,
-                onValueChange = { title = it },
-                placeholder = {
-                    Text(
-                        stringResource(Res.string.title),
-                        style = MaterialTheme.typography.titleMedium.copy(fontFamily = flexFontEmphasis()),
-                    )
-                },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words),
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                textStyle = MaterialTheme.typography.titleMedium.copy(fontFamily = flexFontEmphasis()),
-                shape = RoundedCornerShape(16.dp),
-                colors =
-                    OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = onSurfaceColor,
-                        unfocusedTextColor = onSurfaceColor,
-                        focusedPlaceholderColor = onSurfaceVariantColor,
-                        unfocusedPlaceholderColor = onSurfaceVariantColor,
-                        focusedBorderColor = if (hasEditorCustomColor) onSurfaceColor else MaterialTheme.colorScheme.primary,
-                        unfocusedBorderColor = if (hasEditorCustomColor) onSurfaceVariantColor.copy(alpha = 0.3f) else MaterialTheme.colorScheme.outlineVariant,
-                    ),
-            )
+            // Title Input (omitted for JOURNAL as JournalEditor renders its own centered header)
+            if (selectedType != NoteType.JOURNAL) {
+                OutlinedTextField(
+                    value = title,
+                    onValueChange = { title = it },
+                    placeholder = {
+                        Text(
+                            stringResource(Res.string.title),
+                            style = MaterialTheme.typography.titleMedium.copy(fontFamily = flexFontEmphasis()),
+                        )
+                    },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                    textStyle = MaterialTheme.typography.titleMedium.copy(fontFamily = flexFontEmphasis()),
+                    shape = RoundedCornerShape(16.dp),
+                    colors =
+                        OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = onSurfaceColor,
+                            unfocusedTextColor = onSurfaceColor,
+                            focusedPlaceholderColor = onSurfaceVariantColor,
+                            unfocusedPlaceholderColor = onSurfaceVariantColor,
+                            focusedBorderColor = if (hasEditorCustomColor) onSurfaceColor else MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = if (hasEditorCustomColor) onSurfaceVariantColor.copy(alpha = 0.3f) else MaterialTheme.colorScheme.outlineVariant,
+                        ),
+                )
 
-            Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(10.dp))
+            }
 
             if (selectedType == NoteType.MARKDOWN) {
                 // Main Markdown Field with Scroll Room & Tap-to-Focus Container
@@ -819,6 +821,10 @@ fun NoteEditorSheet(
                 Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
                     JournalEditor(
                         note = tempNote,
+                        title = title,
+                        onTitleChange = { title = it },
+                        description = contentValue.text,
+                        onDescriptionChange = { contentValue = TextFieldValue(it) },
                         onSave = { updatedNote ->
                             val updatedData = updatedNote.parseJournal()
                             journalEntries.clear()
@@ -826,7 +832,7 @@ fun NoteEditorSheet(
                         },
                         onSurfaceColor = onSurfaceColor,
                         onSurfaceVariantColor = onSurfaceVariantColor,
-                        hasEditorCustomColor = hasEditorCustomColor
+                        hasEditorCustomColor = hasEditorCustomColor,
                     )
                 }
             } else if (selectedType == NoteType.VAULT) {

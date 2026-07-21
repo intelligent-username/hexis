@@ -35,6 +35,8 @@ class SettingsDatastoreImpl(private val datastore: DataStore<Preferences>) : Set
         private val habitTimeDivisionMapKey = stringPreferencesKey("habit_time_division_map")
         private val pomodoroSettingsKey = stringPreferencesKey("pomodoro_settings")
         private val firstLaunchDateKey = stringPreferencesKey("first_launch_date")
+        private val lockVaultNotesKey = booleanPreferencesKey("lock_vault_notes")
+        private val vaultPasswordHashKey = stringPreferencesKey("vault_password_hash")
     }
 
     override fun getStartOfTheWeekPref(): Flow<DayOfWeek> =
@@ -163,5 +165,22 @@ class SettingsDatastoreImpl(private val datastore: DataStore<Preferences>) : Set
 
     override suspend fun setFirstLaunchDate(date: LocalDate) {
         datastore.edit { prefs -> prefs[firstLaunchDateKey] = date.toString() }
+    }
+
+    override fun getLockVaultNotesPref(): Flow<Boolean> =
+        datastore.data.map { prefs -> prefs[lockVaultNotesKey] == true }
+
+    override suspend fun setLockVaultNotesPref(pref: Boolean) {
+        datastore.edit { prefs -> prefs[lockVaultNotesKey] = pref }
+    }
+
+    override fun getVaultPasswordHash(): Flow<String?> =
+        datastore.data.map { prefs -> prefs[vaultPasswordHashKey] }
+
+    override suspend fun setVaultPasswordHash(hash: String?) {
+        datastore.edit { prefs ->
+            if (hash != null) prefs[vaultPasswordHashKey] = hash
+            else prefs.remove(vaultPasswordHashKey)
+        }
     }
 }

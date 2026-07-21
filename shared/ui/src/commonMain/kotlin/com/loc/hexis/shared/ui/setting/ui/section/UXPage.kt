@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
@@ -27,7 +28,18 @@ import com.loc.hexis.shared.ui.components.listItemColors
 import com.loc.hexis.shared.ui.components.middleItemShape
 import com.loc.hexis.shared.ui.setting.SettingsAction
 import com.loc.hexis.shared.ui.setting.SettingsState
+import androidx.compose.material3.Button
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import com.loc.hexis.core.hashPassword
+import com.loc.hexis.shared.ui.components.HexisDialog
 import com.loc.hexis.shared.ui.theme.flexFontEmphasis
+import com.loc.hexis.shared.ui.theme.flexFontRounded
 import hexis.shared.ui.generated.resources.*
 import kotlinx.datetime.DayOfWeek
 import org.jetbrains.compose.resources.stringResource
@@ -35,6 +47,9 @@ import org.jetbrains.compose.resources.vectorResource
 
 @Composable
 fun UXPage(state: SettingsState, onAction: (SettingsAction) -> Unit, onNavigateBack: () -> Unit) {
+    var showPasswordDialog by remember { mutableStateOf(false) }
+    var newPassword by remember { mutableStateOf("") }
+    var passwordError by remember { mutableStateOf<String?>(null) }
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     Column(
         modifier =
@@ -175,6 +190,33 @@ fun UXPage(state: SettingsState, onAction: (SettingsAction) -> Unit, onNavigateB
                     )
 
                     ListItem(
+                        headlineContent = { Text(text = "Lock Vault Notes") },
+                        supportingContent = {
+                            Text(text = "Require password to view and edit encrypted vault notes")
+                        },
+                        trailingContent = {
+                            ExpressiveSwitch(
+                                checked = state.isLockVaultNotesOn,
+                                onCheckedChange = { enable ->
+                                    if (enable) {
+                                        if (state.vaultPasswordHash == null) {
+                                            newPassword = ""
+                                            passwordError = null
+                                            showPasswordDialog = true
+                                        } else {
+                                            onAction(SettingsAction.ChangeLockVaultNotes(true))
+                                        }
+                                    } else {
+                                        onAction(SettingsAction.ChangeLockVaultNotes(false))
+                                    }
+                                },
+                            )
+                        },
+                        colors = listItemColors(),
+                        modifier = Modifier.clip(middleItemShape()),
+                    )
+
+                    ListItem(
                         headlineContent = {
                             Text(text = stringResource(Res.string.pause_notifications))
                         },
@@ -192,6 +234,62 @@ fun UXPage(state: SettingsState, onAction: (SettingsAction) -> Unit, onNavigateB
                         colors = listItemColors(),
                         modifier = Modifier.clip(endItemShape()),
                     )
+                }
+            }
+        }
+    }
+
+    if (showPasswordDialog) {
+        HexisDialog(
+            onDismissRequest = { showPasswordDialog = false }
+        ) {
+            Text(
+                text = "Set Vault Password",
+                style = MaterialTheme.typography.titleMedium.copy(fontFamily = flexFontEmphasis()),
+            )
+            Text(
+                text = "Enter a password to lock your vault notes. Password is saved locally as an encrypted hash.",
+                style = MaterialTheme.typography.bodySmall.copy(fontFamily = flexFontRounded()),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            OutlinedTextField(
+                value = newPassword,
+                onValueChange = {
+                    newPassword = it
+                    passwordError = null
+                },
+                placeholder = { Text("Vault Password") },
+                singleLine = true,
+                visualTransformation = PasswordVisualTransformation(),
+                isError = passwordError != null,
+            )
+            if (passwordError != null) {
+                Text(
+                    text = passwordError!!,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
+            androidx.compose.foundation.layout.Row(
+                horizontalArrangement = Arrangement.End,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                TextButton(onClick = { showPasswordDialog = false }) {
+                    Text("Cancel")
+                }
+                Button(
+                    onClick = {
+                        if (newPassword.trim().isEmpty()) {
+                            passwordError = "Password cannot be empty"
+                        } else {
+                            val hash = hashPassword(newPassword.trim())
+                            onAction(SettingsAction.SetVaultPasswordHash(hash))
+                            onAction(SettingsAction.ChangeLockVaultNotes(true))
+                            showPasswordDialog = false
+                        }
+                    }
+                ) {
+                    Text("Save")
                 }
             }
         }

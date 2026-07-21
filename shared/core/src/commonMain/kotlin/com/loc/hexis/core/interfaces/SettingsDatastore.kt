@@ -65,4 +65,12 @@ interface SettingsDatastore {
     fun getFirstLaunchDate(): Flow<LocalDate?>
 
     suspend fun setFirstLaunchDate(date: LocalDate)
+
+    fun getLockVaultNotesPref(): Flow<Boolean>
+
+    suspend fun setLockVaultNotesPref(pref: Boolean)
+
+    fun getVaultPasswordHash(): Flow<String?>
+
+    suspend fun setVaultPasswordHash(hash: String?)
 }

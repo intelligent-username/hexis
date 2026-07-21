@@ -26,6 +26,8 @@ data class SettingsState(
     val startingPage: Sections = Sections.Tasks,
     val isBiometricLockOn: Boolean? = null,
     val isBiometricLockAvailable: Boolean = false,
+    val isLockVaultNotesOn: Boolean = false,
+    val vaultPasswordHash: String? = null,
 )
 
 @Stable
