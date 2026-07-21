@@ -12,4 +12,5 @@ enum class NoteType {
     VAULT,
     COUNTDOWN,
     COMPARISON,
+    JOURNAL,
 }

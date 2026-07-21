@@ -22,6 +22,13 @@ fun FloatingLabelTextField(
     value: String,
     onValueChange: (String) -> Unit,
     labelText: String,
+    colors: androidx.compose.material3.TextFieldColors =
+        OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = MaterialTheme.colorScheme.primary,
+            unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+            focusedLabelColor = MaterialTheme.colorScheme.primary,
+            unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        ),
     modifier: Modifier = Modifier,
     placeholderText: String? = null,
     singleLine: Boolean = true,
@@ -44,13 +51,7 @@ fun FloatingLabelTextField(
         leadingIcon = leadingIcon,
         isError = isError,
         visualTransformation = visualTransformation,
-        colors =
-            OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
-                focusedLabelColor = MaterialTheme.colorScheme.primary,
-                unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-            ),
+        colors = colors,
         modifier = modifier,
     )
 }

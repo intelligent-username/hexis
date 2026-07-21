@@ -1,6 +1,7 @@
 package com.loc.hexis.shared.ui.note.ui
 
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -23,6 +24,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -32,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.loc.hexis.core.note.CounterRow
 import com.loc.hexis.core.note.Note
+import com.loc.hexis.shared.ui.note.getNoteColor
 import com.loc.hexis.shared.ui.theme.flexFontRounded
 import hexis.shared.ui.generated.resources.Res
 import hexis.shared.ui.generated.resources.add
@@ -50,6 +54,39 @@ fun CountingTableCard(
     modifier: Modifier = Modifier,
 ) {
     val tableData = remember(note.payloadJson) { note.parseCountingTable() }
+    val isDark = isSystemInDarkTheme()
+    val customColor = getNoteColor(note.getColorHex(), isDark)
+    val hasCustomColor = customColor != Color.Unspecified
+
+    val onSurfaceColor = if (hasCustomColor) {
+        if (customColor.luminance() < 0.5f) Color.White else Color.Black
+    } else {
+        MaterialTheme.colorScheme.onSurface
+    }
+
+    val onSurfaceVariantColor = if (hasCustomColor) {
+        if (customColor.luminance() < 0.5f) Color.White.copy(alpha = 0.7f) else Color.Black.copy(alpha = 0.7f)
+    } else {
+        MaterialTheme.colorScheme.onSurfaceVariant
+    }
+
+    val primaryColor = if (hasCustomColor) {
+        onSurfaceColor
+    } else {
+        MaterialTheme.colorScheme.primary
+    }
+
+    val dividerColor = if (hasCustomColor) {
+        onSurfaceColor.copy(alpha = 0.15f)
+    } else {
+        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
+    }
+
+    val pillColor = if (hasCustomColor) {
+        onSurfaceColor.copy(alpha = 0.15f)
+    } else {
+        MaterialTheme.colorScheme.surfaceContainerHighest
+    }
 
     BaseNoteCard(
         note = note,
@@ -65,14 +102,14 @@ fun CountingTableCard(
             Text(
                 text = "No counters added yet",
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = onSurfaceVariantColor,
             )
         } else {
             tableData.rows.take(5).forEachIndexed { index, row ->
                 if (index > 0) {
                     HorizontalDivider(
                         modifier = Modifier.padding(vertical = 5.dp),
-                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
+                        color = dividerColor,
                     )
                 }
 
@@ -85,7 +122,7 @@ fun CountingTableCard(
                     Text(
                         text = row.label.ifBlank { "Item ${index + 1}" },
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = onSurfaceVariantColor,
                         modifier = Modifier.weight(1f, fill = false).padding(end = 4.dp),
                         maxLines = 1,
                         overflow = TextOverflow.Clip,
@@ -95,6 +132,8 @@ fun CountingTableCard(
                     ScrollAndTypeCounter(
                         row = row,
                         onValueChange = { newValue -> onValueChange(row.id, newValue) },
+                        contentColor = primaryColor,
+                        pillColor = pillColor,
                         modifier = Modifier.padding(end = 2.dp),
                     )
                 }
@@ -107,6 +146,8 @@ fun CountingTableCard(
 fun ScrollAndTypeCounter(
     row: CounterRow,
     onValueChange: (Double) -> Unit,
+    contentColor: Color = MaterialTheme.colorScheme.primary,
+    pillColor: Color = MaterialTheme.colorScheme.surfaceContainerHighest,
     modifier: Modifier = Modifier,
 ) {
     val haptic = LocalHapticFeedback.current
@@ -133,7 +174,7 @@ fun ScrollAndTypeCounter(
                         fontFamily = flexFontRounded(),
                         fontSize = 12.sp,
                     ),
-                color = MaterialTheme.colorScheme.primary,
+                color = contentColor,
             )
         }
 
@@ -142,7 +183,7 @@ fun ScrollAndTypeCounter(
         // Center Value Pill
         Surface(
             shape = RoundedCornerShape(8.dp),
-            color = MaterialTheme.colorScheme.surfaceContainerHighest,
+            color = pillColor,
             modifier =
                 Modifier.pointerInput(row.id, row.value) {
                     detectVerticalDragGestures(
@@ -178,7 +219,7 @@ fun ScrollAndTypeCounter(
                             fontFamily = flexFontRounded(),
                             fontSize = 12.sp,
                         ),
-                    color = MaterialTheme.colorScheme.primary,
+                    color = contentColor,
                     textAlign = TextAlign.End,
                 )
             }
@@ -197,7 +238,7 @@ fun ScrollAndTypeCounter(
             Icon(
                 imageVector = vectorResource(Res.drawable.add),
                 contentDescription = "Increment",
-                tint = MaterialTheme.colorScheme.primary,
+                tint = contentColor,
                 modifier = Modifier.size(10.dp),
             )
         }

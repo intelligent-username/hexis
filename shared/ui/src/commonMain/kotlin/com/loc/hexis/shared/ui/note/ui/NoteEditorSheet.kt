@@ -70,13 +70,23 @@ import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.withTimeout
 import com.loc.hexis.core.note.CounterRow
 import com.loc.hexis.core.note.CountingTableData
+import com.loc.hexis.core.note.JournalEntry
+import com.loc.hexis.core.note.JournalNoteData
 import com.loc.hexis.core.note.Note
 import com.loc.hexis.core.note.NoteType
 import com.loc.hexis.core.now
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
+import com.loc.hexis.shared.ui.components.ColorPickerDialog
 import com.loc.hexis.shared.ui.app.SystemBackHandler
 import com.loc.hexis.shared.ui.components.FloatingLabelTextField
 import com.loc.hexis.shared.ui.note.getNextListPrefix
 import com.loc.hexis.shared.ui.note.removePrefix
+import com.loc.hexis.shared.ui.note.getNoteColor
+import com.loc.hexis.shared.ui.note.noteColorPresets
+import com.loc.hexis.shared.ui.note.parseColor
+import com.loc.hexis.shared.ui.note.toHex
 import com.loc.hexis.shared.ui.theme.flexFontEmphasis
 import com.loc.hexis.shared.ui.theme.flexFontRounded
 import hexis.shared.ui.generated.resources.Res
@@ -115,6 +125,14 @@ fun NoteEditorSheet(
         mutableStateListOf<CounterRow>().apply { addAll(initialTableData.rows) }
     }
 
+    val initialJournalData = remember(initialNoteId) { note?.parseJournal() ?: JournalNoteData() }
+    val journalEntries = remember(initialNoteId) {
+        mutableStateListOf<JournalEntry>().apply { addAll(initialJournalData.entries) }
+    }
+
+    var selectedColorHex by remember(initialNoteId) { mutableStateOf(note?.getColorHex()) }
+    var colorPickerDialog by remember { mutableStateOf(false) }
+
     var isSaved by remember { mutableStateOf(true) }
     var currentNoteId by remember(initialNoteId) { mutableStateOf(initialNoteId) }
     val contentFocusRequester = remember { FocusRequester() }
@@ -132,11 +150,12 @@ fun NoteEditorSheet(
                         updatedAt = nowTime,
                     ))
                 .copy(id = currentNoteId, title = title, type = selectedType, updatedAt = nowTime)
+                .withColorHex(selectedColorHex)
 
-        return if (selectedType == NoteType.COUNTING_TABLE) {
-            baseNote.withCountingTable(CountingTableData(rows = counterRows.toList()))
-        } else {
-            baseNote.copy(content = contentValue.text)
+        return when (selectedType) {
+            NoteType.COUNTING_TABLE -> baseNote.withCountingTable(CountingTableData(rows = counterRows.toList()))
+            NoteType.JOURNAL -> baseNote.withJournal(JournalNoteData(entries = journalEntries.toList()))
+            else -> baseNote.copy(content = contentValue.text)
         }
     }
 
@@ -146,7 +165,7 @@ fun NoteEditorSheet(
     }
 
     // Auto-save debounce (1500ms)
-    LaunchedEffect(title, selectedType, contentValue.text, counterRows.toList()) {
+    LaunchedEffect(title, selectedType, contentValue.text, counterRows.toList(), journalEntries.toList(), selectedColorHex) {
         isSaved = false
         delay(1500)
         val noteToSave = buildCurrentNote()
@@ -190,13 +209,43 @@ fun NoteEditorSheet(
     }
 
     val focusManager = LocalFocusManager.current
+    val isDark = isSystemInDarkTheme()
+    val editorCustomColor = getNoteColor(selectedColorHex, isDark)
+    val hasEditorCustomColor = editorCustomColor != Color.Unspecified
+
+    val surfaceColor = if (hasEditorCustomColor) {
+        editorCustomColor
+    } else {
+        MaterialTheme.colorScheme.surface
+    }
+
+    val onSurfaceColor = if (hasEditorCustomColor) {
+        if (editorCustomColor.luminance() < 0.5f) Color.White else Color.Black
+    } else {
+        MaterialTheme.colorScheme.onSurface
+    }
+
+    val onSurfaceVariantColor = if (hasEditorCustomColor) {
+        if (editorCustomColor.luminance() < 0.5f) Color.White.copy(alpha = 0.7f) else Color.Black.copy(alpha = 0.7f)
+    } else {
+        MaterialTheme.colorScheme.onSurfaceVariant
+    }
+
+    if (colorPickerDialog) {
+        val initialColor = selectedColorHex?.let { getNoteColor(it, isDark) } ?: MaterialTheme.colorScheme.primary
+        ColorPickerDialog(
+            initialColor = initialColor,
+            onSelect = { color -> selectedColorHex = color.toHex() },
+            onDismiss = { colorPickerDialog = false }
+        )
+    }
 
     Surface(
         modifier =
             Modifier.fillMaxSize()
                 .statusBarsPadding()
                 .imePadding(),
-        color = MaterialTheme.colorScheme.surface,
+        color = surfaceColor,
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
             // Header Bar
@@ -213,7 +262,7 @@ fun NoteEditorSheet(
                     Icon(
                         imageVector = vectorResource(Res.drawable.close),
                         contentDescription = "Close",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        tint = onSurfaceVariantColor,
                     )
                 }
 
@@ -223,18 +272,25 @@ fun NoteEditorSheet(
                             if (note == null) stringResource(Res.string.new_note)
                             else stringResource(Res.string.edit_note),
                         style = MaterialTheme.typography.titleLarge.copy(fontFamily = flexFontEmphasis()),
+                        color = onSurfaceColor,
                     )
                     if (selectedType == NoteType.MARKDOWN) {
                         Text(
                             text = "$wordCount words • $charCount chars",
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = onSurfaceVariantColor,
+                        )
+                    } else if (selectedType == NoteType.JOURNAL) {
+                        Text(
+                            text = "${journalEntries.size} journal entries",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = onSurfaceVariantColor,
                         )
                     } else {
                         Text(
                             text = "${counterRows.size} counter items",
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = onSurfaceVariantColor,
                         )
                     }
                 }
@@ -254,7 +310,7 @@ fun NoteEditorSheet(
                                     if (isArchived) Res.drawable.unarchive else Res.drawable.archive
                                 ),
                             contentDescription = if (isArchived) "Unarchive Note" else "Archive Note",
-                            tint = MaterialTheme.colorScheme.error,
+                            tint = if (hasEditorCustomColor) onSurfaceColor else MaterialTheme.colorScheme.error,
                         )
                     }
                 }
@@ -266,16 +322,31 @@ fun NoteEditorSheet(
                     },
                     shapes = ButtonShapes(shape = CircleShape, pressedShape = CircleShape),
                     colors =
-                        if (isSaved)
-                            ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                                contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        else
-                            ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primary,
-                                contentColor = MaterialTheme.colorScheme.onPrimary,
-                            ),
+                        if (isSaved) {
+                            if (hasEditorCustomColor) {
+                                ButtonDefaults.buttonColors(
+                                    containerColor = onSurfaceColor.copy(alpha = 0.15f),
+                                    contentColor = onSurfaceColor,
+                                )
+                            } else {
+                                ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        } else {
+                            if (hasEditorCustomColor) {
+                                ButtonDefaults.buttonColors(
+                                    containerColor = onSurfaceColor,
+                                    contentColor = if (editorCustomColor.luminance() < 0.5f) Color.Black else Color.White,
+                                )
+                            } else {
+                                ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.primary,
+                                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                                )
+                            }
+                        },
                     contentPadding = PaddingValues(horizontal = 18.dp, vertical = 6.dp),
                 ) {
                     Text(
@@ -304,12 +375,102 @@ fun NoteEditorSheet(
                 shape = RoundedCornerShape(16.dp),
                 colors =
                     OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+                        focusedTextColor = onSurfaceColor,
+                        unfocusedTextColor = onSurfaceColor,
+                        focusedPlaceholderColor = onSurfaceVariantColor,
+                        unfocusedPlaceholderColor = onSurfaceVariantColor,
+                        focusedBorderColor = if (hasEditorCustomColor) onSurfaceColor else MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = if (hasEditorCustomColor) onSurfaceVariantColor.copy(alpha = 0.3f) else MaterialTheme.colorScheme.outlineVariant,
                     ),
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Horizontal Scrollable Color Selector Row
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "Color:",
+                    style = MaterialTheme.typography.labelMedium.copy(fontFamily = flexFontRounded()),
+                    color = onSurfaceVariantColor,
+                )
+
+                Row(
+                    modifier = Modifier.weight(1f).horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    // Default circle
+                    val isDefaultSelected = selectedColorHex == null
+                    Surface(
+                        onClick = { selectedColorHex = null },
+                        shape = CircleShape,
+                        modifier = Modifier.size(28.dp),
+                        color = if (isDark) MaterialTheme.colorScheme.surfaceContainerHigh else MaterialTheme.colorScheme.surfaceVariant,
+                        border = androidx.compose.foundation.BorderStroke(
+                            width = if (isDefaultSelected) 2.dp else 1.dp,
+                            color = if (isDefaultSelected) onSurfaceColor else onSurfaceVariantColor.copy(alpha = 0.4f)
+                        )
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            if (isDefaultSelected) {
+                                Icon(
+                                    imageVector = vectorResource(Res.drawable.close),
+                                    contentDescription = "Selected",
+                                    tint = onSurfaceColor,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                            }
+                        }
+                    }
+
+                    // Preset circles
+                    noteColorPresets.forEach { preset ->
+                        val presetId = "preset:${preset.id}"
+                        val isPresetSelected = selectedColorHex == presetId
+                        val presetColor = parseColor(if (isDark) preset.darkHex else preset.lightHex)
+
+                        Surface(
+                            onClick = { selectedColorHex = presetId },
+                            shape = CircleShape,
+                            modifier = Modifier.size(28.dp),
+                            color = presetColor,
+                            border = androidx.compose.foundation.BorderStroke(
+                                width = if (isPresetSelected) 2.dp else 1.dp,
+                                color = if (isPresetSelected) onSurfaceColor else onSurfaceVariantColor.copy(alpha = 0.4f)
+                            )
+                        ) {}
+                    }
+
+                    // Custom color picker circle
+                    val isCustom = selectedColorHex != null && !selectedColorHex!!.startsWith("preset:")
+                    val customColorVal = if (isCustom) parseColor(selectedColorHex!!) else Color.Transparent
+                    Surface(
+                        onClick = { colorPickerDialog = true },
+                        shape = CircleShape,
+                        modifier = Modifier.size(28.dp),
+                        color = if (isCustom) customColorVal else Color.Transparent,
+                        border = androidx.compose.foundation.BorderStroke(
+                            width = if (isCustom) 2.dp else 1.dp,
+                            color = if (isCustom) onSurfaceColor else onSurfaceVariantColor.copy(alpha = 0.4f)
+                        )
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = vectorResource(Res.drawable.add),
+                                contentDescription = "Custom Color",
+                                tint = if (isCustom) onSurfaceColor else onSurfaceVariantColor,
+                                modifier = Modifier.size(14.dp)
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
 
             if (selectedType == NoteType.MARKDOWN) {
                 // Main Markdown Field with Scroll Room & Tap-to-Focus Container
@@ -348,9 +509,9 @@ fun NoteEditorSheet(
                         keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                         visualTransformation =
                             NoteVisualTransformation(
-                                primaryColor = MaterialTheme.colorScheme.primary,
-                                mutedColor = MaterialTheme.colorScheme.outline,
-                                ruleColor = MaterialTheme.colorScheme.primaryContainer,
+                                primaryColor = if (hasEditorCustomColor) onSurfaceColor else MaterialTheme.colorScheme.primary,
+                                mutedColor = onSurfaceVariantColor,
+                                ruleColor = if (hasEditorCustomColor) onSurfaceColor.copy(alpha = 0.3f) else MaterialTheme.colorScheme.primaryContainer,
                                 collapsedLineIndices = collapsedHeaderLines,
                             ),
                         placeholder = {
@@ -390,7 +551,7 @@ fun NoteEditorSheet(
                                         val cursor = contentValue.selection.start
                                         val currentLine = getCurrentLine(text, cursor)
                                         val lineStart = text.substring(0, cursor.coerceAtMost(text.length)).lastIndexOf('\n') + 1
-
+ 
                                         // Only attempt list auto-continue if cursor is NOT at start of line
                                         if (cursor > lineStart) {
                                             val prefix = getNextListPrefix(currentLine)
@@ -415,11 +576,15 @@ fun NoteEditorSheet(
                         shape = RoundedCornerShape(20.dp),
                         colors =
                             OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+                                focusedTextColor = onSurfaceColor,
+                                unfocusedTextColor = onSurfaceColor,
+                                focusedPlaceholderColor = onSurfaceVariantColor,
+                                unfocusedPlaceholderColor = onSurfaceVariantColor,
+                                focusedBorderColor = if (hasEditorCustomColor) onSurfaceColor else MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = if (hasEditorCustomColor) onSurfaceVariantColor.copy(alpha = 0.3f) else MaterialTheme.colorScheme.outlineVariant,
                             ),
                     )
-
+ 
                     // Generous bottom scrolling space so text is easily visible above the keyboard
                     Spacer(modifier = Modifier.height(180.dp))
                 }
@@ -523,6 +688,29 @@ fun NoteEditorSheet(
                         }
                     }
                 }
+            } else if (selectedType == NoteType.JOURNAL) {
+                val tempNote = remember(journalEntries.toList(), title, selectedColorHex) {
+                    Note(
+                        id = currentNoteId,
+                        title = title,
+                        createdAt = LocalDateTime.now(),
+                        updatedAt = LocalDateTime.now(),
+                        type = NoteType.JOURNAL
+                    ).withJournal(JournalNoteData(entries = journalEntries.toList())).withColorHex(selectedColorHex)
+                }
+                Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
+                    JournalEditor(
+                        note = tempNote,
+                        onSave = { updatedNote ->
+                            val updatedData = updatedNote.parseJournal()
+                            journalEntries.clear()
+                            journalEntries.addAll(updatedData.entries)
+                        },
+                        onSurfaceColor = onSurfaceColor,
+                        onSurfaceVariantColor = onSurfaceVariantColor,
+                        hasEditorCustomColor = hasEditorCustomColor
+                    )
+                }
             } else {
                 // Counting Table Editor Rows with Extra Bottom Scroll Room
                 Column(modifier = Modifier.fillMaxWidth().weight(1f).padding(horizontal = 16.dp)) {
@@ -534,11 +722,20 @@ fun NoteEditorSheet(
                         Text(
                             text = "Counters",
                             style = MaterialTheme.typography.titleMedium.copy(fontFamily = flexFontEmphasis()),
+                            color = onSurfaceColor,
                         )
                         FilledTonalButton(
                             onClick = {
                                 val newId = "row_${Random.nextLong(100_000, 999_999)}_${counterRows.size}"
                                 counterRows.add(CounterRow(id = newId, label = ""))
+                            },
+                            colors = if (hasEditorCustomColor) {
+                                ButtonDefaults.filledTonalButtonColors(
+                                    containerColor = onSurfaceColor.copy(alpha = 0.15f),
+                                    contentColor = onSurfaceColor,
+                                )
+                            } else {
+                                ButtonDefaults.filledTonalButtonColors()
                             },
                             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
                         ) {
@@ -559,7 +756,11 @@ fun NoteEditorSheet(
                         items(counterRows, key = { it.id }) { row ->
                             Surface(
                                 shape = RoundedCornerShape(14.dp),
-                                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                color = if (hasEditorCustomColor) {
+                                    onSurfaceColor.copy(alpha = 0.08f)
+                                } else {
+                                    MaterialTheme.colorScheme.surfaceContainerHigh
+                                },
                                 modifier = Modifier.fillMaxWidth(),
                             ) {
                                 Column(modifier = Modifier.padding(12.dp)) {
@@ -579,6 +780,14 @@ fun NoteEditorSheet(
                                             placeholderText = "e.g. Water Glass",
                                             singleLine = true,
                                             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words),
+                                            colors = OutlinedTextFieldDefaults.colors(
+                                                focusedTextColor = onSurfaceColor,
+                                                unfocusedTextColor = onSurfaceColor,
+                                                focusedLabelColor = if (hasEditorCustomColor) onSurfaceColor else MaterialTheme.colorScheme.primary,
+                                                unfocusedLabelColor = onSurfaceVariantColor,
+                                                focusedBorderColor = if (hasEditorCustomColor) onSurfaceColor else MaterialTheme.colorScheme.primary,
+                                                unfocusedBorderColor = if (hasEditorCustomColor) onSurfaceVariantColor.copy(alpha = 0.3f) else MaterialTheme.colorScheme.outlineVariant,
+                                            ),
                                             modifier = Modifier.weight(1f),
                                         )
 
@@ -589,7 +798,7 @@ fun NoteEditorSheet(
                                             Icon(
                                                 imageVector = vectorResource(Res.drawable.close),
                                                 contentDescription = "Delete Row",
-                                                tint = MaterialTheme.colorScheme.error,
+                                                tint = if (hasEditorCustomColor) onSurfaceColor else MaterialTheme.colorScheme.error,
                                             )
                                         }
                                     }
@@ -616,6 +825,14 @@ fun NoteEditorSheet(
                                                 labelText = "Value",
                                                 singleLine = true,
                                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                                colors = OutlinedTextFieldDefaults.colors(
+                                                    focusedTextColor = onSurfaceColor,
+                                                    unfocusedTextColor = onSurfaceColor,
+                                                    focusedLabelColor = if (hasEditorCustomColor) onSurfaceColor else MaterialTheme.colorScheme.primary,
+                                                    unfocusedLabelColor = onSurfaceVariantColor,
+                                                    focusedBorderColor = if (hasEditorCustomColor) onSurfaceColor else MaterialTheme.colorScheme.primary,
+                                                    unfocusedBorderColor = if (hasEditorCustomColor) onSurfaceVariantColor.copy(alpha = 0.3f) else MaterialTheme.colorScheme.outlineVariant,
+                                                ),
                                                 modifier = Modifier.weight(1f),
                                             )
 
@@ -630,6 +847,14 @@ fun NoteEditorSheet(
                                                 labelText = "Unit",
                                                 singleLine = true,
                                                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words),
+                                                colors = OutlinedTextFieldDefaults.colors(
+                                                    focusedTextColor = onSurfaceColor,
+                                                    unfocusedTextColor = onSurfaceColor,
+                                                    focusedLabelColor = if (hasEditorCustomColor) onSurfaceColor else MaterialTheme.colorScheme.primary,
+                                                    unfocusedLabelColor = onSurfaceVariantColor,
+                                                    focusedBorderColor = if (hasEditorCustomColor) onSurfaceColor else MaterialTheme.colorScheme.primary,
+                                                    unfocusedBorderColor = if (hasEditorCustomColor) onSurfaceVariantColor.copy(alpha = 0.3f) else MaterialTheme.colorScheme.outlineVariant,
+                                                ),
                                                 modifier = Modifier.weight(1f),
                                             )
                                         }

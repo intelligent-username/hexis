@@ -32,4 +32,54 @@ data class Note(
             payloadJson = Json.encodeToString(data),
         )
     }
+
+    fun parseJournal(): JournalNoteData {
+        val json = payloadJson
+        if (type != NoteType.JOURNAL || json.isNullOrBlank()) return JournalNoteData()
+        return runCatching { Json.decodeFromString<JournalNoteData>(json) }
+            .getOrDefault(JournalNoteData())
+    }
+
+    fun withJournal(data: JournalNoteData): Note {
+        return copy(
+            type = NoteType.JOURNAL,
+            payloadJson = Json.encodeToString(data),
+        )
+    }
+
+    fun getColorHex(): String? {
+        val meta = metadata
+        if (meta.isNullOrBlank()) return null
+        return runCatching {
+            val jsonObj = kotlinx.serialization.json.Json.parseToJsonElement(meta).let {
+                if (it is kotlinx.serialization.json.JsonObject) it else null
+            }
+            jsonObj?.get("colorHex")?.let {
+                if (it is kotlinx.serialization.json.JsonPrimitive) it.content else null
+            }
+        }.getOrNull() ?: if (meta.startsWith("#") || meta.startsWith("preset:")) meta else null
+    }
+
+    fun withColorHex(colorHex: String?): Note {
+        val meta = metadata
+        val currentObj = runCatching {
+            if (!meta.isNullOrBlank()) {
+                kotlinx.serialization.json.Json.parseToJsonElement(meta).let {
+                    if (it is kotlinx.serialization.json.JsonObject) it else null
+                }
+            } else null
+        }.getOrNull()
+
+        val newObj = kotlinx.serialization.json.buildJsonObject {
+            currentObj?.forEach { (key, value) ->
+                if (key != "colorHex") {
+                    put(key, value)
+                }
+            }
+            if (colorHex != null) {
+                put("colorHex", kotlinx.serialization.json.JsonPrimitive(colorHex))
+            }
+        }
+        return copy(metadata = newObj.toString())
+    }
 }

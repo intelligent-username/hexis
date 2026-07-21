@@ -68,6 +68,9 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
@@ -75,6 +78,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import com.loc.hexis.core.note.CounterRow
 import com.loc.hexis.core.note.CountingTableData
+import com.loc.hexis.core.note.JournalEntry
+import com.loc.hexis.core.note.JournalNoteData
 import com.loc.hexis.core.note.Note
 import com.loc.hexis.core.note.NoteRepo
 import com.loc.hexis.core.note.NoteType
@@ -86,6 +91,7 @@ import com.loc.hexis.shared.ui.theme.flexFontRounded
 import hexis.shared.ui.generated.resources.Res
 import hexis.shared.ui.generated.resources.add
 import hexis.shared.ui.generated.resources.archive
+import hexis.shared.ui.generated.resources.calendar_month
 import hexis.shared.ui.generated.resources.archived_notes
 import hexis.shared.ui.generated.resources.check
 import hexis.shared.ui.generated.resources.close
@@ -181,10 +187,16 @@ fun NotesPage(onDismiss: () -> Unit, repo: NoteRepo = koinInject()) {
     val filteredNotes =
         if (searchQuery.isBlank()) notes
         else
-            notes.filter {
-                it.title.contains(searchQuery, ignoreCase = true) ||
-                    it.content.contains(searchQuery, ignoreCase = true)
+            notes.filter { note ->
+                note.title.contains(searchQuery, ignoreCase = true) ||
+                    (note.type == NoteType.MARKDOWN && note.content.contains(searchQuery, ignoreCase = true)) ||
+                    (note.type == NoteType.COUNTING_TABLE && note.parseCountingTable().rows.any { row ->
+                        row.label.contains(searchQuery, ignoreCase = true) ||
+                            (row.unit?.contains(searchQuery, ignoreCase = true) == true)
+                    })
             }
+
+
 
     fun toggleSelectNote(id: Long) {
         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -532,113 +544,173 @@ fun NotesPage(onDismiss: () -> Unit, repo: NoteRepo = koinInject()) {
                                         }
                                     }
                         ) {
-                            if (note.type == NoteType.COUNTING_TABLE) {
-                                CountingTableCard(
-                                    note = note,
-                                    showArchived = showArchived,
-                                    onClick = {
-                                        if (isSelectionMode) toggleSelectNote(note.id)
-                                        else {
-                                            editingNote = note
-                                            showEditor = true
+                            SwipeToArchiveWrapper(
+                                enabled = !showArchived && !isSelectionMode,
+                                onArchive = {
+                                    scope.launch {
+                                        repo.upsertNote(note.copy(archived = true))
+                                        showUndo(msgNoteArchived) {
+                                            scope.launch { repo.upsertNote(note.copy(archived = false)) }
                                         }
-                                    },
-                                    onValueChange = { rowId, newValue ->
-                                        val data = note.parseCountingTable()
-                                        val updatedRows =
-                                            data.rows.map { r ->
-                                                if (r.id == rowId) r.copy(value = newValue) else r
+                                    }
+                                }
+                            ) {
+                                if (note.type == NoteType.COUNTING_TABLE) {
+                                    CountingTableCard(
+                                        note = note,
+                                        showArchived = showArchived,
+                                        onClick = {
+                                            if (isSelectionMode) toggleSelectNote(note.id)
+                                            else {
+                                                editingNote = note
+                                                showEditor = true
                                             }
-                                        val updatedNote = note.withCountingTable(CountingTableData(updatedRows))
-                                        scope.launch { repo.upsertNote(updatedNote) }
-                                    },
-                                    onTogglePin = {
-                                        if (!isSelectionMode) {
-                                            scope.launch { repo.upsertNote(note.copy(pinned = !note.pinned)) }
-                                        } else {
-                                            toggleSelectNote(note.id)
-                                        }
-                                    },
-                                    onArchive = {
-                                        if (!isSelectionMode) {
-                                            scope.launch {
-                                                repo.upsertNote(note.copy(archived = true))
-                                                showUndo(msgNoteArchived) {
-                                                    scope.launch { repo.upsertNote(note.copy(archived = false)) }
+                                        },
+                                        onValueChange = { rowId, newValue ->
+                                            val data = note.parseCountingTable()
+                                            val updatedRows =
+                                                data.rows.map { r ->
+                                                    if (r.id == rowId) r.copy(value = newValue) else r
                                                 }
+                                            val updatedNote = note.withCountingTable(CountingTableData(updatedRows))
+                                            scope.launch { repo.upsertNote(updatedNote) }
+                                        },
+                                        onTogglePin = {
+                                            if (!isSelectionMode) {
+                                                scope.launch { repo.upsertNote(note.copy(pinned = !note.pinned)) }
+                                            } else {
+                                                toggleSelectNote(note.id)
                                             }
-                                        } else {
-                                            toggleSelectNote(note.id)
-                                        }
-                                    },
-                                    onUnarchive = {
-                                        scope.launch {
-                                            repo.upsertNote(note.copy(archived = false))
-                                            showUndo(msgNoteUnarchived) {
-                                                scope.launch { repo.upsertNote(note.copy(archived = true)) }
-                                            }
-                                        }
-                                    },
-                                    onDelete = {
-                                        scope.launch {
-                                            val deleted = note
-                                            repo.deleteNote(note.id)
-                                            showUndo(msgNoteDeleted) {
-                                                scope.launch { repo.upsertNote(deleted) }
-                                            }
-                                        }
-                                    },
-                                )
-                            } else {
-                                NoteCard(
-                                    note = note,
-                                    showArchived = showArchived,
-                                    onClick = {
-                                        if (isSelectionMode) toggleSelectNote(note.id)
-                                        else {
-                                            editingNote = note
-                                            showEditor = true
-                                        }
-                                    },
-                                    onTogglePin = {
-                                        if (!isSelectionMode) {
-                                            scope.launch { repo.upsertNote(note.copy(pinned = !note.pinned)) }
-                                        } else {
-                                            toggleSelectNote(note.id)
-                                        }
-                                    },
-                                    onArchive = {
-                                        if (!isSelectionMode) {
-                                            scope.launch {
-                                                repo.upsertNote(note.copy(archived = true))
-                                                showUndo(msgNoteArchived) {
-                                                    scope.launch {
-                                                        repo.upsertNote(note.copy(archived = false))
+                                        },
+                                        onArchive = {
+                                            if (!isSelectionMode) {
+                                                scope.launch {
+                                                    repo.upsertNote(note.copy(archived = true))
+                                                    showUndo(msgNoteArchived) {
+                                                        scope.launch { repo.upsertNote(note.copy(archived = false)) }
                                                     }
                                                 }
+                                            } else {
+                                                toggleSelectNote(note.id)
                                             }
-                                        } else {
-                                            toggleSelectNote(note.id)
-                                        }
-                                    },
-                                    onUnarchive = {
-                                        scope.launch {
-                                            repo.upsertNote(note.copy(archived = false))
-                                            showUndo(msgNoteUnarchived) {
-                                                scope.launch { repo.upsertNote(note.copy(archived = true)) }
+                                        },
+                                        onUnarchive = {
+                                            scope.launch {
+                                                repo.upsertNote(note.copy(archived = false))
+                                                showUndo(msgNoteUnarchived) {
+                                                    scope.launch { repo.upsertNote(note.copy(archived = true)) }
+                                                }
                                             }
-                                        }
-                                    },
-                                    onDelete = {
-                                        scope.launch {
-                                            val deleted = note
-                                            repo.deleteNote(note.id)
-                                            showUndo(msgNoteDeleted) {
-                                                scope.launch { repo.upsertNote(deleted) }
+                                        },
+                                        onDelete = {
+                                            scope.launch {
+                                                val deleted = note
+                                                repo.deleteNote(note.id)
+                                                showUndo(msgNoteDeleted) {
+                                                    scope.launch { repo.upsertNote(deleted) }
+                                                }
                                             }
-                                        }
-                                    },
-                                )
+                                        },
+                                    )
+                                } else if (note.type == NoteType.JOURNAL) {
+                                    JournalCard(
+                                        note = note,
+                                        showArchived = showArchived,
+                                        onClick = {
+                                            if (isSelectionMode) toggleSelectNote(note.id)
+                                            else {
+                                                editingNote = note
+                                                showEditor = true
+                                            }
+                                        },
+                                        onTogglePin = {
+                                            if (!isSelectionMode) {
+                                                scope.launch { repo.upsertNote(note.copy(pinned = !note.pinned)) }
+                                            } else {
+                                                toggleSelectNote(note.id)
+                                            }
+                                        },
+                                        onArchive = {
+                                            if (!isSelectionMode) {
+                                                scope.launch {
+                                                    repo.upsertNote(note.copy(archived = true))
+                                                    showUndo(msgNoteArchived) {
+                                                        scope.launch { repo.upsertNote(note.copy(archived = false)) }
+                                                    }
+                                                }
+                                            } else {
+                                                toggleSelectNote(note.id)
+                                            }
+                                        },
+                                        onUnarchive = {
+                                            scope.launch {
+                                                repo.upsertNote(note.copy(archived = false))
+                                                showUndo(msgNoteUnarchived) {
+                                                    scope.launch { repo.upsertNote(note.copy(archived = true)) }
+                                                }
+                                            }
+                                        },
+                                        onDelete = {
+                                            scope.launch {
+                                                val deleted = note
+                                                repo.deleteNote(note.id)
+                                                showUndo(msgNoteDeleted) {
+                                                    scope.launch { repo.upsertNote(deleted) }
+                                                }
+                                            }
+                                        },
+                                    )
+                                } else {
+                                    NoteCard(
+                                        note = note,
+                                        showArchived = showArchived,
+                                        onClick = {
+                                            if (isSelectionMode) toggleSelectNote(note.id)
+                                            else {
+                                                editingNote = note
+                                                showEditor = true
+                                            }
+                                        },
+                                        onTogglePin = {
+                                            if (!isSelectionMode) {
+                                                scope.launch { repo.upsertNote(note.copy(pinned = !note.pinned)) }
+                                            } else {
+                                                toggleSelectNote(note.id)
+                                            }
+                                        },
+                                        onArchive = {
+                                            if (!isSelectionMode) {
+                                                scope.launch {
+                                                    repo.upsertNote(note.copy(archived = true))
+                                                    showUndo(msgNoteArchived) {
+                                                        scope.launch {
+                                                            repo.upsertNote(note.copy(archived = false))
+                                                        }
+                                                    }
+                                                }
+                                            } else {
+                                                toggleSelectNote(note.id)
+                                            }
+                                        },
+                                        onUnarchive = {
+                                            scope.launch {
+                                                repo.upsertNote(note.copy(archived = false))
+                                                showUndo(msgNoteUnarchived) {
+                                                    scope.launch { repo.upsertNote(note.copy(archived = true)) }
+                                                }
+                                            }
+                                        },
+                                        onDelete = {
+                                            scope.launch {
+                                                val deleted = note
+                                                repo.deleteNote(note.id)
+                                                showUndo(msgNoteDeleted) {
+                                                    scope.launch { repo.upsertNote(deleted) }
+                                                }
+                                            }
+                                        },
+                                    )
+                                }
                             }
 
                             // Selection Checkbox Overlay
@@ -772,97 +844,149 @@ fun NotesPage(onDismiss: () -> Unit, repo: NoteRepo = koinInject()) {
                                         }
                                     }
                         ) {
-                            if (note.type == NoteType.COUNTING_TABLE) {
-                                CountingTableCard(
-                                    note = note,
-                                    showArchived = showArchived,
-                                    onClick = {
-                                        if (isSelectionMode) toggleSelectNote(note.id)
-                                        else {
-                                            editingNote = note
-                                            showEditor = true
+                            SwipeToArchiveWrapper(
+                                enabled = !showArchived && !isSelectionMode,
+                                onArchive = {
+                                    scope.launch {
+                                        repo.upsertNote(note.copy(archived = true))
+                                        showUndo(msgNoteArchived) {
+                                            scope.launch { repo.upsertNote(note.copy(archived = false)) }
                                         }
-                                    },
-                                    onValueChange = { rowId, newValue ->
-                                        val data = note.parseCountingTable()
-                                        val updatedRows =
-                                            data.rows.map { r ->
-                                                if (r.id == rowId) r.copy(value = newValue) else r
+                                    }
+                                }
+                            ) {
+                                if (note.type == NoteType.COUNTING_TABLE) {
+                                    CountingTableCard(
+                                        note = note,
+                                        showArchived = showArchived,
+                                        onClick = {
+                                            if (isSelectionMode) toggleSelectNote(note.id)
+                                            else {
+                                                editingNote = note
+                                                showEditor = true
                                             }
-                                        val updatedNote = note.withCountingTable(CountingTableData(updatedRows))
-                                        scope.launch { repo.upsertNote(updatedNote) }
-                                    },
-                                    onTogglePin = {
-                                        scope.launch { repo.upsertNote(note.copy(pinned = !note.pinned)) }
-                                    },
-                                    onArchive = {
-                                        scope.launch {
-                                            repo.upsertNote(note.copy(archived = true))
-                                            showUndo(msgNoteArchived) {
-                                                scope.launch { repo.upsertNote(note.copy(archived = false)) }
-                                            }
-                                        }
-                                    },
-                                    onUnarchive = {
-                                        scope.launch {
-                                            repo.upsertNote(note.copy(archived = false))
-                                            showUndo(msgNoteUnarchived) {
-                                                scope.launch { repo.upsertNote(note.copy(archived = true)) }
-                                            }
-                                        }
-                                    },
-                                    onDelete = {
-                                        scope.launch {
-                                            val deleted = note
-                                            repo.deleteNote(note.id)
-                                            showUndo(msgNoteDeleted) {
-                                                scope.launch { repo.upsertNote(deleted) }
-                                            }
-                                        }
-                                    },
-                                )
-                            } else {
-                                NoteCard(
-                                    note = note,
-                                    showArchived = showArchived,
-                                    onClick = {
-                                        if (isSelectionMode) toggleSelectNote(note.id)
-                                        else {
-                                            editingNote = note
-                                            showEditor = true
-                                        }
-                                    },
-                                    onTogglePin = {
-                                        scope.launch { repo.upsertNote(note.copy(pinned = !note.pinned)) }
-                                    },
-                                    onArchive = {
-                                        scope.launch {
-                                            repo.upsertNote(note.copy(archived = true))
-                                            showUndo(msgNoteArchived) {
-                                                scope.launch {
-                                                    repo.upsertNote(note.copy(archived = false))
+                                        },
+                                        onValueChange = { rowId, newValue ->
+                                            val data = note.parseCountingTable()
+                                            val updatedRows =
+                                                data.rows.map { r ->
+                                                    if (r.id == rowId) r.copy(value = newValue) else r
+                                                }
+                                            val updatedNote = note.withCountingTable(CountingTableData(updatedRows))
+                                            scope.launch { repo.upsertNote(updatedNote) }
+                                        },
+                                        onTogglePin = {
+                                            scope.launch { repo.upsertNote(note.copy(pinned = !note.pinned)) }
+                                        },
+                                        onArchive = {
+                                            scope.launch {
+                                                repo.upsertNote(note.copy(archived = true))
+                                                showUndo(msgNoteArchived) {
+                                                    scope.launch { repo.upsertNote(note.copy(archived = false)) }
                                                 }
                                             }
-                                        }
-                                    },
-                                    onUnarchive = {
-                                        scope.launch {
-                                            repo.upsertNote(note.copy(archived = false))
-                                            showUndo(msgNoteUnarchived) {
-                                                scope.launch { repo.upsertNote(note.copy(archived = true)) }
+                                        },
+                                        onUnarchive = {
+                                            scope.launch {
+                                                repo.upsertNote(note.copy(archived = false))
+                                                showUndo(msgNoteUnarchived) {
+                                                    scope.launch { repo.upsertNote(note.copy(archived = true)) }
+                                                }
                                             }
-                                        }
-                                    },
-                                    onDelete = {
-                                        scope.launch {
-                                            val deleted = note
-                                            repo.deleteNote(note.id)
-                                            showUndo(msgNoteDeleted) {
-                                                scope.launch { repo.upsertNote(deleted) }
+                                        },
+                                        onDelete = {
+                                            scope.launch {
+                                                val deleted = note
+                                                repo.deleteNote(note.id)
+                                                showUndo(msgNoteDeleted) {
+                                                    scope.launch { repo.upsertNote(deleted) }
+                                                }
                                             }
-                                        }
-                                    },
-                                )
+                                        },
+                                    )
+                                } else if (note.type == NoteType.JOURNAL) {
+                                    JournalCard(
+                                        note = note,
+                                        showArchived = showArchived,
+                                        onClick = {
+                                            if (isSelectionMode) toggleSelectNote(note.id)
+                                            else {
+                                                editingNote = note
+                                                showEditor = true
+                                            }
+                                        },
+                                        onTogglePin = {
+                                            scope.launch { repo.upsertNote(note.copy(pinned = !note.pinned)) }
+                                        },
+                                        onArchive = {
+                                            scope.launch {
+                                                repo.upsertNote(note.copy(archived = true))
+                                                showUndo(msgNoteArchived) {
+                                                    scope.launch { repo.upsertNote(note.copy(archived = false)) }
+                                                }
+                                            }
+                                        },
+                                        onUnarchive = {
+                                            scope.launch {
+                                                repo.upsertNote(note.copy(archived = false))
+                                                showUndo(msgNoteUnarchived) {
+                                                    scope.launch { repo.upsertNote(note.copy(archived = true)) }
+                                                }
+                                            }
+                                        },
+                                        onDelete = {
+                                            scope.launch {
+                                                val deleted = note
+                                                repo.deleteNote(note.id)
+                                                showUndo(msgNoteDeleted) {
+                                                    scope.launch { repo.upsertNote(deleted) }
+                                                }
+                                            }
+                                        },
+                                    )
+                                } else {
+                                    NoteCard(
+                                        note = note,
+                                        showArchived = showArchived,
+                                        onClick = {
+                                            if (isSelectionMode) toggleSelectNote(note.id)
+                                            else {
+                                                editingNote = note
+                                                showEditor = true
+                                            }
+                                        },
+                                        onTogglePin = {
+                                            scope.launch { repo.upsertNote(note.copy(pinned = !note.pinned)) }
+                                        },
+                                        onArchive = {
+                                            scope.launch {
+                                                repo.upsertNote(note.copy(archived = true))
+                                                showUndo(msgNoteArchived) {
+                                                    scope.launch {
+                                                        repo.upsertNote(note.copy(archived = false))
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        onUnarchive = {
+                                            scope.launch {
+                                                repo.upsertNote(note.copy(archived = false))
+                                                showUndo(msgNoteUnarchived) {
+                                                    scope.launch { repo.upsertNote(note.copy(archived = true)) }
+                                                }
+                                            }
+                                        },
+                                        onDelete = {
+                                            scope.launch {
+                                                val deleted = note
+                                                repo.deleteNote(note.id)
+                                                showUndo(msgNoteDeleted) {
+                                                    scope.launch { repo.upsertNote(deleted) }
+                                                }
+                                            }
+                                        },
+                                    )
+                                }
                             }
 
                             // Selection Checkbox Overlay
@@ -1085,6 +1209,46 @@ fun NotesPage(onDismiss: () -> Unit, repo: NoteRepo = koinInject()) {
                     }
                 }
 
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    modifier =
+                        Modifier.fillMaxWidth().clickable {
+                            showCreateTypeSheet = false
+                            val now = LocalDateTime.now()
+                            val newId = Random.nextLong(100_000_000L, 999_999_999L)
+                            editingNote =
+                                Note(
+                                    id = newId,
+                                    title = "",
+                                    content = "",
+                                    type = NoteType.JOURNAL,
+                                    createdAt = now,
+                                    updatedAt = now,
+                                ).withJournal(JournalNoteData())
+                            showEditor = true
+                        },
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    ) {
+                        Text("📅", style = MaterialTheme.typography.headlineMedium)
+                        Column {
+                            Text(
+                                text = "Journal",
+                                style = MaterialTheme.typography.titleMedium.copy(fontFamily = flexFontEmphasis()),
+                            )
+                            Text(
+                                text = "Chronological log of thoughts and mood",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                }
+
                 Spacer(modifier = Modifier.height(16.dp))
             }
         }
@@ -1130,6 +1294,75 @@ internal fun formatNoteDate(dateTime: LocalDateTime): String {
         else -> {
             val month = date.month.name.lowercase().replaceFirstChar { it.uppercase() }.take(3)
             "$month ${date.dayOfMonth}"
+        }
+    }
+}
+
+@Composable
+private fun SwipeToArchiveWrapper(
+    enabled: Boolean,
+    onArchive: () -> Unit,
+    content: @Composable () -> Unit
+) {
+    if (!enabled) {
+        content()
+        return
+    }
+
+    var offsetX by remember { mutableStateOf(0f) }
+    val animatedOffsetX by animateFloatAsState(targetValue = offsetX)
+    val density = LocalDensity.current
+    val thresholdPx = with(density) { 100.dp.toPx() }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .pointerInput(Unit) {
+                detectHorizontalDragGestures(
+                    onDragEnd = {
+                        if (kotlin.math.abs(offsetX) > thresholdPx) {
+                            onArchive()
+                        }
+                        offsetX = 0f
+                    },
+                    onDragCancel = {
+                        offsetX = 0f
+                    },
+                    onHorizontalDrag = { change, dragAmount ->
+                        change.consume()
+                        offsetX = (offsetX + dragAmount).coerceIn(-thresholdPx * 1.5f, thresholdPx * 1.5f)
+                    }
+                )
+            }
+    ) {
+        if (offsetX != 0f) {
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .background(
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        shape = RoundedCornerShape(20.dp)
+                    )
+                    .padding(horizontal = 16.dp),
+                contentAlignment = if (offsetX > 0) Alignment.CenterStart else Alignment.CenterEnd
+            ) {
+                Icon(
+                    imageVector = vectorResource(Res.drawable.archive),
+                    contentDescription = "Archive",
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+        }
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .graphicsLayer {
+                    translationX = animatedOffsetX
+                }
+        ) {
+            content()
         }
     }
 }

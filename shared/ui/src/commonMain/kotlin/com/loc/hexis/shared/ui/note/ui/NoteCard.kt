@@ -1,5 +1,6 @@
 package com.loc.hexis.shared.ui.note.ui
 
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -22,10 +23,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.loc.hexis.core.note.Note
 import com.loc.hexis.shared.ui.note.getContentPreview
+import com.loc.hexis.shared.ui.note.getNoteColor
 import com.loc.hexis.shared.ui.theme.flexFontEmphasis
 import com.loc.hexis.shared.ui.theme.flexFontRounded
 import hexis.shared.ui.generated.resources.Res
@@ -49,15 +53,57 @@ fun BaseNoteCard(
     modifier: Modifier = Modifier,
     body: @Composable ColumnScope.() -> Unit,
 ) {
+    val isDark = isSystemInDarkTheme()
+    val customColor = getNoteColor(note.getColorHex(), isDark)
+    val hasCustomColor = customColor != Color.Unspecified
+
+    val containerColor = if (hasCustomColor) customColor else {
+        if (showArchived) MaterialTheme.colorScheme.surfaceContainerLow
+        else MaterialTheme.colorScheme.surfaceContainerHigh
+    }
+
+    val onSurfaceColor = if (hasCustomColor) {
+        if (customColor.luminance() < 0.5f) Color.White else Color.Black
+    } else {
+        MaterialTheme.colorScheme.onSurface
+    }
+
+    val onSurfaceVariantColor = if (hasCustomColor) {
+        if (customColor.luminance() < 0.5f) Color.White.copy(alpha = 0.7f) else Color.Black.copy(alpha = 0.7f)
+    } else {
+        MaterialTheme.colorScheme.onSurfaceVariant
+    }
+
+    val pinBtnContainerColor = if (hasCustomColor) {
+        if (note.pinned) onSurfaceColor.copy(alpha = 0.25f) else onSurfaceColor.copy(alpha = 0.1f)
+    } else {
+        if (note.pinned) MaterialTheme.colorScheme.primaryContainer
+        else MaterialTheme.colorScheme.surfaceContainerHigh
+    }
+
+    val pinBtnContentColor = if (hasCustomColor) {
+        onSurfaceColor
+    } else {
+        if (note.pinned) MaterialTheme.colorScheme.onPrimaryContainer
+        else MaterialTheme.colorScheme.onSurfaceVariant
+    }
+
+    val archiveBtnContainerColor = if (hasCustomColor) {
+        onSurfaceColor.copy(alpha = 0.1f)
+    } else {
+        MaterialTheme.colorScheme.surfaceContainerHigh
+    }
+
+    val archiveBtnContentColor = if (hasCustomColor) {
+        onSurfaceColor
+    } else {
+        MaterialTheme.colorScheme.error
+    }
+
     Card(
         onClick = onClick,
         shape = RoundedCornerShape(20.dp),
-        colors =
-            CardDefaults.cardColors(
-                containerColor =
-                    if (showArchived) MaterialTheme.colorScheme.surfaceContainerLow
-                    else MaterialTheme.colorScheme.surfaceContainerHigh
-            ),
+        colors = CardDefaults.cardColors(containerColor = containerColor),
         modifier = modifier.fillMaxWidth(),
     ) {
         Column(modifier = Modifier.padding(14.dp).fillMaxWidth()) {
@@ -69,7 +115,7 @@ fun BaseNoteCard(
                 Text(
                     text = note.title.ifEmpty { stringResource(Res.string.untitled) },
                     style = MaterialTheme.typography.titleMedium.copy(fontFamily = flexFontEmphasis()),
-                    color = MaterialTheme.colorScheme.onSurface,
+                    color = onSurfaceColor,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f),
@@ -79,7 +125,7 @@ fun BaseNoteCard(
                     Icon(
                         imageVector = vectorResource(Res.drawable.flag),
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
+                        tint = if (hasCustomColor) onSurfaceColor else MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(18.dp).padding(start = 4.dp),
                     )
                 }
@@ -99,7 +145,7 @@ fun BaseNoteCard(
                 Text(
                     text = formatNoteDate(note.updatedAt),
                     style = MaterialTheme.typography.labelSmall.copy(fontFamily = flexFontRounded()),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                    color = onSurfaceVariantColor.copy(alpha = 0.6f),
                 )
 
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -109,13 +155,8 @@ fun BaseNoteCard(
                             modifier = Modifier.size(32.dp),
                             colors =
                                 IconButtonDefaults.filledTonalIconButtonColors(
-                                    containerColor =
-                                        if (note.pinned) MaterialTheme.colorScheme.primaryContainer
-                                        else MaterialTheme.colorScheme.surfaceContainerHigh,
-                                    contentColor =
-                                        if (note.pinned)
-                                            MaterialTheme.colorScheme.onPrimaryContainer
-                                        else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    containerColor = pinBtnContainerColor,
+                                    contentColor = pinBtnContentColor,
                                 ),
                             shapes =
                                 IconButtonShapes(
@@ -135,8 +176,8 @@ fun BaseNoteCard(
                             modifier = Modifier.size(32.dp),
                             colors =
                                 IconButtonDefaults.filledTonalIconButtonColors(
-                                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                                    contentColor = MaterialTheme.colorScheme.error,
+                                    containerColor = archiveBtnContainerColor,
+                                    contentColor = archiveBtnContentColor,
                                 ),
                             shapes =
                                 IconButtonShapes(
@@ -155,7 +196,7 @@ fun BaseNoteCard(
                             Icon(
                                 imageVector = vectorResource(Res.drawable.unarchive),
                                 contentDescription = "Unarchive Note",
-                                tint = MaterialTheme.colorScheme.primary,
+                                tint = if (hasCustomColor) onSurfaceColor else MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(16.dp),
                             )
                         }
@@ -163,7 +204,7 @@ fun BaseNoteCard(
                             Icon(
                                 imageVector = vectorResource(Res.drawable.delete),
                                 contentDescription = "Delete Note",
-                                tint = MaterialTheme.colorScheme.error,
+                                tint = if (hasCustomColor) onSurfaceColor else MaterialTheme.colorScheme.error,
                                 modifier = Modifier.size(16.dp),
                             )
                         }
@@ -185,6 +226,15 @@ fun NoteCard(
     onDelete: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
+    val isDark = isSystemInDarkTheme()
+    val customColor = getNoteColor(note.getColorHex(), isDark)
+    val hasCustomColor = customColor != Color.Unspecified
+    val onSurfaceVariantColor = if (hasCustomColor) {
+        if (customColor.luminance() < 0.5f) Color.White.copy(alpha = 0.7f) else Color.Black.copy(alpha = 0.7f)
+    } else {
+        MaterialTheme.colorScheme.onSurfaceVariant
+    }
+
     BaseNoteCard(
         note = note,
         showArchived = showArchived,
@@ -199,7 +249,7 @@ fun NoteCard(
             Text(
                 text = getContentPreview(note.content),
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = onSurfaceVariantColor,
                 maxLines = 3,
                 overflow = TextOverflow.Ellipsis,
             )
