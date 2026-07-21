@@ -1413,6 +1413,12 @@ fun NotesPage(onDismiss: () -> Unit, repo: NoteRepo = koinInject()) {
                     }
                 }
             },
+            onDuplicate = { copy ->
+                scope.launch {
+                    repo.upsertNote(copy)
+                    editingNote = copy
+                }
+            },
         )
     }
 }

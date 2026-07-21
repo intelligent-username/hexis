@@ -90,12 +90,21 @@ import com.loc.hexis.shared.ui.note.parseColor
 import com.loc.hexis.shared.ui.note.toHex
 import com.loc.hexis.shared.ui.theme.flexFontEmphasis
 import com.loc.hexis.shared.ui.theme.flexFontRounded
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.BorderStroke
 import hexis.shared.ui.generated.resources.Res
 import hexis.shared.ui.generated.resources.add
 import hexis.shared.ui.generated.resources.archive
+import hexis.shared.ui.generated.resources.check
 import hexis.shared.ui.generated.resources.close
+import hexis.shared.ui.generated.resources.content_copy
 import hexis.shared.ui.generated.resources.edit_note
 import hexis.shared.ui.generated.resources.new_note
+import hexis.shared.ui.generated.resources.palette
 import hexis.shared.ui.generated.resources.title
 import hexis.shared.ui.generated.resources.unarchive
 import kotlin.random.Random
@@ -110,6 +119,7 @@ fun NoteEditorSheet(
     onDismissRequest: () -> Unit,
     onSave: (Note) -> Unit,
     onArchive: ((Long) -> Unit)? = null,
+    onDuplicate: ((Note) -> Unit)? = null,
 ) {
     val initialNoteId = remember { note?.id ?: 0L }
     var title by remember(initialNoteId) { mutableStateOf(note?.title ?: "") }
@@ -136,6 +146,7 @@ fun NoteEditorSheet(
 
     var selectedColorHex by remember(initialNoteId) { mutableStateOf(note?.getColorHex()) }
     var colorPickerDialog by remember { mutableStateOf(false) }
+    var showColorMenu by remember { mutableStateOf(false) }
 
     var isSaved by remember { mutableStateOf(true) }
     var currentNoteId by remember(initialNoteId) { mutableStateOf(initialNoteId) }
@@ -307,6 +318,17 @@ fun NoteEditorSheet(
                     }
                 }
 
+                IconButton(
+                    onClick = { showColorMenu = !showColorMenu },
+                    modifier = Modifier.padding(end = 4.dp),
+                ) {
+                    Icon(
+                        imageVector = vectorResource(Res.drawable.palette),
+                        contentDescription = "Color Theme",
+                        tint = if (showColorMenu) MaterialTheme.colorScheme.primary else if (hasEditorCustomColor) onSurfaceColor else MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+
                 if (currentNoteId != 0L && onArchive != null) {
                     val isArchived = note?.archived == true
                     IconButton(
@@ -323,6 +345,29 @@ fun NoteEditorSheet(
                                 ),
                             contentDescription = if (isArchived) "Unarchive Note" else "Archive Note",
                             tint = if (hasEditorCustomColor) onSurfaceColor else MaterialTheme.colorScheme.error,
+                        )
+                    }
+                }
+
+                if (currentNoteId != 0L && onDuplicate != null) {
+                    IconButton(
+                        onClick = {
+                            val current = buildCurrentNote()
+                            onSave(current)
+                            val nowTime = LocalDateTime.now()
+                            val duplicate = current.copy(
+                                id = Random.nextLong(100_000_000L, 999_999_999L),
+                                createdAt = nowTime,
+                                updatedAt = nowTime,
+                            )
+                            onDuplicate(duplicate)
+                        },
+                        modifier = Modifier.padding(end = 4.dp),
+                    ) {
+                        Icon(
+                            imageVector = vectorResource(Res.drawable.content_copy),
+                            contentDescription = "Duplicate Note",
+                            tint = if (hasEditorCustomColor) onSurfaceColor else MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
@@ -368,6 +413,153 @@ fun NoteEditorSheet(
                 }
             }
 
+            AnimatedVisibility(
+                visible = showColorMenu,
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut() + shrinkVertically(),
+            ) {
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 6.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    color = if (hasEditorCustomColor) onSurfaceColor.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surfaceContainerHigh,
+                ) {
+                    Column(
+                        modifier = Modifier.padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalAlignment = Alignment.Start,
+                    ) {
+                        Text(
+                            text = "Note Theme Color",
+                            style = MaterialTheme.typography.labelMedium.copy(fontFamily = flexFontEmphasis()),
+                            color = onSurfaceColor,
+                            modifier = Modifier.padding(bottom = 2.dp),
+                        )
+
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(6.dp),
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            // Default option
+                            val isDefaultSelected = selectedColorHex == null
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { selectedColorHex = null }
+                                    .padding(vertical = 4.dp, horizontal = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Surface(
+                                    shape = CircleShape,
+                                    modifier = Modifier.size(24.dp),
+                                    color = if (isDark) MaterialTheme.colorScheme.surfaceContainerHigh else MaterialTheme.colorScheme.surfaceVariant,
+                                    border = BorderStroke(
+                                        width = if (isDefaultSelected) 2.dp else 1.dp,
+                                        color = if (isDefaultSelected) onSurfaceColor else onSurfaceVariantColor.copy(alpha = 0.4f)
+                                    )
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        if (isDefaultSelected) {
+                                            Icon(
+                                                imageVector = vectorResource(Res.drawable.check),
+                                                contentDescription = "Selected",
+                                                tint = onSurfaceColor,
+                                                modifier = Modifier.size(14.dp)
+                                            )
+                                        }
+                                    }
+                                }
+                                Text(
+                                    text = "Default",
+                                    style = MaterialTheme.typography.bodyMedium.copy(fontFamily = flexFontRounded()),
+                                    color = onSurfaceColor,
+                                )
+                            }
+
+                            // Preset options
+                            noteColorPresets.forEach { preset ->
+                                val presetId = "preset:${preset.id}"
+                                val isPresetSelected = selectedColorHex == presetId
+                                val presetColor = parseColor(if (isDark) preset.darkHex else preset.lightHex)
+
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable { selectedColorHex = presetId }
+                                        .padding(vertical = 4.dp, horizontal = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    Surface(
+                                        shape = CircleShape,
+                                        modifier = Modifier.size(24.dp),
+                                        color = presetColor,
+                                        border = BorderStroke(
+                                            width = if (isPresetSelected) 2.dp else 1.dp,
+                                            color = if (isPresetSelected) onSurfaceColor else onSurfaceVariantColor.copy(alpha = 0.4f)
+                                        )
+                                    ) {
+                                        Box(contentAlignment = Alignment.Center) {
+                                            if (isPresetSelected) {
+                                                Icon(
+                                                    imageVector = vectorResource(Res.drawable.check),
+                                                    contentDescription = "Selected",
+                                                    tint = onSurfaceColor,
+                                                    modifier = Modifier.size(14.dp)
+                                                )
+                                            }
+                                        }
+                                    }
+                                    Text(
+                                        text = preset.name,
+                                        style = MaterialTheme.typography.bodyMedium.copy(fontFamily = flexFontRounded()),
+                                        color = onSurfaceColor,
+                                    )
+                                }
+                            }
+
+                            // Custom color picker
+                            val isCustom = selectedColorHex != null && !selectedColorHex!!.startsWith("preset:")
+                            val customColorVal = if (isCustom) parseColor(selectedColorHex!!) else Color.Transparent
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { colorPickerDialog = true }
+                                    .padding(vertical = 4.dp, horizontal = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Surface(
+                                    shape = CircleShape,
+                                    modifier = Modifier.size(24.dp),
+                                    color = if (isCustom) customColorVal else Color.Transparent,
+                                    border = BorderStroke(
+                                        width = if (isCustom) 2.dp else 1.dp,
+                                        color = if (isCustom) onSurfaceColor else onSurfaceVariantColor.copy(alpha = 0.4f)
+                                    )
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Icon(
+                                            imageVector = vectorResource(Res.drawable.add),
+                                            contentDescription = "Custom Color",
+                                            tint = if (isCustom) onSurfaceColor else onSurfaceVariantColor,
+                                            modifier = Modifier.size(14.dp)
+                                        )
+                                    }
+                                }
+                                Text(
+                                    text = "Custom color...",
+                                    style = MaterialTheme.typography.bodyMedium.copy(fontFamily = flexFontRounded()),
+                                    color = onSurfaceColor,
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
 
 
             // Title Input
@@ -395,92 +587,6 @@ fun NoteEditorSheet(
                         unfocusedBorderColor = if (hasEditorCustomColor) onSurfaceVariantColor.copy(alpha = 0.3f) else MaterialTheme.colorScheme.outlineVariant,
                     ),
             )
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            // Horizontal Scrollable Color Selector Row
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = "Color:",
-                    style = MaterialTheme.typography.labelMedium.copy(fontFamily = flexFontRounded()),
-                    color = onSurfaceVariantColor,
-                )
-
-                Row(
-                    modifier = Modifier.weight(1f).horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    // Default circle
-                    val isDefaultSelected = selectedColorHex == null
-                    Surface(
-                        onClick = { selectedColorHex = null },
-                        shape = CircleShape,
-                        modifier = Modifier.size(28.dp),
-                        color = if (isDark) MaterialTheme.colorScheme.surfaceContainerHigh else MaterialTheme.colorScheme.surfaceVariant,
-                        border = androidx.compose.foundation.BorderStroke(
-                            width = if (isDefaultSelected) 2.dp else 1.dp,
-                            color = if (isDefaultSelected) onSurfaceColor else onSurfaceVariantColor.copy(alpha = 0.4f)
-                        )
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            if (isDefaultSelected) {
-                                Icon(
-                                    imageVector = vectorResource(Res.drawable.close),
-                                    contentDescription = "Selected",
-                                    tint = onSurfaceColor,
-                                    modifier = Modifier.size(14.dp)
-                                )
-                            }
-                        }
-                    }
-
-                    // Preset circles
-                    noteColorPresets.forEach { preset ->
-                        val presetId = "preset:${preset.id}"
-                        val isPresetSelected = selectedColorHex == presetId
-                        val presetColor = parseColor(if (isDark) preset.darkHex else preset.lightHex)
-
-                        Surface(
-                            onClick = { selectedColorHex = presetId },
-                            shape = CircleShape,
-                            modifier = Modifier.size(28.dp),
-                            color = presetColor,
-                            border = androidx.compose.foundation.BorderStroke(
-                                width = if (isPresetSelected) 2.dp else 1.dp,
-                                color = if (isPresetSelected) onSurfaceColor else onSurfaceVariantColor.copy(alpha = 0.4f)
-                            )
-                        ) {}
-                    }
-
-                    // Custom color picker circle
-                    val isCustom = selectedColorHex != null && !selectedColorHex!!.startsWith("preset:")
-                    val customColorVal = if (isCustom) parseColor(selectedColorHex!!) else Color.Transparent
-                    Surface(
-                        onClick = { colorPickerDialog = true },
-                        shape = CircleShape,
-                        modifier = Modifier.size(28.dp),
-                        color = if (isCustom) customColorVal else Color.Transparent,
-                        border = androidx.compose.foundation.BorderStroke(
-                            width = if (isCustom) 2.dp else 1.dp,
-                            color = if (isCustom) onSurfaceColor else onSurfaceVariantColor.copy(alpha = 0.4f)
-                        )
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(
-                                imageVector = vectorResource(Res.drawable.add),
-                                contentDescription = "Custom Color",
-                                tint = if (isCustom) onSurfaceColor else onSurfaceVariantColor,
-                                modifier = Modifier.size(14.dp)
-                            )
-                        }
-                    }
-                }
-            }
 
             Spacer(modifier = Modifier.height(10.dp))
 

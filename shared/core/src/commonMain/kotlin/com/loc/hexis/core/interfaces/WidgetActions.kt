@@ -6,4 +6,5 @@ object WidgetActions {
     const val OPEN_TASKS = "widget_open_tasks"
     const val OPEN_PROGRESS = "widget_open_progress"
     const val OPEN_OVERALL_ANALYTICS = "widget_open_overall_analytics"
+    const val OPEN_NOTES = "widget_open_notes"
 }

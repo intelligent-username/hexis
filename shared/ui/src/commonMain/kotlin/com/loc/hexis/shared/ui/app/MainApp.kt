@@ -137,6 +137,9 @@ fun MainApp(state: MainAppState) {
                     hvm.onAction(HabitsAction.PrepareAnalytics(null))
                     hvm.onAction(HabitsAction.ToggleOverallAnalytics(true))
                 }
+                WidgetActions.OPEN_NOTES -> {
+                    showNotes = true
+                }
             }
             mvm.setShortcutAction(null)
         }
