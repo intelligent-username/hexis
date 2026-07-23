@@ -81,7 +81,7 @@ class HabitStreakWidget : GlanceAppWidget(), KoinComponent {
             val size = LocalSize.current
 
             val habitsWithAnalytics by repo.getHabitsWithAnalytics().collectAsState(emptyList())
-            val sortedData = habitsWithAnalytics.sortedBy { it.habit.id }
+            val sortedData = habitsWithAnalytics.sortedBy { it.habit.index }
 
             val state = currentState<Preferences>()
             val habitId = state[habitIdKey] ?: sortedData.firstOrNull()?.habit?.id ?: 0
@@ -226,7 +226,6 @@ private fun Content(
                                 modifier =
                                     GlanceModifier.clickable {
                                         onChangeHabit()
-                                        onUpdateWidget()
                                     },
                             )
                         }

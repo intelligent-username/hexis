@@ -2,6 +2,7 @@ package com.loc.hexis.widgets.single_note_widget
 
 import android.app.Activity
 import android.appwidget.AppWidgetManager
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -38,14 +39,18 @@ import androidx.compose.ui.unit.dp
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.state.updateAppWidgetState
+import androidx.glance.appwidget.updateAll
 import androidx.glance.state.PreferencesGlanceStateDefinition
+import androidx.lifecycle.lifecycleScope
 import com.loc.hexis.core.note.Note
 import com.loc.hexis.core.note.NoteRepo
 import com.loc.hexis.core.note.NoteType
 import com.loc.hexis.core.theme.Theme
 import com.loc.hexis.shared.ui.note.getContentPreview
 import com.loc.hexis.shared.ui.theme.HexisTheme
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.koin.android.ext.android.inject
 
 class SingleNoteWidgetConfigActivity : ComponentActivity() {
@@ -83,27 +88,37 @@ class SingleNoteWidgetConfigActivity : ComponentActivity() {
     }
 
     private fun saveWidgetStateAndFinish(noteId: Long) {
-        val scope = (this as? ComponentActivity)?.let {
-            kotlinx.coroutines.MainScope()
-        } ?: return
+        val sp = applicationContext.getSharedPreferences("single_note_widget_prefs", Context.MODE_PRIVATE)
+        sp.edit().putLong("single_note_id_$appWidgetId", noteId).putLong("single_note_id", noteId).apply()
 
-        scope.launch {
-            val glanceId = GlanceAppWidgetManager(applicationContext)
-                .getGlanceIdBy(appWidgetId)
-
-            updateAppWidgetState(applicationContext, PreferencesGlanceStateDefinition, glanceId) { prefs ->
-                prefs.toMutablePreferences().apply {
-                    this[longPreferencesKey("single_note_id")] = noteId
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val glanceId = try {
+                    GlanceAppWidgetManager(applicationContext).getGlanceIdBy(appWidgetId)
+                } catch (_: Exception) {
+                    null
                 }
-            }
 
-            SingleNoteWidget().update(applicationContext, glanceId)
+                if (glanceId != null) {
+                    updateAppWidgetState(applicationContext, PreferencesGlanceStateDefinition, glanceId) { prefs ->
+                        prefs.toMutablePreferences().apply {
+                            this[longPreferencesKey("single_note_id")] = noteId
+                            this[longPreferencesKey("last_updated")] = System.currentTimeMillis()
+                        }
+                    }
+                    SingleNoteWidget().update(applicationContext, glanceId)
+                } else {
+                    SingleNoteWidget().updateAll(applicationContext)
+                }
+            } catch (_: Throwable) {}
 
-            val resultValue = Intent().apply {
-                putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
+            withContext(Dispatchers.Main) {
+                val resultValue = Intent().apply {
+                    putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
+                }
+                setResult(Activity.RESULT_OK, resultValue)
+                finish()
             }
-            setResult(Activity.RESULT_OK, resultValue)
-            finish()
         }
     }
 }
@@ -115,74 +130,79 @@ private fun SingleNoteConfigScreen(
     onDismiss: () -> Unit,
 ) {
     val notes by noteRepo.getNotesFlow().collectAsState(initial = emptyList())
-    val previewableNotes = notes.filter { it.type != NoteType.VAULT && !it.archived }
+    val eligibleNotes = notes.filter { it.type != NoteType.VAULT }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .padding(16.dp),
+            .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.6f))
+            .clickable { onDismiss() },
+        contentAlignment = Alignment.Center,
     ) {
-        Column(
-            modifier = Modifier.fillMaxSize(),
+        Card(
+            modifier = Modifier
+                .fillMaxWidth(0.9f)
+                .padding(16.dp)
+                .clickable(enabled = false) {},
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface,
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp),
             ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "Select Note",
-                        style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-                        color = MaterialTheme.colorScheme.onBackground,
-                    )
-                    Text(
-                        text = "Choose a note to preview on your home screen",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-
-                Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(RoundedCornerShape(18.dp))
-                        .background(MaterialTheme.colorScheme.surfaceContainerHighest)
-                        .clickable { onDismiss() },
-                    contentAlignment = Alignment.Center,
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        text = "✕",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        text = "Select Note to Preview",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
                     )
+                    Box(
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(MaterialTheme.colorScheme.surfaceVariant)
+                            .clickable { onDismiss() },
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = "✕",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
-            }
 
-            Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-            if (previewableNotes.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .weight(1f),
-                    contentAlignment = Alignment.Center,
-                ) {
+                if (eligibleNotes.isEmpty()) {
                     Text(
-                        text = "No previewable notes available",
+                        text = "No available notes found. Create a note in the app first.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(vertical = 24.dp),
                     )
-                }
-            } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    contentPadding = PaddingValues(bottom = 16.dp),
-                ) {
-                    items(previewableNotes, key = { it.id }) { note ->
-                        NoteSelectItemCard(note = note, onClick = { onNoteSelected(note) })
+                } else {
+                    LazyColumn(
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        contentPadding = PaddingValues(vertical = 4.dp),
+                    ) {
+                        items(eligibleNotes) { note ->
+                            NoteSelectorItem(
+                                note = note,
+                                onClick = { onNoteSelected(note) },
+                            )
+                        }
                     }
                 }
             }
@@ -191,49 +211,44 @@ private fun SingleNoteConfigScreen(
 }
 
 @Composable
-private fun NoteSelectItemCard(
+private fun NoteSelectorItem(
     note: Note,
     onClick: () -> Unit,
 ) {
+    val parsedContent = getContentPreview(note.content)
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() },
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
         ),
     ) {
         Column(
-            modifier = Modifier.padding(14.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Text(
-                    text = note.title.ifBlank { "Untitled Note" },
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f),
-                )
-            }
+            Text(
+                text = note.title.ifBlank { "Untitled Note" },
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
 
-            if (note.content.isNotBlank() && note.type == NoteType.MARKDOWN) {
+            if (parsedContent.isNotBlank()) {
                 Spacer(modifier = Modifier.height(4.dp))
-                val preview = getContentPreview(note.content)
-                if (preview.isNotBlank()) {
-                    Text(
-                        text = preview,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
+                Text(
+                    text = parsedContent,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
             }
         }
     }

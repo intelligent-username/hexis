@@ -16,16 +16,20 @@ import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
 import androidx.glance.LocalContext
 import androidx.glance.LocalSize
+import androidx.glance.action.ActionParameters
+import androidx.glance.action.actionParametersOf
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.SizeMode
-import androidx.glance.appwidget.action.actionSendBroadcast
+import androidx.glance.appwidget.action.ActionCallback
+import androidx.glance.appwidget.action.actionRunCallback
 import androidx.glance.appwidget.action.actionStartActivity
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.lazy.LazyColumn
 import androidx.glance.appwidget.lazy.items
 import androidx.glance.appwidget.provideContent
 import androidx.glance.appwidget.state.getAppWidgetState
+import androidx.glance.appwidget.updateAll
 import androidx.glance.background
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
@@ -44,21 +48,111 @@ import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import com.loc.hexis.app.MainActivity
-import com.loc.hexis.core.data.HexisIntentReceiver
-import com.loc.hexis.core.interfaces.IntentActions
 import com.loc.hexis.core.interfaces.ThemeDatastore
 import com.loc.hexis.core.interfaces.WidgetActions
 import com.loc.hexis.core.note.CounterRow
+import com.loc.hexis.core.note.CountingTableData
 import com.loc.hexis.core.note.Note
 import com.loc.hexis.core.note.NoteRepo
 import com.loc.hexis.core.note.NoteType
 import com.loc.hexis.core.now
 import com.loc.hexis.shared.ui.note.getNoteColor
+import com.loc.hexis.widgets.notes_shortcut_widget.NotesShortcutWidget
 import com.loc.hexis.widgets.rememberWidgetColorProviders
 import kotlinx.coroutines.flow.first
 import kotlinx.datetime.LocalDateTime
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.get
+import org.koin.java.KoinJavaComponent
+import androidx.glance.appwidget.GlanceAppWidgetManager
+import androidx.glance.appwidget.state.updateAppWidgetState
+
+val noteIdKey = ActionParameters.Key<Long>("note_id_key")
+val rowIdKey = ActionParameters.Key<String>("row_id_key")
+
+class IncrementCounterActionCallback : ActionCallback {
+    override suspend fun onAction(
+        context: Context,
+        glanceId: GlanceId,
+        parameters: ActionParameters,
+    ) {
+        val noteId = parameters[noteIdKey] ?: return
+        val rowId = parameters[rowIdKey] ?: return
+        val repo: NoteRepo = KoinJavaComponent.get(NoteRepo::class.java)
+
+        val note = repo.getNoteById(noteId) ?: return
+        val tableData = note.parseCountingTable()
+        val updatedRows = tableData.rows.map { r: CounterRow ->
+            if (r.id == rowId) r.copy(value = r.value + r.step) else r
+        }
+        repo.upsertNote(
+            note.withCountingTable(CountingTableData(updatedRows))
+                .copy(updatedAt = LocalDateTime.now())
+        )
+
+        updateAppWidgetState(context, PreferencesGlanceStateDefinition, glanceId) { prefs ->
+            prefs.toMutablePreferences().apply {
+                this[longPreferencesKey("last_updated")] = System.currentTimeMillis()
+            }
+        }
+        SingleNoteWidget().update(context, glanceId)
+
+        try {
+            val glanceManager = GlanceAppWidgetManager(context)
+            val shortcutIds = glanceManager.getGlanceIds(NotesShortcutWidget::class.java)
+            for (sId in shortcutIds) {
+                updateAppWidgetState(context, PreferencesGlanceStateDefinition, sId) { prefs ->
+                    prefs.toMutablePreferences().apply {
+                        this[longPreferencesKey("last_updated")] = System.currentTimeMillis()
+                    }
+                }
+                NotesShortcutWidget().update(context, sId)
+            }
+        } catch (_: Throwable) {}
+    }
+}
+
+class DecrementCounterActionCallback : ActionCallback {
+    override suspend fun onAction(
+        context: Context,
+        glanceId: GlanceId,
+        parameters: ActionParameters,
+    ) {
+        val noteId = parameters[noteIdKey] ?: return
+        val rowId = parameters[rowIdKey] ?: return
+        val repo: NoteRepo = KoinJavaComponent.get(NoteRepo::class.java)
+
+        val note = repo.getNoteById(noteId) ?: return
+        val tableData = note.parseCountingTable()
+        val updatedRows = tableData.rows.map { r: CounterRow ->
+            if (r.id == rowId) r.copy(value = (r.value - r.step).coerceAtLeast(0.0)) else r
+        }
+        repo.upsertNote(
+            note.withCountingTable(CountingTableData(updatedRows))
+                .copy(updatedAt = LocalDateTime.now())
+        )
+
+        updateAppWidgetState(context, PreferencesGlanceStateDefinition, glanceId) { prefs ->
+            prefs.toMutablePreferences().apply {
+                this[longPreferencesKey("last_updated")] = System.currentTimeMillis()
+            }
+        }
+        SingleNoteWidget().update(context, glanceId)
+
+        try {
+            val glanceManager = GlanceAppWidgetManager(context)
+            val shortcutIds = glanceManager.getGlanceIds(NotesShortcutWidget::class.java)
+            for (sId in shortcutIds) {
+                updateAppWidgetState(context, PreferencesGlanceStateDefinition, sId) { prefs ->
+                    prefs.toMutablePreferences().apply {
+                        this[longPreferencesKey("last_updated")] = System.currentTimeMillis()
+                    }
+                }
+                NotesShortcutWidget().update(context, sId)
+            }
+        } catch (_: Throwable) {}
+    }
+}
 
 private data class NoteCardColors(
     val background: ColorProvider,
@@ -111,7 +205,11 @@ class SingleNoteWidget : GlanceAppWidget(), KoinComponent {
         val noteId = prefs[longPreferencesKey("single_note_id")]
 
         val notes = repo.getNotesFlow().first()
-        val targetNote = notes.find { it.id == noteId }
+        val targetNote = if (noteId != null) {
+            repo.getNoteById(noteId) ?: notes.firstOrNull()
+        } else {
+            notes.firstOrNull()
+        }
 
         val appTheme = themeDatastore.getAppThemeFlow().first()
         val seedColor = themeDatastore.getSeedColorFlow().first()
@@ -294,7 +392,7 @@ private fun SingleNoteContent(note: Note?, isDark: Boolean) {
                         LazyColumn(
                             modifier = GlanceModifier.fillMaxSize(),
                         ) {
-                            items(tableData.rows) { row ->
+                            items(tableData.rows, itemId = { row -> (row.id + "_" + row.value).hashCode().toLong() }) { row ->
                                 CounterWidgetRow(
                                     noteId = note.id,
                                     row = row,
@@ -386,20 +484,15 @@ private fun CounterWidgetRow(
     cardColors: NoteCardColors,
     openAction: androidx.glance.action.Action,
 ) {
-    val context = LocalContext.current
     val valText = if (row.value % 1.0 == 0.0) row.value.toLong().toString() else row.value.toString()
 
-    val decrementIntent = Intent(context, HexisIntentReceiver::class.java).apply {
-        action = IntentActions.DECREMENT_NOTE_COUNTER.action
-        putExtra("note_id", noteId)
-        putExtra("row_id", row.id)
-    }
+    val decrementAction = actionRunCallback<DecrementCounterActionCallback>(
+        actionParametersOf(noteIdKey to noteId, rowIdKey to row.id)
+    )
 
-    val incrementIntent = Intent(context, HexisIntentReceiver::class.java).apply {
-        action = IntentActions.INCREMENT_NOTE_COUNTER.action
-        putExtra("note_id", noteId)
-        putExtra("row_id", row.id)
-    }
+    val incrementAction = actionRunCallback<IncrementCounterActionCallback>(
+        actionParametersOf(noteIdKey to noteId, rowIdKey to row.id)
+    )
 
     Box(
         modifier = GlanceModifier
@@ -430,7 +523,7 @@ private fun CounterWidgetRow(
                         .cornerRadius(6.dp)
                         .background(GlanceTheme.colors.secondaryContainer)
                         .padding(horizontal = 10.dp, vertical = 4.dp)
-                        .clickable(actionSendBroadcast(decrementIntent)),
+                        .clickable(decrementAction),
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
@@ -464,7 +557,7 @@ private fun CounterWidgetRow(
                         .cornerRadius(6.dp)
                         .background(GlanceTheme.colors.primary)
                         .padding(horizontal = 10.dp, vertical = 4.dp)
-                        .clickable(actionSendBroadcast(incrementIntent)),
+                        .clickable(incrementAction),
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(

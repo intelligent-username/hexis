@@ -1,6 +1,10 @@
 package com.loc.hexis.note.data.repository
 
 import android.content.Context
+import androidx.datastore.preferences.core.longPreferencesKey
+import androidx.glance.appwidget.GlanceAppWidgetManager
+import androidx.glance.appwidget.state.updateAppWidgetState
+import androidx.glance.state.PreferencesGlanceStateDefinition
 import com.loc.hexis.core.note.Note
 import com.loc.hexis.core.note.NoteRepo
 import com.loc.hexis.note.data.database.NotesDao
@@ -8,7 +12,6 @@ import com.loc.hexis.note.data.toNote
 import com.loc.hexis.note.data.toNoteEntity
 import com.loc.hexis.widgets.notes_shortcut_widget.NotesShortcutWidget
 import com.loc.hexis.widgets.single_note_widget.SingleNoteWidget
-import androidx.glance.appwidget.updateAll
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
@@ -51,7 +54,28 @@ class NotesRepository(private val notesDao: NotesDao, private val context: Conte
     }
 
     private suspend fun refreshWidgets() {
-        SingleNoteWidget().updateAll(context)
-        NotesShortcutWidget().updateAll(context)
+        try {
+            val glanceManager = GlanceAppWidgetManager(context)
+
+            val singleGlanceIds = glanceManager.getGlanceIds(SingleNoteWidget::class.java)
+            for (id in singleGlanceIds) {
+                updateAppWidgetState(context, PreferencesGlanceStateDefinition, id) { prefs ->
+                    prefs.toMutablePreferences().apply {
+                        this[longPreferencesKey("last_updated")] = System.currentTimeMillis()
+                    }
+                }
+                SingleNoteWidget().update(context, id)
+            }
+
+            val shortcutGlanceIds = glanceManager.getGlanceIds(NotesShortcutWidget::class.java)
+            for (id in shortcutGlanceIds) {
+                updateAppWidgetState(context, PreferencesGlanceStateDefinition, id) { prefs ->
+                    prefs.toMutablePreferences().apply {
+                        this[longPreferencesKey("last_updated")] = System.currentTimeMillis()
+                    }
+                }
+                NotesShortcutWidget().update(context, id)
+            }
+        } catch (_: Throwable) {}
     }
 }

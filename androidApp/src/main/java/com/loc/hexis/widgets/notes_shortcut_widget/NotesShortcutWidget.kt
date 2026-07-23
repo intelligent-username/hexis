@@ -16,10 +16,11 @@ import androidx.glance.Image
 import androidx.glance.ImageProvider
 import androidx.glance.LocalContext
 import androidx.glance.LocalSize
+import androidx.glance.action.actionParametersOf
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.SizeMode
-import androidx.glance.appwidget.action.actionSendBroadcast
+import androidx.glance.appwidget.action.actionRunCallback
 import androidx.glance.appwidget.action.actionStartActivity
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.lazy.LazyColumn
@@ -42,8 +43,6 @@ import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import com.loc.hexis.R
 import com.loc.hexis.app.MainActivity
-import com.loc.hexis.core.data.HexisIntentReceiver
-import com.loc.hexis.core.interfaces.IntentActions
 import com.loc.hexis.core.interfaces.ThemeDatastore
 import com.loc.hexis.core.interfaces.WidgetActions
 import com.loc.hexis.core.note.Note
@@ -53,6 +52,10 @@ import com.loc.hexis.core.now
 import com.loc.hexis.shared.ui.note.getContentPreview
 import com.loc.hexis.shared.ui.note.getNoteColor
 import com.loc.hexis.widgets.rememberWidgetColorProviders
+import com.loc.hexis.widgets.single_note_widget.DecrementCounterActionCallback
+import com.loc.hexis.widgets.single_note_widget.IncrementCounterActionCallback
+import com.loc.hexis.widgets.single_note_widget.noteIdKey
+import com.loc.hexis.widgets.single_note_widget.rowIdKey
 import kotlinx.coroutines.flow.first
 import kotlinx.datetime.LocalDateTime
 import org.koin.core.component.KoinComponent
@@ -244,14 +247,14 @@ private fun NotesWidgetContent(notes: List<Note>, isDark: Boolean) {
 
             Row(modifier = GlanceModifier.fillMaxSize()) {
                 LazyColumn(modifier = GlanceModifier.defaultWeight()) {
-                    items(col1Notes) { note ->
+                    items(col1Notes, itemId = { note -> (note.id.toString() + "_" + note.payloadJson + "_" + note.updatedAt).hashCode().toLong() }) { note ->
                         NoteCardItem(note = note, isDark = isDark)
                         Spacer(modifier = GlanceModifier.height(6.dp))
                     }
                 }
                 Spacer(modifier = GlanceModifier.width(8.dp))
                 LazyColumn(modifier = GlanceModifier.defaultWeight()) {
-                    items(col2Notes) { note ->
+                    items(col2Notes, itemId = { note -> (note.id.toString() + "_" + note.payloadJson + "_" + note.updatedAt).hashCode().toLong() }) { note ->
                         NoteCardItem(note = note, isDark = isDark)
                         Spacer(modifier = GlanceModifier.height(6.dp))
                     }
@@ -261,7 +264,7 @@ private fun NotesWidgetContent(notes: List<Note>, isDark: Boolean) {
             LazyColumn(
                 modifier = GlanceModifier.fillMaxSize(),
             ) {
-                items(notes) { note ->
+                items(notes, itemId = { note -> (note.id.toString() + "_" + note.payloadJson + "_" + note.updatedAt).hashCode().toLong() }) { note ->
                     NoteCardItem(note = note, isDark = isDark)
                     Spacer(modifier = GlanceModifier.height(6.dp))
                 }
@@ -329,17 +332,13 @@ private fun NoteCardItem(note: Note, isDark: Boolean) {
                             val valText = if (row.value % 1.0 == 0.0) row.value.toLong().toString() else row.value.toString()
                             val labelText = row.label.ifBlank { "Item ${index + 1}" }
 
-                            val decrementIntent = Intent(context, HexisIntentReceiver::class.java).apply {
-                                action = IntentActions.DECREMENT_NOTE_COUNTER.action
-                                putExtra("note_id", note.id)
-                                putExtra("row_id", row.id)
-                            }
+                            val decrementAction = actionRunCallback<DecrementCounterActionCallback>(
+                                actionParametersOf(noteIdKey to note.id, rowIdKey to row.id)
+                            )
 
-                            val incrementIntent = Intent(context, HexisIntentReceiver::class.java).apply {
-                                action = IntentActions.INCREMENT_NOTE_COUNTER.action
-                                putExtra("note_id", note.id)
-                                putExtra("row_id", row.id)
-                            }
+                            val incrementAction = actionRunCallback<IncrementCounterActionCallback>(
+                                actionParametersOf(noteIdKey to note.id, rowIdKey to row.id)
+                            )
 
                             if (index > 0) {
                                 Spacer(modifier = GlanceModifier.height(3.dp))
@@ -368,7 +367,7 @@ private fun NoteCardItem(note: Note, isDark: Boolean) {
                                             .cornerRadius(6.dp)
                                             .background(GlanceTheme.colors.secondaryContainer)
                                             .padding(horizontal = 8.dp, vertical = 2.dp)
-                                            .clickable(actionSendBroadcast(decrementIntent)),
+                                            .clickable(decrementAction),
                                         contentAlignment = Alignment.Center,
                                     ) {
                                         Text(
@@ -401,7 +400,7 @@ private fun NoteCardItem(note: Note, isDark: Boolean) {
                                             .cornerRadius(6.dp)
                                             .background(GlanceTheme.colors.primary)
                                             .padding(horizontal = 8.dp, vertical = 2.dp)
-                                            .clickable(actionSendBroadcast(incrementIntent)),
+                                            .clickable(incrementAction),
                                         contentAlignment = Alignment.Center,
                                     ) {
                                         Text(
