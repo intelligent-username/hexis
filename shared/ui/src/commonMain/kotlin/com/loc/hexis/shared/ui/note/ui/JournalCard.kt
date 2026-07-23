@@ -81,9 +81,9 @@ fun JournalCard(
 
         if (journalData.entries.isNotEmpty()) {
             Spacer(modifier = Modifier.height(6.dp))
-            // Show the last 3 entries
+            // Show the last 3 entries (newest first / reverse chronological)
             val lastEntries = remember(journalData.entries) {
-                journalData.entries.takeLast(3)
+                journalData.entries.reversed().take(3)
             }
             Column(
                 verticalArrangement = Arrangement.spacedBy(4.dp),

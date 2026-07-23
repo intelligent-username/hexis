@@ -144,8 +144,8 @@ class MainViewModel(
         _state.update { it.copy(currentChangelog = null) }
     }
 
-    fun setShortcutAction(action: String?) {
-        _state.update { it.copy(shortcutAction = action) }
+    fun setShortcutAction(action: String?, noteId: Long? = null) {
+        _state.update { it.copy(shortcutAction = action, targetNoteId = noteId) }
     }
 
     fun setLaunchSource(source: LaunchSource) {

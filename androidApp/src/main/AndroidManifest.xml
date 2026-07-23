@@ -114,13 +114,33 @@
 
         <receiver android:name=".widgets.notes_shortcut_widget.NotesShortcutWidgetReceiver"
             android:exported="true"
-            android:label="Notes">
+            android:label="Notes Widget">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/notes_shortcut_widget"/>
+        </receiver>
+
+        <activity
+            android:name=".widgets.single_note_widget.SingleNoteWidgetConfigActivity"
+            android:exported="true"
+            android:theme="@style/Theme.Hexis">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
+            </intent-filter>
+        </activity>
+
+        <receiver android:name=".widgets.single_note_widget.SingleNoteWidgetReceiver"
+            android:exported="true"
+            android:label="Single Note Widget">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/single_note_widget"/>
         </receiver>
 
     </application>

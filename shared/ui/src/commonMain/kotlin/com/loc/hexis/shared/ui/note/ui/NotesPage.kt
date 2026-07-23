@@ -126,6 +126,7 @@ import org.koin.compose.koinInject
 @Composable
 fun NotesPage(
     onDismiss: () -> Unit,
+    initialNoteId: Long? = null,
     repo: NoteRepo = koinInject(),
     settingsDatastore: SettingsDatastore = koinInject()
 ) {
@@ -171,6 +172,8 @@ fun NotesPage(
     val msgNoteUnarchived = stringResource(Res.string.note_unarchived)
     val msgNoteDeleted = stringResource(Res.string.note_deleted)
 
+    var initialNoteOpened by remember(initialNoteId) { mutableStateOf(false) }
+
     LaunchedEffect(showArchived) {
         val flow = if (showArchived) repo.getArchivedNotesFlow() else repo.getNotesFlow()
         flow.collect { list ->
@@ -178,6 +181,21 @@ fun NotesPage(
                 notes.clear()
                 notes.addAll(list)
                 notesLoaded = true
+            }
+        }
+    }
+
+    LaunchedEffect(initialNoteId, notesLoaded) {
+        if (initialNoteId != null && notesLoaded && !initialNoteOpened) {
+            val target = notes.firstOrNull { it.id == initialNoteId }
+            if (target != null) {
+                if (target.type == NoteType.VAULT && isLockVaultNotesOn && !vaultPasswordHash.isNullOrEmpty()) {
+                    pendingVaultNote = target
+                } else {
+                    editingNote = target
+                    showEditor = true
+                }
+                initialNoteOpened = true
             }
         }
     }

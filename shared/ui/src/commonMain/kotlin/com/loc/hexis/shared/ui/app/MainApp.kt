@@ -87,6 +87,7 @@ fun MainApp(state: MainAppState) {
     var showPomodoro by remember { mutableStateOf(false) }
     var pomodoroLinkedHabitId by remember { mutableStateOf<Long?>(null) }
     var showNotes by remember { mutableStateOf(false) }
+    var targetNoteId by remember { mutableStateOf<Long?>(null) }
 
     androidx.compose.runtime.LaunchedEffect(state.startingSection) {
         if (state.shortcutAction == null && state.launchSource == LaunchSource.LAUNCHER) {
@@ -138,6 +139,11 @@ fun MainApp(state: MainAppState) {
                     hvm.onAction(HabitsAction.ToggleOverallAnalytics(true))
                 }
                 WidgetActions.OPEN_NOTES -> {
+                    targetNoteId = null
+                    showNotes = true
+                }
+                WidgetActions.OPEN_NOTE -> {
+                    targetNoteId = state.targetNoteId
                     showNotes = true
                 }
             }
@@ -271,7 +277,13 @@ fun MainApp(state: MainAppState) {
     }
 
     if (showNotes) {
-        NotesPage(onDismiss = { showNotes = false })
+        NotesPage(
+            initialNoteId = targetNoteId,
+            onDismiss = {
+                showNotes = false
+                targetNoteId = null
+            },
+        )
     }
 }
 

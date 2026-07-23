@@ -53,7 +53,10 @@ class MainActivity : FragmentActivity() {
             }
         mainViewModel.setLaunchSource(launchSource)
 
-        intent.getStringExtra("shortcut_action")?.let { mainViewModel.setShortcutAction(it) }
+        intent.getStringExtra("shortcut_action")?.let {
+            val noteId = if (intent.hasExtra("note_id")) intent.getLongExtra("note_id", -1L).takeIf { id -> id != -1L } else null
+            mainViewModel.setShortcutAction(it, noteId)
+        }
 
         setContent {
             val windowSizeClass = calculateWindowSizeClass(this)
@@ -115,7 +118,10 @@ class MainActivity : FragmentActivity() {
                 else -> LaunchSource.UNKNOWN
             }
         mainViewModel.setLaunchSource(source)
-        intent.getStringExtra("shortcut_action")?.let { mainViewModel.setShortcutAction(it) }
+        intent.getStringExtra("shortcut_action")?.let {
+            val noteId = if (intent.hasExtra("note_id")) intent.getLongExtra("note_id", -1L).takeIf { id -> id != -1L } else null
+            mainViewModel.setShortcutAction(it, noteId)
+        }
     }
 
     private fun showBiometricPrompt(onSuccess: () -> Unit, onError: (Int, CharSequence) -> Unit) {

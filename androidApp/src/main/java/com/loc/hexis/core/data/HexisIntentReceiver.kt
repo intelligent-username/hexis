@@ -18,8 +18,12 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalDateTime
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.get
+
+import com.loc.hexis.core.note.CountingTableData
+import com.loc.hexis.core.note.NoteRepo
 
 class HexisIntentReceiver : BroadcastReceiver(), KoinComponent {
 
@@ -34,20 +38,23 @@ class HexisIntentReceiver : BroadcastReceiver(), KoinComponent {
 
         receiverScope.launch {
             try {
-                val datastore = get<SettingsDatastore>()
-                val pauseNotifications = datastore.getNotificationsFlow().first()
-
-                if (intent != null && !pauseNotifications) {
+                if (intent != null) {
                     when (intent.action) {
-                        IntentActions.HABIT_NOTIFICATION.action -> habitNotification(intent)
-
-                        IntentActions.ADD_HABIT_STATUS.action -> addHabitStatus(intent)
-
-                        IntentActions.MARK_TASK_DONE.action -> markTaskDone(intent)
-
-                        IntentActions.TASK_NOTIFICATION.action -> taskNotification(intent)
-
-                        else -> return@launch
+                        IntentActions.INCREMENT_NOTE_COUNTER.action -> incrementNoteCounter(intent)
+                        IntentActions.DECREMENT_NOTE_COUNTER.action -> decrementNoteCounter(intent)
+                        else -> {
+                            val datastore = get<SettingsDatastore>()
+                            val pauseNotifications = datastore.getNotificationsFlow().first()
+                            if (!pauseNotifications) {
+                                when (intent.action) {
+                                    IntentActions.HABIT_NOTIFICATION.action -> habitNotification(intent)
+                                    IntentActions.ADD_HABIT_STATUS.action -> addHabitStatus(intent)
+                                    IntentActions.MARK_TASK_DONE.action -> markTaskDone(intent)
+                                    IntentActions.TASK_NOTIFICATION.action -> taskNotification(intent)
+                                    else -> return@launch
+                                }
+                            }
+                        }
                     }
                 }
             } catch (t: Throwable) {
@@ -56,6 +63,40 @@ class HexisIntentReceiver : BroadcastReceiver(), KoinComponent {
                 pendingResult.finish()
             }
         }
+    }
+
+    private suspend fun incrementNoteCounter(intent: Intent) {
+        val noteId = intent.getLongExtra("note_id", -1L)
+        val rowId = intent.getStringExtra("row_id") ?: return
+        if (noteId < 0) return
+
+        val noteRepo = get<NoteRepo>()
+        val note = noteRepo.getNoteById(noteId) ?: return
+        val tableData = note.parseCountingTable()
+        val updatedRows = tableData.rows.map { r ->
+            if (r.id == rowId) r.copy(value = r.value + r.step) else r
+        }
+        noteRepo.upsertNote(
+            note.withCountingTable(CountingTableData(updatedRows))
+                .copy(updatedAt = LocalDateTime.now())
+        )
+    }
+
+    private suspend fun decrementNoteCounter(intent: Intent) {
+        val noteId = intent.getLongExtra("note_id", -1L)
+        val rowId = intent.getStringExtra("row_id") ?: return
+        if (noteId < 0) return
+
+        val noteRepo = get<NoteRepo>()
+        val note = noteRepo.getNoteById(noteId) ?: return
+        val tableData = note.parseCountingTable()
+        val updatedRows = tableData.rows.map { r ->
+            if (r.id == rowId) r.copy(value = (r.value - r.step).coerceAtLeast(0.0)) else r
+        }
+        noteRepo.upsertNote(
+            note.withCountingTable(CountingTableData(updatedRows))
+                .copy(updatedAt = LocalDateTime.now())
+        )
     }
 
     private suspend fun markTaskDone(intent: Intent) {

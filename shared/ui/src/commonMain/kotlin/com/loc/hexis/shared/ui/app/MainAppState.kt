@@ -23,6 +23,7 @@ data class MainAppState(
     val theme: Theme = Theme(),
     val currentChangelog: VersionEntry? = null,
     val shortcutAction: String? = null,
+    val targetNoteId: Long? = null,
     val launchSource: LaunchSource = LaunchSource.UNKNOWN,
     val dayOnHexis: Int = 0,
     val weeklyPoints: Int = 0,
