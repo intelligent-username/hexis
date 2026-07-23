@@ -1,9 +1,11 @@
 package com.loc.hexis.shared.ui.note.ui
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -11,7 +13,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -96,6 +97,7 @@ fun CountingTableCard(
         onArchive = onArchive,
         onUnarchive = onUnarchive,
         onDelete = onDelete,
+        showBottomBar = false,
         modifier = modifier,
     ) {
         if (tableData.rows.isEmpty()) {
@@ -107,7 +109,7 @@ fun CountingTableCard(
         } else {
             tableData.rows.take(5).forEachIndexed { index, row ->
                 if (index > 0) {
-                    HorizontalDivider(
+                    androidx.compose.material3.HorizontalDivider(
                         modifier = Modifier.padding(vertical = 5.dp),
                         color = dividerColor,
                     )

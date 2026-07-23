@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -953,6 +954,7 @@ fun NoteEditorSheet(
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
                                         verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
                                     ) {
                                         Row(
                                             modifier = Modifier.weight(1f),
@@ -1004,7 +1006,36 @@ fun NoteEditorSheet(
                                             )
                                         }
 
-                                        Spacer(modifier = Modifier.size(48.dp))
+                                        // Step field: fixed width, raw text state so mid-type chars don't get erased
+                                        val stepText = remember(row.id) {
+                                            mutableStateOf(if (row.step == 1.0) "" else if (row.step % 1.0 == 0.0) row.step.toLong().toString() else row.step.toString())
+                                        }
+                                        OutlinedTextField(
+                                            value = stepText.value,
+                                            onValueChange = { raw ->
+                                                stepText.value = raw
+                                                val parsed = raw.toDoubleOrNull()
+                                                val targetIdx = counterRows.indexOfFirst { it.id == row.id }
+                                                if (targetIdx != -1 && parsed != null && parsed > 0) {
+                                                    counterRows[targetIdx] = counterRows[targetIdx].copy(step = parsed)
+                                                }
+                                            },
+                                            label = { Text("Step", style = MaterialTheme.typography.labelSmall) },
+                                            placeholder = { Text("1", style = MaterialTheme.typography.labelSmall) },
+                                            singleLine = true,
+                                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                            colors = OutlinedTextFieldDefaults.colors(
+                                                focusedTextColor = onSurfaceColor,
+                                                unfocusedTextColor = onSurfaceColor,
+                                                focusedLabelColor = if (hasEditorCustomColor) onSurfaceColor else MaterialTheme.colorScheme.primary,
+                                                unfocusedLabelColor = onSurfaceVariantColor,
+                                                focusedBorderColor = if (hasEditorCustomColor) onSurfaceColor else MaterialTheme.colorScheme.primary,
+                                                unfocusedBorderColor = if (hasEditorCustomColor) onSurfaceVariantColor.copy(alpha = 0.3f) else MaterialTheme.colorScheme.outlineVariant,
+                                            ),
+                                            shape = RoundedCornerShape(10.dp),
+                                            textStyle = MaterialTheme.typography.bodySmall,
+                                            modifier = Modifier.width(72.dp),
+                                        )
                                     }
                                 }
                             }

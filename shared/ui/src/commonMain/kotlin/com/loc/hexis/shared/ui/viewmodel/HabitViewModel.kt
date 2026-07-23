@@ -345,12 +345,17 @@ class HabitViewModel(
     }
 
     private suspend fun toggleHabitProgress(habit: Habit, date: LocalDate) {
-        if (habit.pomodoroLinked) return
-        val currentValue = repo.getHabitProgress(habit.id, date)
-        if (currentValue >= (habit.targetValue ?: 1.0)) {
-            repo.deleteHabitStatus(habit.id, date)
-        } else {
-            repo.incrementHabitProgress(habit.id, date, habit.incrementBy)
+        try {
+            if (habit.pomodoroLinked) return
+            val currentValue = repo.getHabitProgress(habit.id, date)
+            val target = (habit.targetValue ?: 1.0) - 0.001
+            if (currentValue >= target) {
+                repo.deleteHabitStatus(habit.id, date)
+            } else {
+                repo.incrementHabitProgress(habit.id, date, habit.incrementBy)
+            }
+        } catch (e: Exception) {
+            _state.update { it.copy(errorMessage = e.message ?: "Failed to update habit progress") }
         }
     }
 

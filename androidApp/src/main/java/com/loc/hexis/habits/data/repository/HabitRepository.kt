@@ -304,16 +304,19 @@ class HabitRepository(
         date: LocalDate,
         incrementBy: Double,
     ): Double {
-        val currentValue = habitStatusDao.getProgressOrDefault(habitId, date)
-        val newValue = currentValue + incrementBy
-        habitStatusDao.deleteStatus(habitId, date)
-        habitStatusDao.upsert(
-            com.loc.hexis.habits.data.database.HabitStatusEntity(
-                habitId = habitId,
-                date = date,
-                value = newValue,
+        val existing = habitStatusDao.getStatus(habitId, date)
+        val newValue = (existing?.value ?: 0.0) + incrementBy
+        if (existing != null) {
+            habitStatusDao.upsert(existing.copy(value = newValue))
+        } else {
+            habitStatusDao.upsert(
+                com.loc.hexis.habits.data.database.HabitStatusEntity(
+                    habitId = habitId,
+                    date = date,
+                    value = newValue,
+                )
             )
-        )
+        }
 
         if (date == LocalDate.now()) {
             notificationManager.cancelNotification(habitId = habitId.toInt())
@@ -351,7 +354,7 @@ class HabitRepository(
     override suspend fun isHabitCompleted(habitId: Long, date: LocalDate): Boolean {
         val habit = habitDao.getHabitById(habitId)?.toHabit() ?: return false
         val value = habitStatusDao.getProgressOrDefault(habitId, date)
-        return value >= (habit.targetValue ?: 1.0)
+        return value >= ((habit.targetValue ?: 1.0) - 0.001)
     }
 
     private fun computeWeeklyPoints(

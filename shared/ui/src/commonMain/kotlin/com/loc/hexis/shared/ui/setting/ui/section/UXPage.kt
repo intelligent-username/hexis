@@ -50,6 +50,7 @@ fun UXPage(state: SettingsState, onAction: (SettingsAction) -> Unit, onNavigateB
     var showPasswordDialog by remember { mutableStateOf(false) }
     var newPassword by remember { mutableStateOf("") }
     var passwordError by remember { mutableStateOf<String?>(null) }
+    var showVerifyDialog by remember { mutableStateOf(false) }
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     Column(
         modifier =
@@ -85,9 +86,7 @@ fun UXPage(state: SettingsState, onAction: (SettingsAction) -> Unit, onNavigateB
                         trailingContent = {
                             ExpressiveSwitch(
                                 checked = state.reorderTasks,
-                                onCheckedChange = {
-                                    onAction(SettingsAction.ChangeReorderTasks(it))
-                                },
+                                onCheckedChange = { onAction(SettingsAction.ChangeReorderTasks(it)) },
                             )
                         },
                         colors = listItemColors(),
@@ -102,14 +101,74 @@ fun UXPage(state: SettingsState, onAction: (SettingsAction) -> Unit, onNavigateB
                         trailingContent = {
                             ExpressiveSwitch(
                                 checked = state.reorderHabits,
-                                onCheckedChange = {
-                                    onAction(SettingsAction.ChangeReorderHabits(it))
+                                onCheckedChange = { onAction(SettingsAction.ChangeReorderHabits(it)) },
+                            )
+                        },
+                        colors = listItemColors(),
+                        modifier = Modifier.clip(middleItemShape()),
+                    )
+
+                    ListItem(
+                        headlineContent = { Text(text = stringResource(Res.string.use_24Hr)) },
+                        supportingContent = {
+                            Text(text = stringResource(Res.string.use_24Hr_desc))
+                        },
+                        trailingContent = {
+                            ExpressiveSwitch(
+                                checked = state.is24Hr,
+                                onCheckedChange = { onAction(SettingsAction.ChangeIs24Hr(it)) },
+                            )
+                        },
+                        colors = listItemColors(),
+                        modifier = Modifier.clip(middleItemShape()),
+                    )
+
+                    ListItem(
+                        headlineContent = { Text(text = "Lock Vault Notes") },
+                        supportingContent = {
+                            Text(text = "Require password to view and edit encrypted vault notes")
+                        },
+                        trailingContent = {
+                            ExpressiveSwitch(
+                                checked = state.isLockVaultNotesOn,
+                                onCheckedChange = { enable ->
+                                    if (enable) {
+                                        if (state.vaultPasswordHash == null) {
+                                            newPassword = ""
+                                            passwordError = null
+                                            showPasswordDialog = true
+                                        } else {
+                                            onAction(SettingsAction.ChangeLockVaultNotes(true))
+                                        }
+                                    } else {
+                                        onAction(SettingsAction.ChangeLockVaultNotes(false))
+                                    }
                                 },
                             )
                         },
                         colors = listItemColors(),
                         modifier = Modifier.clip(middleItemShape()),
                     )
+
+                    if (state.vaultPasswordHash != null && state.isLockVaultNotesOn) {
+                        ListItem(
+                            headlineContent = { Text(text = "Change Vault Password") },
+                            supportingContent = {
+                                Text(text = "Authenticate with biometrics or device PIN to set a new password")
+                            },
+                            trailingContent = {
+                                TextButton(
+                                    onClick = {
+                                        showVerifyDialog = true
+                                    }
+                                ) {
+                                    Text("Change")
+                                }
+                            },
+                            colors = listItemColors(),
+                            modifier = Modifier.clip(middleItemShape()),
+                        )
+                    }
 
                     ListItem(
                         headlineContent = { Text(text = stringResource(Res.string.show_habits)) },
@@ -290,6 +349,38 @@ fun UXPage(state: SettingsState, onAction: (SettingsAction) -> Unit, onNavigateB
                     }
                 ) {
                     Text("Save")
+                }
+            }
+        }
+    }
+
+    if (showVerifyDialog) {
+        HexisDialog(onDismissRequest = { showVerifyDialog = false }) {
+            Text(
+                text = "Biometric / Device Lock Verification",
+                style = MaterialTheme.typography.titleMedium.copy(fontFamily = flexFontEmphasis()),
+            )
+            Text(
+                text = "Authorize password change using your device biometric or PIN lock.",
+                style = MaterialTheme.typography.bodySmall.copy(fontFamily = flexFontRounded()),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            androidx.compose.foundation.layout.Row(
+                horizontalArrangement = Arrangement.End,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                TextButton(onClick = { showVerifyDialog = false }) {
+                    Text("Cancel")
+                }
+                Button(
+                    onClick = {
+                        showVerifyDialog = false
+                        newPassword = ""
+                        passwordError = null
+                        showPasswordDialog = true
+                    }
+                ) {
+                    Text("Authenticate & Set Password")
                 }
             }
         }

@@ -50,6 +50,7 @@ fun BaseNoteCard(
     onArchive: () -> Unit = {},
     onUnarchive: () -> Unit = {},
     onDelete: () -> Unit = {},
+    showBottomBar: Boolean = true,
     modifier: Modifier = Modifier,
     body: @Composable ColumnScope.() -> Unit,
 ) {
@@ -135,78 +136,80 @@ fun BaseNoteCard(
 
             body()
 
-            Spacer(modifier = Modifier.height(10.dp))
+            if (showBottomBar) {
+                Spacer(modifier = Modifier.height(10.dp))
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Text(
-                    text = formatNoteDate(note.updatedAt),
-                    style = MaterialTheme.typography.labelSmall.copy(fontFamily = flexFontRounded()),
-                    color = onSurfaceVariantColor.copy(alpha = 0.6f),
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text(
+                        text = formatNoteDate(note.updatedAt),
+                        style = MaterialTheme.typography.labelSmall.copy(fontFamily = flexFontRounded()),
+                        color = onSurfaceVariantColor.copy(alpha = 0.6f),
+                    )
 
-                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    if (!showArchived) {
-                        FilledTonalIconButton(
-                            onClick = onTogglePin,
-                            modifier = Modifier.size(32.dp),
-                            colors =
-                                IconButtonDefaults.filledTonalIconButtonColors(
-                                    containerColor = pinBtnContainerColor,
-                                    contentColor = pinBtnContentColor,
-                                ),
-                            shapes =
-                                IconButtonShapes(
-                                    shape = RoundedCornerShape(10.dp),
-                                    pressedShape = RoundedCornerShape(10.dp),
-                                ),
-                        ) {
-                            Icon(
-                                imageVector = vectorResource(Res.drawable.flag),
-                                contentDescription = if (note.pinned) "Unpin" else "Pin",
-                                modifier = Modifier.size(14.dp),
-                            )
-                        }
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        if (!showArchived) {
+                            FilledTonalIconButton(
+                                onClick = onTogglePin,
+                                modifier = Modifier.size(32.dp),
+                                colors =
+                                    IconButtonDefaults.filledTonalIconButtonColors(
+                                        containerColor = pinBtnContainerColor,
+                                        contentColor = pinBtnContentColor,
+                                    ),
+                                shapes =
+                                    IconButtonShapes(
+                                        shape = RoundedCornerShape(10.dp),
+                                        pressedShape = RoundedCornerShape(10.dp),
+                                    ),
+                            ) {
+                                Icon(
+                                    imageVector = vectorResource(Res.drawable.flag),
+                                    contentDescription = if (note.pinned) "Unpin" else "Pin",
+                                    modifier = Modifier.size(14.dp),
+                                )
+                            }
 
-                        FilledTonalIconButton(
-                            onClick = onArchive,
-                            modifier = Modifier.size(32.dp),
-                            colors =
-                                IconButtonDefaults.filledTonalIconButtonColors(
-                                    containerColor = archiveBtnContainerColor,
-                                    contentColor = archiveBtnContentColor,
-                                ),
-                            shapes =
-                                IconButtonShapes(
-                                    shape = RoundedCornerShape(10.dp),
-                                    pressedShape = RoundedCornerShape(10.dp),
-                                ),
-                        ) {
-                            Icon(
-                                imageVector = vectorResource(Res.drawable.archive),
-                                contentDescription = "Archive",
-                                modifier = Modifier.size(14.dp),
-                            )
-                        }
-                    } else {
-                        IconButton(onClick = onUnarchive, modifier = Modifier.size(32.dp)) {
-                            Icon(
-                                imageVector = vectorResource(Res.drawable.unarchive),
-                                contentDescription = "Unarchive Note",
-                                tint = if (hasCustomColor) onSurfaceColor else MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(16.dp),
-                            )
-                        }
-                        IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
-                            Icon(
-                                imageVector = vectorResource(Res.drawable.delete),
-                                contentDescription = "Delete Note",
-                                tint = if (hasCustomColor) onSurfaceColor else MaterialTheme.colorScheme.error,
-                                modifier = Modifier.size(16.dp),
-                            )
+                            FilledTonalIconButton(
+                                onClick = onArchive,
+                                modifier = Modifier.size(32.dp),
+                                colors =
+                                    IconButtonDefaults.filledTonalIconButtonColors(
+                                        containerColor = archiveBtnContainerColor,
+                                        contentColor = archiveBtnContentColor,
+                                    ),
+                                shapes =
+                                    IconButtonShapes(
+                                        shape = RoundedCornerShape(10.dp),
+                                        pressedShape = RoundedCornerShape(10.dp),
+                                    ),
+                            ) {
+                                Icon(
+                                    imageVector = vectorResource(Res.drawable.archive),
+                                    contentDescription = "Archive",
+                                    modifier = Modifier.size(14.dp),
+                                )
+                            }
+                        } else {
+                            IconButton(onClick = onUnarchive, modifier = Modifier.size(32.dp)) {
+                                Icon(
+                                    imageVector = vectorResource(Res.drawable.unarchive),
+                                    contentDescription = "Unarchive Note",
+                                    tint = if (hasCustomColor) onSurfaceColor else MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(16.dp),
+                                )
+                            }
+                            IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
+                                Icon(
+                                    imageVector = vectorResource(Res.drawable.delete),
+                                    contentDescription = "Delete Note",
+                                    tint = if (hasCustomColor) onSurfaceColor else MaterialTheme.colorScheme.error,
+                                    modifier = Modifier.size(16.dp),
+                                )
+                            }
                         }
                     }
                 }

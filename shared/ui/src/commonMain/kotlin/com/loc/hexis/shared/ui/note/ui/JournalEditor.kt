@@ -331,18 +331,61 @@ fun JournalEditor(
                             1L -> "Tomorrow"
                             else -> date.toFormattedString()
                         }
-                        Surface(
-                            color = if (hasEditorCustomColor) Color.Transparent else MaterialTheme.colorScheme.surface,
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(IntrinsicSize.Min),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(
-                                text = headerText,
-                                style = MaterialTheme.typography.labelLarge.copy(
-                                    fontFamily = flexFontEmphasis(),
-                                    fontWeight = FontWeight.Bold
-                                ),
-                                color = primaryAccent
-                            )
+                            // Unbroken Vertical Timeline Line through Date Headers
+                            Box(
+                                modifier = Modifier
+                                    .width(36.dp)
+                                    .fillMaxHeight(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .width(2.dp)
+                                        .fillMaxHeight()
+                                        .background(
+                                            color = if (hasEditorCustomColor) onSurfaceColor.copy(alpha = 0.25f)
+                                            else primaryAccent.copy(alpha = 0.3f)
+                                        )
+                                )
+                            }
+
+                            // Centered Date Header Pill
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .padding(vertical = 8.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Surface(
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = if (hasEditorCustomColor) onSurfaceColor.copy(alpha = 0.15f)
+                                    else MaterialTheme.colorScheme.surfaceContainerHigh,
+                                    border = BorderStroke(
+                                        width = 1.dp,
+                                        color = if (hasEditorCustomColor) onSurfaceColor.copy(alpha = 0.2f)
+                                        else primaryAccent.copy(alpha = 0.25f)
+                                    ),
+                                ) {
+                                    Text(
+                                        text = headerText,
+                                        style = MaterialTheme.typography.labelMedium.copy(
+                                            fontFamily = flexFontEmphasis(),
+                                            fontWeight = FontWeight.Bold
+                                        ),
+                                        color = primaryAccent,
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                                    )
+                                }
+                            }
+
+                            // 36.dp spacer matching left timeline column for perfect horizontal centering
+                            Spacer(modifier = Modifier.width(36.dp))
                         }
                     }
 
@@ -360,7 +403,7 @@ fun JournalEditor(
                             // Continuous Connected Timeline Axis Column
                             Box(
                                 modifier = Modifier
-                                    .width(32.dp)
+                                    .width(36.dp)
                                     .fillMaxHeight(),
                                 contentAlignment = Alignment.TopCenter
                             ) {
@@ -375,19 +418,43 @@ fun JournalEditor(
                                         )
                                 )
 
-                                // Timeline Node Circle
-                                Surface(
-                                    shape = CircleShape,
-                                    color = if (hasEditorCustomColor) onSurfaceColor else primaryAccent,
-                                    border = BorderStroke(
-                                        width = 3.dp,
-                                        color = if (hasEditorCustomColor) Color.Transparent
-                                        else MaterialTheme.colorScheme.surface
-                                    ),
-                                    modifier = Modifier
-                                        .padding(top = 14.dp)
-                                        .size(14.dp)
-                                ) {}
+                                // Timeline Node: Mood Emoji if present, else Default Circle
+                                val mood = entry.mood
+                                if (!mood.isNullOrBlank()) {
+                                    Surface(
+                                        shape = CircleShape,
+                                        color = if (hasEditorCustomColor) onSurfaceColor.copy(alpha = 0.2f)
+                                        else MaterialTheme.colorScheme.surfaceContainerHighest,
+                                        border = BorderStroke(
+                                            width = 1.5.dp,
+                                            color = if (hasEditorCustomColor) onSurfaceColor.copy(alpha = 0.4f) else primaryAccent.copy(alpha = 0.5f)
+                                        ),
+                                        modifier = Modifier
+                                            .padding(top = 10.dp)
+                                            .size(24.dp)
+                                    ) {
+                                        Box(contentAlignment = Alignment.Center) {
+                                            Text(
+                                                text = mood,
+                                                fontSize = 13.sp,
+                                                textAlign = TextAlign.Center
+                                            )
+                                        }
+                                    }
+                                } else {
+                                    Surface(
+                                        shape = CircleShape,
+                                        color = if (hasEditorCustomColor) onSurfaceColor else primaryAccent,
+                                        border = BorderStroke(
+                                            width = 3.dp,
+                                            color = if (hasEditorCustomColor) Color.Transparent
+                                            else MaterialTheme.colorScheme.surface
+                                        ),
+                                        modifier = Modifier
+                                            .padding(top = 14.dp)
+                                            .size(14.dp)
+                                    ) {}
+                                }
                             }
 
                             // Entry Content Card
@@ -411,20 +478,6 @@ fun JournalEditor(
                                                 style = MaterialTheme.typography.labelMedium.copy(fontFamily = flexFontRounded()),
                                                 color = onSurfaceVariantColor
                                             )
-                                            val mood = entry.mood
-                                            if (!mood.isNullOrBlank()) {
-                                                Surface(
-                                                    shape = RoundedCornerShape(8.dp),
-                                                    color = onSurfaceVariantColor.copy(alpha = 0.12f),
-                                                    modifier = Modifier.padding(start = 8.dp)
-                                                ) {
-                                                    Text(
-                                                        text = mood,
-                                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                                                        fontSize = 14.sp
-                                                    )
-                                                }
-                                            }
                                         }
 
                                         Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {

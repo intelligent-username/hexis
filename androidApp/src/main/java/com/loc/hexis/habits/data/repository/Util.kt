@@ -202,7 +202,8 @@ fun computePointsSummary(
 }
 
 fun filterCompletedStatuses(habit: Habit, statuses: List<HabitStatus>): List<HabitStatus> {
-    return statuses.filter { it.value >= (habit.targetValue ?: 1.0) }
+    val target = (habit.targetValue ?: 1.0) - 0.001
+    return statuses.filter { it.value >= target }
 }
 
 fun calculateConsistency(dates: List<LocalDate>, eligibleWeekdays: Set<DayOfWeek>): Float {
