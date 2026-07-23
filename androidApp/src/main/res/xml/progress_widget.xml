@@ -12,5 +12,4 @@
     android:initialLayout="@layout/progress_widget_initial"
     android:resizeMode="horizontal|vertical"
     android:widgetCategory="home_screen"
-    android:description="@string/widget_progress_desc"
-    android:previewImage="@drawable/progress_widget" />
+    android:description="@string/widget_progress_desc" />
