@@ -497,10 +497,11 @@ fun JournalEditor(
                                                 },
                                                 modifier = Modifier.size(28.dp)
                                             ) {
-                                                Text(
-                                                    text = if (editingEntryId == entry.id) "✓" else "✏️",
-                                                    fontSize = 13.sp,
-                                                    color = onSurfaceColor
+                                                Icon(
+                                                    imageVector = vectorResource(if (editingEntryId == entry.id) Res.drawable.check else Res.drawable.edit),
+                                                    contentDescription = "Edit entry",
+                                                    tint = onSurfaceColor,
+                                                    modifier = Modifier.size(16.dp),
                                                 )
                                             }
                                             IconButton(

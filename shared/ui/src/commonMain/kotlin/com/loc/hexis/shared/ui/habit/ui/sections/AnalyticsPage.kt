@@ -47,9 +47,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.clickable
+import androidx.compose.material3.Surface
+import androidx.compose.ui.unit.sp
 import com.kizitonwose.calendar.compose.heatmapcalendar.rememberHeatMapCalendarState
 import com.kizitonwose.calendar.compose.rememberCalendarState
 import com.kizitonwose.calendar.core.minusMonths
+import com.loc.hexis.core.toFormattedString
 import com.loc.hexis.shared.ui.LocalWindowSizeClass
 import com.loc.hexis.shared.ui.components.HexisDialog
 import com.loc.hexis.shared.ui.habit.HabitState
@@ -67,7 +71,11 @@ import com.loc.hexis.shared.ui.theme.flexFontEmphasis
 import com.loc.hexis.shared.ui.theme.flexFontRounded
 import com.loc.hexis.shared.ui.util.rememberToday
 import hexis.shared.ui.generated.resources.*
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.minus
+import kotlinx.datetime.plus
 import kotlinx.datetime.yearMonth
+import androidx.compose.ui.text.font.FontWeight
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.resources.vectorResource
 
@@ -83,6 +91,7 @@ fun AnalyticsPage(
     val windowSizeClass = LocalWindowSizeClass.current
 
     val today by rememberToday()
+    var selectedDate by remember(today) { mutableStateOf(today) }
     val currentMonth = today.yearMonth
     val currentHabit =
         state.habitsWithAnalytics.find { it.habit.id == state.analyticsHabitId } ?: return
@@ -247,110 +256,195 @@ fun AnalyticsPage(
             }
 
             if (currentHabit.habit.displayMode == com.loc.hexis.core.habits.DisplayMode.PROGRESS) {
-                val currentValue = currentHabit.statuses.find { it.date == today }?.value ?: 0.0
+                val currentValue = currentHabit.statuses.find { it.date == selectedDate }?.value ?: 0.0
                 val targetValue = currentHabit.habit.targetValue ?: 1.0
                 val incrementBy = currentHabit.habit.incrementBy
+                val progressFraction = if (targetValue > 0.0) (currentValue / targetValue).coerceIn(0.0, 1.0).toFloat() else 0f
+                val isTargetReached = currentValue >= (targetValue - 0.001)
 
                 item {
-                    var undoBudget by remember { mutableStateOf(0) }
+                    val dateDiff = selectedDate.toEpochDays() - today.toEpochDays()
+                    val dateTitle = when (dateDiff) {
+                        0L -> "Today's Progress"
+                        -1L -> "Yesterday's Progress"
+                        else -> "${selectedDate.toFormattedString()} Progress"
+                    }
 
-                    Column(
-                        modifier =
-                            Modifier.fillMaxWidth()
-                                .background(
-                                    MaterialTheme.colorScheme.surfaceContainerHigh,
-                                    shape = MaterialTheme.shapes.large,
-                                )
-                                .padding(16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
+                    Surface(
+                        shape = MaterialTheme.shapes.large,
+                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        modifier = Modifier.fillMaxWidth().widthIn(max = maxWidth),
                     ) {
-                        Text(text = "Today's Progress", style = MaterialTheme.typography.titleSmall)
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(0.dp),
-                            modifier =
-                                Modifier.pointerInput(Unit) {
-                                    detectVerticalDragGestures { _, dragDistance ->
-                                        if (dragDistance > 30f && currentValue > 0.0) {
+                        Column(
+                            modifier = Modifier.padding(16.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                        ) {
+                            // Date Navigation Bar
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                FilledTonalIconButton(
+                                    onClick = {
+                                        selectedDate = selectedDate.minus(1, DateTimeUnit.DAY)
+                                    },
+                                    modifier = Modifier.size(36.dp),
+                                ) {
+                                    Icon(
+                                        imageVector = vectorResource(Res.drawable.arrow_back),
+                                        contentDescription = "Previous Day",
+                                        modifier = Modifier.size(18.dp),
+                                    )
+                                }
+
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text(
+                                        text = dateTitle,
+                                        style = MaterialTheme.typography.titleMedium.copy(
+                                            fontFamily = flexFontEmphasis(),
+                                            fontWeight = FontWeight.Bold,
+                                        ),
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                    )
+
+                                    if (selectedDate != today) {
+                                        Spacer(modifier = Modifier.height(2.dp))
+                                        Surface(
+                                            shape = RoundedCornerShape(12.dp),
+                                            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.8f),
+                                            modifier = Modifier.clip(RoundedCornerShape(12.dp)).clickable {
+                                                selectedDate = today
+                                            },
+                                        ) {
+                                            Text(
+                                                text = "Reset to Today",
+                                                style = MaterialTheme.typography.labelSmall.copy(
+                                                    fontFamily = flexFontRounded(),
+                                                    fontSize = 11.sp,
+                                                ),
+                                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                                            )
+                                        }
+                                    }
+                                }
+
+                                FilledTonalIconButton(
+                                    onClick = {
+                                        if (selectedDate < today) {
+                                            selectedDate = selectedDate.plus(1, DateTimeUnit.DAY)
+                                        }
+                                    },
+                                    enabled = selectedDate < today,
+                                    modifier = Modifier.size(36.dp),
+                                ) {
+                                    Icon(
+                                        imageVector = vectorResource(Res.drawable.arrow_forward),
+                                        contentDescription = "Next Day",
+                                        modifier = Modifier.size(18.dp),
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            // Counter Controls & Value
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                            ) {
+                                FilledTonalIconButton(
+                                    onClick = {
+                                        if (currentValue > 0.0) {
                                             onAction(
                                                 HabitsAction.DecrementHabitProgress(
                                                     currentHabit.habit,
-                                                    today,
+                                                    selectedDate,
                                                 )
                                             )
-                                            undoBudget++
-                                        } else if (
-                                            dragDistance < -30f &&
-                                                undoBudget > 0 &&
-                                                currentValue + incrementBy <= targetValue
-                                        ) {
-                                            onAction(
-                                                HabitsAction.IncrementHabitProgress(
-                                                    currentHabit.habit,
-                                                    today,
-                                                )
-                                            )
-                                            undoBudget--
                                         }
-                                    }
-                                },
-                        ) {
-                            IconButton(
-                                onClick = {
-                                    if (currentValue > 0.0) {
-                                        onAction(
-                                            HabitsAction.DecrementHabitProgress(
-                                                currentHabit.habit,
-                                                today,
-                                            )
+                                    },
+                                    enabled = currentValue > 0.0,
+                                    modifier = Modifier.size(48.dp),
+                                ) {
+                                    Text(
+                                        text = "−",
+                                        style = MaterialTheme.typography.headlineMedium.copy(
+                                            fontFamily = flexFontRounded(),
+                                            fontWeight = FontWeight.Bold,
+                                        ),
+                                    )
+                                }
+
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Row(verticalAlignment = Alignment.Bottom) {
+                                        Text(
+                                            text = if (currentValue % 1.0 == 0.0) currentValue.toLong().toString() else currentValue.toString(),
+                                            style = MaterialTheme.typography.displayMedium.copy(
+                                                fontFamily = flexFontRounded(),
+                                                fontWeight = FontWeight.Bold,
+                                            ),
+                                            color = if (isTargetReached) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
                                         )
-                                        undoBudget++
+                                        Text(
+                                            text = " / ${if (targetValue % 1.0 == 0.0) targetValue.toLong().toString() else targetValue.toString()}",
+                                            style = MaterialTheme.typography.headlineSmall.copy(
+                                                fontFamily = flexFontRounded(),
+                                            ),
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.padding(bottom = 6.dp),
+                                        )
+                                    }
+
+                                    if (isTargetReached) {
+                                        Text(
+                                            text = "Target Met",
+                                            style = MaterialTheme.typography.labelMedium.copy(
+                                                fontFamily = flexFontRounded(),
+                                                fontWeight = FontWeight.SemiBold,
+                                            ),
+                                            color = MaterialTheme.colorScheme.primary,
+                                        )
+                                    } else if (incrementBy != 1.0) {
+                                        Text(
+                                            text = "Step: ±${if (incrementBy % 1.0 == 0.0) incrementBy.toLong().toString() else incrementBy.toString()}",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                                        )
                                     }
                                 }
-                            ) {
-                                Icon(
-                                    imageVector = vectorResource(Res.drawable.arrow_back),
-                                    contentDescription = "Decrement",
-                                )
-                            }
 
-                            Text(
-                                text = "${currentValue.toInt()}",
-                                style =
-                                    MaterialTheme.typography.displaySmall.copy(
-                                        fontFamily = flexFontRounded()
-                                    ),
-                                color = MaterialTheme.colorScheme.primary,
-                            )
-                            Text(
-                                text = "/${targetValue.toInt()}",
-                                style =
-                                    MaterialTheme.typography.headlineSmall.copy(
-                                        fontFamily = flexFontRounded()
-                                    ),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-
-                            val canUndo =
-                                undoBudget > 0 && currentValue + incrementBy <= targetValue
-                            IconButton(
-                                onClick = {
-                                    onAction(
-                                        HabitsAction.IncrementHabitProgress(
-                                            currentHabit.habit,
-                                            today,
+                                FilledIconButton(
+                                    onClick = {
+                                        onAction(
+                                            HabitsAction.IncrementHabitProgress(
+                                                currentHabit.habit,
+                                                selectedDate,
+                                            )
                                         )
+                                    },
+                                    enabled = selectedDate <= today,
+                                    modifier = Modifier.size(48.dp),
+                                ) {
+                                    Icon(
+                                        imageVector = vectorResource(Res.drawable.add),
+                                        contentDescription = "Increment",
+                                        modifier = Modifier.size(24.dp),
                                     )
-                                    undoBudget--
-                                },
-                                enabled = canUndo,
-                            ) {
-                                Icon(
-                                    imageVector = vectorResource(Res.drawable.arrow_forward),
-                                    contentDescription = "Increment",
-                                )
+                                }
                             }
+
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            // Animated Linear Progress Bar
+                            androidx.compose.material3.LinearProgressIndicator(
+                                progress = { progressFraction },
+                                modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)),
+                                color = MaterialTheme.colorScheme.primary,
+                                trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                            )
                         }
                     }
                 }
@@ -365,7 +459,10 @@ fun AnalyticsPage(
                     days = currentHabit.habit.days,
                     startDate = currentHabit.habit.time.date,
                     onDateClick = {
-                        onAction(HabitsAction.ToggleHabitProgress(currentHabit.habit, it))
+                        selectedDate = it
+                        if (currentHabit.habit.displayMode != com.loc.hexis.core.habits.DisplayMode.PROGRESS) {
+                            onAction(HabitsAction.ToggleHabitProgress(currentHabit.habit, it))
+                        }
                     },
                 )
             }
@@ -380,9 +477,12 @@ fun AnalyticsPage(
                     startDate = currentHabit.habit.time.date,
                     onNavigateToCalendar = onNavigateToCalendar,
                     onDateClick = {
-                        onAction(
-                            HabitsAction.ToggleHabitProgress(habit = currentHabit.habit, date = it)
-                        )
+                        selectedDate = it
+                        if (currentHabit.habit.displayMode != com.loc.hexis.core.habits.DisplayMode.PROGRESS) {
+                            onAction(
+                                HabitsAction.ToggleHabitProgress(habit = currentHabit.habit, date = it)
+                            )
+                        }
                     },
                 )
             }
