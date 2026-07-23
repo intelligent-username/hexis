@@ -1,13 +1,19 @@
 package com.loc.hexis.widgets.notes_shortcut_widget
 
+import android.appwidget.AppWidgetManager
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.glance.ColorFilter
 import androidx.glance.GlanceComposable
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
@@ -16,16 +22,18 @@ import androidx.glance.Image
 import androidx.glance.ImageProvider
 import androidx.glance.LocalContext
 import androidx.glance.LocalSize
-import androidx.glance.action.actionParametersOf
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.SizeMode
+import androidx.glance.action.ActionParameters
+import androidx.glance.appwidget.action.ActionCallback
 import androidx.glance.appwidget.action.actionRunCallback
 import androidx.glance.appwidget.action.actionStartActivity
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.lazy.LazyColumn
 import androidx.glance.appwidget.lazy.items
 import androidx.glance.appwidget.provideContent
+import androidx.glance.appwidget.updateAll
 import androidx.glance.background
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
@@ -45,6 +53,8 @@ import com.loc.hexis.R
 import com.loc.hexis.app.MainActivity
 import com.loc.hexis.core.interfaces.ThemeDatastore
 import com.loc.hexis.core.interfaces.WidgetActions
+import com.loc.hexis.core.note.CounterRow
+import com.loc.hexis.core.note.CountingTableData
 import com.loc.hexis.core.note.Note
 import com.loc.hexis.core.note.NoteRepo
 import com.loc.hexis.core.note.NoteType
@@ -52,11 +62,7 @@ import com.loc.hexis.core.now
 import com.loc.hexis.shared.ui.note.getContentPreview
 import com.loc.hexis.shared.ui.note.getNoteColor
 import com.loc.hexis.widgets.rememberWidgetColorProviders
-import com.loc.hexis.widgets.single_note_widget.DecrementCounterActionCallback
-import com.loc.hexis.widgets.single_note_widget.IncrementCounterActionCallback
-import com.loc.hexis.widgets.single_note_widget.noteIdKey
-import com.loc.hexis.widgets.single_note_widget.rowIdKey
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDateTime
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.get
@@ -91,6 +97,16 @@ private fun getNoteCardColors(note: Note, isDark: Boolean): NoteCardColors {
     }
 }
 
+class RefreshNotesShortcutWidgetActionCallback : ActionCallback {
+    override suspend fun onAction(
+        context: Context,
+        glanceId: GlanceId,
+        parameters: ActionParameters,
+    ) {
+        NotesShortcutWidget().update(context, glanceId)
+    }
+}
+
 class NotesShortcutWidget : GlanceAppWidget(), KoinComponent {
 
     override val sizeMode: SizeMode = SizeMode.Exact
@@ -99,18 +115,19 @@ class NotesShortcutWidget : GlanceAppWidget(), KoinComponent {
         val repo = get<NoteRepo>()
         val themeDatastore = get<ThemeDatastore>()
 
-        val notes = repo.getNotesFlow().first()
-
-        val appTheme = themeDatastore.getAppThemeFlow().first()
-        val seedColor = themeDatastore.getSeedColorFlow().first()
-        val isAmoled = themeDatastore.getAmoledPref().first()
-        val paletteStyle = themeDatastore.getPaletteStyle().first()
-        val isMaterialYou = themeDatastore.getMaterialYouFlow().first()
-
-        val isDark = appTheme == com.loc.hexis.core.theme.AppTheme.DARK || isAmoled
-
         provideContent {
+            val scope = rememberCoroutineScope()
             val size = LocalSize.current
+            val notes by repo.getNotesFlow().collectAsState(emptyList())
+
+            val appTheme by themeDatastore.getAppThemeFlow().collectAsState(com.loc.hexis.core.theme.AppTheme.SYSTEM)
+            val seedColor by themeDatastore.getSeedColorFlow().collectAsState(0xFFFFFF)
+            val isAmoled by themeDatastore.getAmoledPref().collectAsState(false)
+            val paletteStyle by themeDatastore.getPaletteStyle().collectAsState(com.loc.hexis.core.theme.PaletteStyle.TONALSPOT)
+            val isMaterialYou by themeDatastore.getMaterialYouFlow().collectAsState(false)
+
+            val isDark = appTheme == com.loc.hexis.core.theme.AppTheme.DARK || isAmoled
+
             val colors = rememberWidgetColorProviders(
                 appTheme = appTheme,
                 seedColor = seedColor,
@@ -119,9 +136,28 @@ class NotesShortcutWidget : GlanceAppWidget(), KoinComponent {
                 isMaterialYou = isMaterialYou,
             )
 
-            key(size, notes.hashCode()) {
+            key(size) {
                 GlanceTheme(colors = colors) {
-                    NotesWidgetContent(notes = notes, isDark = isDark)
+                    NotesWidgetContent(
+                        notes = notes,
+                        isDark = isDark,
+                        onCounterAction = { noteId, rowId, isIncrement ->
+                            scope.launch {
+                                val note = repo.getNoteById(noteId) ?: return@launch
+                                val tableData = note.parseCountingTable()
+                                val updatedRows = tableData.rows.map { r ->
+                                    if (r.id == rowId) {
+                                        if (isIncrement) r.copy(value = r.value + r.step)
+                                        else r.copy(value = (r.value - r.step).coerceAtLeast(0.0))
+                                    } else r
+                                }
+                                repo.upsertNote(
+                                    note.withCountingTable(CountingTableData(updatedRows))
+                                        .copy(updatedAt = LocalDateTime.now())
+                                )
+                            }
+                        },
+                    )
                 }
             }
         }
@@ -163,7 +199,7 @@ class NotesShortcutWidget : GlanceAppWidget(), KoinComponent {
                 isMaterialYou = false,
             )
             GlanceTheme(colors = colors) {
-                NotesWidgetContent(notes = sampleNotes, isDark = false)
+                NotesWidgetContent(notes = sampleNotes, isDark = false, onCounterAction = { _, _, _ -> })
             }
         }
     }
@@ -171,7 +207,11 @@ class NotesShortcutWidget : GlanceAppWidget(), KoinComponent {
 
 @GlanceComposable
 @Composable
-private fun NotesWidgetContent(notes: List<Note>, isDark: Boolean) {
+private fun NotesWidgetContent(
+    notes: List<Note>,
+    isDark: Boolean,
+    onCounterAction: (noteId: Long, rowId: String, isIncrement: Boolean) -> Unit,
+) {
     val context = LocalContext.current
     val size = LocalSize.current
     val openNotesAction = actionStartActivity(
@@ -208,6 +248,22 @@ private fun NotesWidgetContent(notes: List<Note>, isDark: Boolean) {
                 ),
             )
             Spacer(modifier = GlanceModifier.defaultWeight())
+            Box(
+                modifier = GlanceModifier
+                    .cornerRadius(8.dp)
+                    .background(GlanceTheme.colors.surfaceVariant)
+                    .padding(horizontal = 4.dp, vertical = 4.dp)
+                    .clickable(actionRunCallback<RefreshNotesShortcutWidgetActionCallback>()),
+                contentAlignment = Alignment.Center,
+            ) {
+                Image(
+                    provider = ImageProvider(R.drawable.refresh),
+                    contentDescription = "Refresh",
+                    colorFilter = ColorFilter.tint(GlanceTheme.colors.onSurface),
+                    modifier = GlanceModifier.width(12.dp).height(12.dp),
+                )
+            }
+            Spacer(modifier = GlanceModifier.width(8.dp))
             Text(
                 text = "${notes.size} ${if (notes.size == 1) "note" else "notes"}",
                 style = TextStyle(
@@ -248,14 +304,14 @@ private fun NotesWidgetContent(notes: List<Note>, isDark: Boolean) {
             Row(modifier = GlanceModifier.fillMaxSize()) {
                 LazyColumn(modifier = GlanceModifier.defaultWeight()) {
                     items(col1Notes, itemId = { note -> (note.id.toString() + "_" + note.payloadJson + "_" + note.updatedAt).hashCode().toLong() }) { note ->
-                        NoteCardItem(note = note, isDark = isDark)
+                        NoteCardItem(note = note, isDark = isDark, onCounterAction = onCounterAction)
                         Spacer(modifier = GlanceModifier.height(6.dp))
                     }
                 }
                 Spacer(modifier = GlanceModifier.width(8.dp))
                 LazyColumn(modifier = GlanceModifier.defaultWeight()) {
                     items(col2Notes, itemId = { note -> (note.id.toString() + "_" + note.payloadJson + "_" + note.updatedAt).hashCode().toLong() }) { note ->
-                        NoteCardItem(note = note, isDark = isDark)
+                        NoteCardItem(note = note, isDark = isDark, onCounterAction = onCounterAction)
                         Spacer(modifier = GlanceModifier.height(6.dp))
                     }
                 }
@@ -265,7 +321,7 @@ private fun NotesWidgetContent(notes: List<Note>, isDark: Boolean) {
                 modifier = GlanceModifier.fillMaxSize(),
             ) {
                 items(notes, itemId = { note -> (note.id.toString() + "_" + note.payloadJson + "_" + note.updatedAt).hashCode().toLong() }) { note ->
-                    NoteCardItem(note = note, isDark = isDark)
+                    NoteCardItem(note = note, isDark = isDark, onCounterAction = onCounterAction)
                     Spacer(modifier = GlanceModifier.height(6.dp))
                 }
             }
@@ -275,7 +331,11 @@ private fun NotesWidgetContent(notes: List<Note>, isDark: Boolean) {
 
 @GlanceComposable
 @Composable
-private fun NoteCardItem(note: Note, isDark: Boolean) {
+private fun NoteCardItem(
+    note: Note,
+    isDark: Boolean,
+    onCounterAction: (noteId: Long, rowId: String, isIncrement: Boolean) -> Unit,
+) {
     val context = LocalContext.current
     val titleText = note.title.ifBlank { "Untitled Note" }
     val openNoteAction = actionStartActivity(
@@ -332,14 +392,6 @@ private fun NoteCardItem(note: Note, isDark: Boolean) {
                             val valText = if (row.value % 1.0 == 0.0) row.value.toLong().toString() else row.value.toString()
                             val labelText = row.label.ifBlank { "Item ${index + 1}" }
 
-                            val decrementAction = actionRunCallback<DecrementCounterActionCallback>(
-                                actionParametersOf(noteIdKey to note.id, rowIdKey to row.id)
-                            )
-
-                            val incrementAction = actionRunCallback<IncrementCounterActionCallback>(
-                                actionParametersOf(noteIdKey to note.id, rowIdKey to row.id)
-                            )
-
                             if (index > 0) {
                                 Spacer(modifier = GlanceModifier.height(3.dp))
                             }
@@ -367,7 +419,7 @@ private fun NoteCardItem(note: Note, isDark: Boolean) {
                                             .cornerRadius(6.dp)
                                             .background(GlanceTheme.colors.secondaryContainer)
                                             .padding(horizontal = 8.dp, vertical = 2.dp)
-                                            .clickable(decrementAction),
+                                            .clickable { onCounterAction(note.id, row.id, false) },
                                         contentAlignment = Alignment.Center,
                                     ) {
                                         Text(
@@ -400,7 +452,7 @@ private fun NoteCardItem(note: Note, isDark: Boolean) {
                                             .cornerRadius(6.dp)
                                             .background(GlanceTheme.colors.primary)
                                             .padding(horizontal = 8.dp, vertical = 2.dp)
-                                            .clickable(incrementAction),
+                                            .clickable { onCounterAction(note.id, row.id, true) },
                                         contentAlignment = Alignment.Center,
                                     ) {
                                         Text(

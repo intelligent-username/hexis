@@ -2,7 +2,6 @@ package com.loc.hexis.widgets.single_note_widget
 
 import android.app.Activity
 import android.appwidget.AppWidgetManager
-import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -36,11 +35,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.glance.appwidget.GlanceAppWidgetManager
-import androidx.glance.appwidget.state.updateAppWidgetState
-import androidx.glance.appwidget.updateAll
-import androidx.glance.state.PreferencesGlanceStateDefinition
 import androidx.lifecycle.lifecycleScope
 import com.loc.hexis.core.note.Note
 import com.loc.hexis.core.note.NoteRepo
@@ -51,6 +46,7 @@ import com.loc.hexis.shared.ui.theme.HexisTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import androidx.glance.appwidget.state.updateAppWidgetState
 import org.koin.android.ext.android.inject
 
 class SingleNoteWidgetConfigActivity : ComponentActivity() {
@@ -88,29 +84,14 @@ class SingleNoteWidgetConfigActivity : ComponentActivity() {
     }
 
     private fun saveWidgetStateAndFinish(noteId: Long) {
-        val sp = applicationContext.getSharedPreferences("single_note_widget_prefs", Context.MODE_PRIVATE)
-        sp.edit().putLong("single_note_id_$appWidgetId", noteId).putLong("single_note_id", noteId).apply()
-
         lifecycleScope.launch(Dispatchers.IO) {
             try {
-                val glanceId = try {
-                    GlanceAppWidgetManager(applicationContext).getGlanceIdBy(appWidgetId)
-                } catch (_: Exception) {
-                    null
+                val glanceId = GlanceAppWidgetManager(applicationContext).getGlanceIdBy(appWidgetId)
+                updateAppWidgetState(applicationContext, glanceId) { prefs ->
+                    prefs[noteIdPrefKey] = noteId
                 }
-
-                if (glanceId != null) {
-                    updateAppWidgetState(applicationContext, PreferencesGlanceStateDefinition, glanceId) { prefs ->
-                        prefs.toMutablePreferences().apply {
-                            this[longPreferencesKey("single_note_id")] = noteId
-                            this[longPreferencesKey("last_updated")] = System.currentTimeMillis()
-                        }
-                    }
-                    SingleNoteWidget().update(applicationContext, glanceId)
-                } else {
-                    SingleNoteWidget().updateAll(applicationContext)
-                }
-            } catch (_: Throwable) {}
+                SingleNoteWidget().update(applicationContext, glanceId)
+            } catch (_: Exception) {}
 
             withContext(Dispatchers.Main) {
                 val resultValue = Intent().apply {

@@ -1,10 +1,7 @@
 package com.loc.hexis.note.data.repository
 
 import android.content.Context
-import androidx.datastore.preferences.core.longPreferencesKey
-import androidx.glance.appwidget.GlanceAppWidgetManager
-import androidx.glance.appwidget.state.updateAppWidgetState
-import androidx.glance.state.PreferencesGlanceStateDefinition
+import androidx.glance.appwidget.updateAll
 import com.loc.hexis.core.note.Note
 import com.loc.hexis.core.note.NoteRepo
 import com.loc.hexis.note.data.database.NotesDao
@@ -55,27 +52,8 @@ class NotesRepository(private val notesDao: NotesDao, private val context: Conte
 
     private suspend fun refreshWidgets() {
         try {
-            val glanceManager = GlanceAppWidgetManager(context)
-
-            val singleGlanceIds = glanceManager.getGlanceIds(SingleNoteWidget::class.java)
-            for (id in singleGlanceIds) {
-                updateAppWidgetState(context, PreferencesGlanceStateDefinition, id) { prefs ->
-                    prefs.toMutablePreferences().apply {
-                        this[longPreferencesKey("last_updated")] = System.currentTimeMillis()
-                    }
-                }
-                SingleNoteWidget().update(context, id)
-            }
-
-            val shortcutGlanceIds = glanceManager.getGlanceIds(NotesShortcutWidget::class.java)
-            for (id in shortcutGlanceIds) {
-                updateAppWidgetState(context, PreferencesGlanceStateDefinition, id) { prefs ->
-                    prefs.toMutablePreferences().apply {
-                        this[longPreferencesKey("last_updated")] = System.currentTimeMillis()
-                    }
-                }
-                NotesShortcutWidget().update(context, id)
-            }
+            NotesShortcutWidget().updateAll(context)
+            SingleNoteWidget().updateAll(context)
         } catch (_: Throwable) {}
     }
 }
