@@ -6,11 +6,6 @@ import kotlinx.serialization.Serializable
 enum class NoteType {
     MARKDOWN,
     COUNTING_TABLE,
-    TABLE,
-    TIMELINE,
-    DECISION_MATRIX,
     VAULT,
-    COUNTDOWN,
-    COMPARISON,
     JOURNAL,
 }

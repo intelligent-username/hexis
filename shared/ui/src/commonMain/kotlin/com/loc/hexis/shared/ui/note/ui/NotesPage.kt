@@ -99,6 +99,7 @@ import hexis.shared.ui.generated.resources.calendar_month
 import hexis.shared.ui.generated.resources.archived_notes
 import hexis.shared.ui.generated.resources.check
 import hexis.shared.ui.generated.resources.close
+import hexis.shared.ui.generated.resources.content_copy
 import hexis.shared.ui.generated.resources.delete
 import hexis.shared.ui.generated.resources.new_note
 import hexis.shared.ui.generated.resources.no_notes_found
@@ -285,6 +286,35 @@ fun NotesPage(
                             Text(
                                 text = if (selectedNoteIds.size == filteredNotes.size) "Deselect" else "All",
                                 fontFamily = flexFontRounded(),
+                            )
+                        }
+
+                        // Batch Duplicate Button
+                        IconButton(
+                            onClick = {
+                                val toDuplicate = notes.filter { selectedNoteIds.contains(it.id) }
+                                val now = LocalDateTime.now()
+                                scope.launch {
+                                    toDuplicate.forEach { note ->
+                                        repo.upsertNote(
+                                            note.copy(
+                                                id = 0,
+                                                createdAt = now,
+                                                updatedAt = now,
+                                            )
+                                        )
+                                    }
+                                    selectedNoteIds = emptySet()
+                                    showUndo("${toDuplicate.size} notes duplicated") {}
+                                }
+                            },
+                            modifier = Modifier.size(40.dp),
+                        ) {
+                            Icon(
+                                imageVector = vectorResource(Res.drawable.content_copy),
+                                contentDescription = "Duplicate Selected",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(20.dp),
                             )
                         }
 

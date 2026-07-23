@@ -1,11 +1,10 @@
 package com.loc.hexis.shared.ui.task.ui.component
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -22,6 +21,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
@@ -120,7 +120,15 @@ fun TaskCard(
                 }
             }
 
-            AnimatedVisibility(visible = dragState, enter = fadeIn(), exit = fadeOut()) {
+            val alpha by
+                animateFloatAsState(
+                    targetValue = if (dragState) 1f else 0f,
+                    animationSpec = MaterialTheme.motionScheme.fastEffectsSpec(),
+                    label = "reorderIconAlpha",
+                )
+            Box(
+                modifier = Modifier.graphicsLayer { this.alpha = alpha },
+            ) {
                 reorderIcon()
             }
         }
