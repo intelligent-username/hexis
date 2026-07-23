@@ -65,8 +65,10 @@ import com.loc.hexis.shared.ui.theme.flexFontEmphasis
 import com.loc.hexis.shared.ui.theme.flexFontRounded
 import hexis.shared.ui.generated.resources.Res
 import hexis.shared.ui.generated.resources.add
+import hexis.shared.ui.generated.resources.check
 import hexis.shared.ui.generated.resources.close
 import hexis.shared.ui.generated.resources.delete
+import hexis.shared.ui.generated.resources.edit
 import hexis.shared.ui.generated.resources.search
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
