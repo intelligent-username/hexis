@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.6.0",
+    "changes": [
+      "**Refined Note Editor Rendering**: Clean, 90%-width horizontal rule (`---`) formatting in the note editor replacing thick legacy block lines.",
+      "Habit streaks, points, archiving, counter UX improvements"
+    ]
+  },
+  {
     "version": "1.3.0",
     "changes": [
       "New Note type: TABLE counters",

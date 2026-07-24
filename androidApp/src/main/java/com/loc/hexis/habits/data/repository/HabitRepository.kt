@@ -97,7 +97,7 @@ class HabitRepository(
                     val completedStatuses = filterCompletedStatuses(habit, habitStatusesForHabit)
                     val completedDates = completedStatuses.map { it.date }
 
-                    val pointsSummary = computePointsSummary(habit, completedStatuses, firstDay)
+                    val pointsSummary = computePointsSummary(habit, habitStatusesForHabit, firstDay)
 
                     HabitWithAnalytics(
                         habit = habit,
@@ -184,12 +184,8 @@ class HabitRepository(
 
                 val allPointsSummaries =
                     activeHabits.map { habit ->
-                        val completed =
-                            filterCompletedStatuses(
-                                habit,
-                                habitStatusesFlow.filter { it.habitId == habit.id },
-                            )
-                        computePointsSummary(habit, completed, firstDay)
+                        val habitStatusesForHabit = habitStatusesFlow.filter { it.habitId == habit.id }
+                        computePointsSummary(habit, habitStatusesForHabit, firstDay)
                     }
                 val totalPoints = allPointsSummaries.sumOf { it.totalPoints }
                 val aggregateWeeklyHistory =

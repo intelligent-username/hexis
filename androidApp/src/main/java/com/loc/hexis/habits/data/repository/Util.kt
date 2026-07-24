@@ -1,11 +1,13 @@
 package com.loc.hexis.habits.data.repository
 
+import com.loc.hexis.core.habits.DisplayMode
 import com.loc.hexis.core.habits.Habit
 import com.loc.hexis.core.habits.HabitStatus
 import com.loc.hexis.core.habits.PointsSummary
 import com.loc.hexis.core.habits.WeekDayFrequencyData
 import com.loc.hexis.core.habits.WeeklyComparisonData
 import com.loc.hexis.core.now
+import kotlin.math.roundToInt
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.DayOfWeek
@@ -157,27 +159,43 @@ fun countStreakAtDate(
 
 fun computePointsSummary(
     habit: Habit,
-    completedStatuses: List<HabitStatus>,
+    allStatuses: List<HabitStatus>,
     firstDay: DayOfWeek,
 ): PointsSummary {
-    if (completedStatuses.isEmpty()) return PointsSummary()
+    if (allStatuses.isEmpty()) return PointsSummary()
 
     val eligible = habit.days
     val today = LocalDate.now()
     val totalWeeks = 52
+    val isCounter = habit.displayMode == DisplayMode.PROGRESS
+    val targetVal = habit.targetValue ?: 1.0
 
     val weeklyPoints = mutableMapOf<LocalDate, Int>()
     var totalPoints = 0
 
-    for (status in completedStatuses.sortedBy { it.date }) {
-        val allDatesUpTo = completedStatuses.filter { it.date <= status.date }.map { it.date }
-        val streak = countStreakAtDate(allDatesUpTo, eligible, status.date)
-        val pts = 10 + (streak * 3)
-        totalPoints += pts
+    val completedStatusesSoFar = mutableListOf<HabitStatus>()
 
-        val daysFromFirst = (status.date.dayOfWeek.isoDayNumber - firstDay.isoDayNumber + 7) % 7
-        val weekStart = status.date.minus(daysFromFirst, DateTimeUnit.DAY)
-        weeklyPoints[weekStart] = (weeklyPoints[weekStart] ?: 0) + pts
+    for (status in allStatuses.sortedBy { it.date }) {
+        val isCompleted = status.value >= targetVal - 0.001
+        val pts: Int = if (isCompleted) {
+            completedStatusesSoFar.add(status)
+            val streak = countStreakAtDate(completedStatusesSoFar.map { it.date }, eligible, status.date)
+            val basePts = 10 + (streak * 2)
+            if (isCounter) (basePts * 1.10).roundToInt() else basePts
+        } else if (isCounter && status.value > 0.0 && targetVal > 0.0) {
+            val fraction = (status.value / targetVal).coerceIn(0.0, 1.0)
+            val baseDayPts = 10.0 * 1.10
+            (0.5 * fraction * baseDayPts).roundToInt()
+        } else {
+            0
+        }
+
+        if (pts > 0) {
+            totalPoints += pts
+            val daysFromFirst = (status.date.dayOfWeek.isoDayNumber - firstDay.isoDayNumber + 7) % 7
+            val weekStart = status.date.minus(daysFromFirst, DateTimeUnit.DAY)
+            weeklyPoints[weekStart] = (weeklyPoints[weekStart] ?: 0) + pts
+        }
     }
 
     val todayWeekStart =

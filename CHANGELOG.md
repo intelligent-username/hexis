@@ -1,12 +1,13 @@
 # Changelog
 
-## 6.1.0: Single Note Widget, Reactive Refresh & Editor Polishing
+## 1.6.0: Single Note Widget, Reactive Refresh & Editor Polishing
 
 2 New Widgets
   - Single Note pin: Select and display any note (Markdown, Counting Table, or Journal) on your home screen with per-widget configuration.
   - All notes shortcut view
-- **Refined Note Editor Rendering**: Clean, 90%-width horizontal rule (`---`) formatting in the note editor replacing thick legacy block lines.
-- Habit streaks, points, archiving, counter UX improvements
+- Refined Note Editor Rendering
+- Refined note previews
+- Habit streaks points adjustment, retroactive counter habit changing, and other UX improvements.
 
 ## 1.3.0: Drag Reordering, Shortcuts & UX Refinements
 
