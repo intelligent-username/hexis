@@ -31,7 +31,7 @@ plugins {
 
 val appName = "Hexis"
 val appVersionCode = 6030
-val appVersionName = "6.1.0"
+val appVersionName = "1.6.0"
 
 val gitHash = execute("git", "rev-parse", "HEAD").take(7)
 
