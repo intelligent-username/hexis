@@ -2,10 +2,11 @@
 
 ## 6.1.0: Single Note Widget, Reactive Refresh & Editor Polishing
 
-- **Single Note Preview Widget**: Select and display any note (Markdown, Counting Table, or Journal) on your home screen with per-widget configuration.
-- **Interactive Counter Controls**: Increment and decrement counting table values directly from the note widget cards on your home screen.
-- **Reactive Widget Refresh**: Real-time synchronization between in-app note updates and home screen widgets with instant manual refresh.
+2 New Widgets
+  - Single Note pin: Select and display any note (Markdown, Counting Table, or Journal) on your home screen with per-widget configuration.
+  - All notes shortcut view
 - **Refined Note Editor Rendering**: Clean, 90%-width horizontal rule (`---`) formatting in the note editor replacing thick legacy block lines.
+- Habit streaks, points, archiving, counter UX improvements
 
 ## 1.3.0: Drag Reordering, Shortcuts & UX Refinements
 
