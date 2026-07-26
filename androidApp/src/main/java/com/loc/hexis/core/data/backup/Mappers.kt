@@ -76,7 +76,7 @@ fun Category.toCategorySchema(): CategorySchema {
 fun PomodoroSession.toPomodoroSessionSchema(): PomodoroSessionSchema {
     return PomodoroSessionSchema(
         id = id,
-        goalDurationMinutes = goalDurationMinutes,
+        goalDurationMinutes = goalDurationMinutes.toInt(),
         timeStarted = Converters.dateToTimestamp(timeStarted)!!,
         timeFinished = Converters.dateToTimestamp(timeFinished),
         completed = completed,
@@ -88,7 +88,7 @@ fun PomodoroSession.toPomodoroSessionSchema(): PomodoroSessionSchema {
 fun PomodoroSessionSchema.toPomodoroSession(): PomodoroSession {
     return PomodoroSession(
         id = id,
-        goalDurationMinutes = goalDurationMinutes,
+        goalDurationMinutes = goalDurationMinutes.toFloat(),
         timeStarted = Converters.dateFromTimestamp(timeStarted)!!,
         timeFinished = Converters.dateFromTimestamp(timeFinished),
         completed = completed,

@@ -287,8 +287,11 @@ fun AnalyticsPage(
                             ) {
                                 FilledTonalIconButton(
                                     onClick = {
-                                        selectedDate = selectedDate.minus(1, DateTimeUnit.DAY)
+                                        if (selectedDate > currentHabit.habit.time.date) {
+                                            selectedDate = selectedDate.minus(1, DateTimeUnit.DAY)
+                                        }
                                     },
+                                    enabled = selectedDate > currentHabit.habit.time.date,
                                     modifier = Modifier.size(36.dp),
                                 ) {
                                     Icon(

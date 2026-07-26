@@ -368,9 +368,15 @@ private fun SingleNoteContent(
                                     LineType.HORIZONTAL_RULE -> Box(
                                         modifier = GlanceModifier
                                             .fillMaxWidth()
-                                            .height(1.dp)
-                                            .background(GlanceTheme.colors.outline),
-                                    ) {}
+                                            .padding(vertical = 4.dp),
+                                    ) {
+                                        Box(
+                                            modifier = GlanceModifier
+                                                .fillMaxWidth()
+                                                .height(1.dp)
+                                                .background(GlanceTheme.colors.outline),
+                                        ) {}
+                                    }
                                     LineType.REGULAR -> Text(
                                         text = line.text,
                                         style = TextStyle(fontSize = 12.sp, color = cardColors.onSurfaceVariant),

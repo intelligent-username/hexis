@@ -63,6 +63,21 @@ class PomodoroRepository(private val pomodoroDao: PomodoroDao) : PomodoroRepo {
             .flowOn(Dispatchers.IO)
     }
 
+    override fun getSessionMinutesByDay(): Flow<List<PomodoroDayCount>> {
+        return pomodoroDao
+            .getSessionMinutesByDay()
+            .map { list ->
+                list.map {
+                    PomodoroDayCount(
+                        date = LocalDate.fromEpochDays(it.epochDay.toInt()),
+                        count = it.count,
+                        totalMinutes = it.totalMinutes,
+                    )
+                }
+            }
+            .flowOn(Dispatchers.IO)
+    }
+
     override suspend fun getSessionCountsByHabit(): List<Pair<Long?, Int>> {
         return withContext(Dispatchers.IO) {
             pomodoroDao.getSessionCountsByHabit().map { it.linkedHabitId to it.count }

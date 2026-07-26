@@ -6,7 +6,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class PomodoroSession(
     val id: Long = 0,
-    val goalDurationMinutes: Int,
+    val goalDurationMinutes: Float,
     val timeStarted: LocalDateTime,
     val timeFinished: LocalDateTime? = null,
     val completed: Boolean = false,

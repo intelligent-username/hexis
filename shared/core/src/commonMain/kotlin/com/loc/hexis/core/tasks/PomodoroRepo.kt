@@ -22,6 +22,8 @@ interface PomodoroRepo {
 
     fun getSessionCountsByDay(): Flow<List<PomodoroDayCount>>
 
+    fun getSessionMinutesByDay(): Flow<List<PomodoroDayCount>>
+
     suspend fun getSessionCountsByHabit(): List<Pair<Long?, Int>>
 
     suspend fun getAllSessions(): List<PomodoroSession>

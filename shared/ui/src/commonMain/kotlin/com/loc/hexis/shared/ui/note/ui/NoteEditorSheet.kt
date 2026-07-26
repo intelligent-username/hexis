@@ -61,7 +61,6 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalViewConfiguration
-import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
@@ -594,6 +593,8 @@ fun NoteEditorSheet(
             }
 
             if (selectedType == NoteType.MARKDOWN) {
+                val ruleLineColor = if (hasEditorCustomColor) onSurfaceColor.copy(alpha = 0.3f) else MaterialTheme.colorScheme.primaryContainer
+
                 // Main Markdown Field with Scroll Room & Tap-to-Focus Container
                 Column(
                     modifier =
@@ -632,7 +633,7 @@ fun NoteEditorSheet(
                             NoteVisualTransformation(
                                 primaryColor = if (hasEditorCustomColor) onSurfaceColor else MaterialTheme.colorScheme.primary,
                                 mutedColor = onSurfaceVariantColor,
-                                ruleColor = if (hasEditorCustomColor) onSurfaceColor.copy(alpha = 0.3f) else MaterialTheme.colorScheme.primaryContainer,
+                                ruleColor = ruleLineColor,
                                 collapsedLineIndices = collapsedHeaderLines,
                             ),
                         placeholder = {
@@ -672,8 +673,7 @@ fun NoteEditorSheet(
                                         val cursor = contentValue.selection.start
                                         val currentLine = getCurrentLine(text, cursor)
                                         val lineStart = text.substring(0, cursor.coerceAtMost(text.length)).lastIndexOf('\n') + 1
- 
-                                        // Only attempt list auto-continue if cursor is NOT at start of line
+
                                         if (cursor > lineStart) {
                                             val prefix = getNextListPrefix(currentLine)
                                             if (prefix != null) {
@@ -705,7 +705,7 @@ fun NoteEditorSheet(
                                 unfocusedBorderColor = if (hasEditorCustomColor) onSurfaceVariantColor.copy(alpha = 0.3f) else MaterialTheme.colorScheme.outlineVariant,
                             ),
                     )
- 
+
                     // Generous bottom scrolling space so text is easily visible above the keyboard
                     Spacer(modifier = Modifier.height(180.dp))
                 }

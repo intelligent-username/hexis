@@ -186,6 +186,8 @@ fun TaskUpsertSheetContent(
                     keyboardController?.show()
                 }
 
+                val isTitleOverLimit = textFieldState.text.length > 100
+
                 OutlinedTextField(
                     state = textFieldState,
                     shape = MaterialTheme.shapes.medium,
@@ -201,6 +203,15 @@ fun TaskUpsertSheetContent(
                     },
                     modifier = Modifier.fillMaxWidth().focusRequester(focusRequester),
                 )
+
+                if (isTitleOverLimit) {
+                    Text(
+                        text = "Character limit reached (${textFieldState.text.length}/100)",
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.labelSmall,
+                        modifier = Modifier.padding(start = 16.dp, top = 4.dp),
+                    )
+                }
             }
 
             item {

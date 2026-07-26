@@ -34,12 +34,17 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -52,8 +57,10 @@ import com.loc.hexis.core.toFormattedString
 import com.loc.hexis.shared.ui.habit.HabitsAction
 import com.loc.hexis.shared.ui.util.rememberToday
 import hexis.shared.ui.generated.resources.*
+import kotlinx.coroutines.launch
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.DayOfWeek
+import kotlinx.datetime.isoDayNumber
 import kotlinx.datetime.minus
 import org.jetbrains.compose.resources.vectorResource
 
@@ -104,13 +111,25 @@ fun HabitCard(
             label = "cardBackground",
         )
 
+    val habitStartDate = habitWithAnalytics.habit.time.date
+    // Align to the start of the creation week so the WeekCalendar's week-level
+    // navigation never tries to render a week partially before the start date,
+    // which causes the kizitonwose library to throw.
+    val daysFromWeekStart =
+        (habitStartDate.dayOfWeek.isoDayNumber - startingDay.isoDayNumber + 7) % 7
+    val weekAlignedStart = habitStartDate.minus(daysFromWeekStart, DateTimeUnit.DAY)
+    val effectiveStartDate =
+        if (weekAlignedStart <= today) weekAlignedStart else habitStartDate
+
     val weekState =
         rememberWeekCalendarState(
-            startDate = habitWithAnalytics.habit.time.date.minus(1, DateTimeUnit.YEAR),
+            startDate = effectiveStartDate,
             endDate = today,
             firstVisibleWeekDate = today,
             firstDayOfWeek = startingDay,
         )
+
+    val scope = rememberCoroutineScope()
 
     val interactionSource = remember {
         androidx.compose.foundation.interaction.MutableInteractionSource()
@@ -242,6 +261,10 @@ fun HabitCard(
             trailingContent = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Row(
+                        modifier =
+                            Modifier.clickable {
+                                scope.launch { weekState.animateScrollToDate(today) }
+                            },
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
@@ -291,9 +314,21 @@ fun HabitCard(
         )
 
         if (!compactView) {
-            WeekCalendar(
-                contentPadding = PaddingValues(8.dp),
-                state = weekState,
+            Box(
+                modifier =
+                    Modifier.nestedScroll(
+                        object : NestedScrollConnection {
+                            override fun onPostScroll(
+                                consumed: Offset,
+                                available: Offset,
+                                source: NestedScrollSource,
+                            ): Offset = Offset(available.x, 0f)
+                        }
+                    ),
+            ) {
+                WeekCalendar(
+                    contentPadding = PaddingValues(8.dp),
+                    state = weekState,
                 dayContent = { weekDay ->
                     val startDate = habitWithAnalytics.habit.time.date
                     val target = habitWithAnalytics.habit.targetValue ?: 1.0
@@ -375,7 +410,7 @@ fun HabitCard(
                                     } else Modifier
                                 )
                                 .then(
-                                    if (weekDay.date == startDate && done) {
+                                    if (weekDay.date == startDate) {
                                         Modifier.border(
                                             width = 1.dp,
                                             color = Color(0xFFFFD700),
@@ -428,8 +463,8 @@ fun HabitCard(
                             )
                         }
                     }
-                },
-            )
+                })
+            }
         }
     }
 }

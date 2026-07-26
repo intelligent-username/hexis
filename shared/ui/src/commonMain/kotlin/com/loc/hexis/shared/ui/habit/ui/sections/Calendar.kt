@@ -155,9 +155,12 @@ private fun YearlyCalendar(
     onDateClick: (Habit, LocalDate) -> Unit,
     edgeWeeks: List<DayOfWeek>,
 ) {
+    val habitYear = currentHabit.habit.time.date.year
+    val startYearVal = if (habitYear <= today.yearMonth.year) habitYear else today.yearMonth.year
+
     val calendarState =
         rememberYearCalendarState(
-            startYear = Year(2024),
+            startYear = Year(startYearVal),
             endYear = Year(today.yearMonth.year),
             firstVisibleYear = Year(today.yearMonth.year),
             firstDayOfWeek = state.startingDay,
@@ -221,9 +224,12 @@ private fun MonthlyCalendar(
     onDateClick: (Habit, LocalDate) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val habitYearMonth = currentHabit.habit.time.date.yearMonth
+    val startYearMonthVal = if (habitYearMonth <= today.yearMonth) habitYearMonth else today.yearMonth
+
     val calendarState =
         rememberCalendarState(
-            startMonth = YearMonth(year = 2024, month = Month.JANUARY),
+            startMonth = startYearMonthVal,
             endMonth = today.yearMonth,
             firstVisibleMonth = today.yearMonth,
             firstDayOfWeek = state.startingDay,

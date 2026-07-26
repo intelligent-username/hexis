@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - 'CHANGELOG.md'
+      - "CHANGELOG.md"
   workflow_dispatch:
 
 permissions:
@@ -23,17 +23,23 @@ jobs:
       - name: Extract version from CHANGELOG
         id: version
         run: |
+          echo "=== Extracting Version ==="
           VERSION=$(grep -m1 -E '^## [0-9]+\.[0-9]+\.[0-9]+' CHANGELOG.md | sed -E 's/## ([0-9]+\.[0-9]+\.[0-9]+).*/\1/')
+          echo "Extracted version: '$VERSION'"
           if [ -z "$VERSION" ]; then
-            echo "Could not extract version from CHANGELOG.md" >&2
+            echo "::error::Could not extract version from CHANGELOG.md"
             exit 1
           fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
+          echo "Checking existing git tags for v$VERSION..."
           if git rev-parse "v$VERSION" >/dev/null 2>&1; then
-            echo "Tag v$VERSION already exists. Skipping release."
+            echo "Tag v$VERSION already exists in repository."
+            echo "Skip decision: true"
             echo "skip=true" >> "$GITHUB_OUTPUT"
           else
+            echo "Tag v$VERSION does not exist yet."
+            echo "Skip decision: false"
             echo "skip=false" >> "$GITHUB_OUTPUT"
           fi
 
@@ -56,31 +62,50 @@ jobs:
       - name: Setup Signing Keystore
         if: steps.version.outputs.skip != 'true'
         run: |
+          echo "=== Setting up Signing Keystore & local.properties ==="
+          if [ -z "${{ secrets.KEYSTORE_BASE64 }}" ]; then
+            echo "::warning::KEYSTORE_BASE64 secret is missing or empty!"
+          else
+            echo "KEYSTORE_BASE64 secret is present."
+          fi
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > release.jks
           echo "storeFile=release.jks" >> local.properties
           echo "storePassword=${{ secrets.STORE_PASSWORD }}" >> local.properties
           echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> local.properties
           echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> local.properties
+          echo "local.properties configured successfully."
 
       - name: Compile release APK
         if: steps.version.outputs.skip != 'true'
-        run: ./gradlew :androidApp:assembleRelease
+        run: |
+          echo "=== Compiling Release APK ==="
+          ./gradlew :androidApp:assembleRelease
 
       - name: Locate APK
         if: steps.version.outputs.skip != 'true'
         id: apk
         run: |
+          echo "=== Locating Output APK ==="
           APK=$(find androidApp/build/outputs/apk -name '*release*.apk' -type f | head -1)
+          echo "Found APK at: $APK"
+          if [ -z "$APK" ]; then
+            echo "::error::No release APK found!"
+            exit 1
+          fi
           echo "path=$APK" >> "$GITHUB_OUTPUT"
           echo "name=$(basename "$APK")" >> "$GITHUB_OUTPUT"
 
       - name: Rename APK
         if: steps.version.outputs.skip != 'true'
-        run: cp "${{ steps.apk.outputs.path }}" "Hexis.apk"
+        run: |
+          echo "=== Preparing Release Artifact ==="
+          cp "${{ steps.apk.outputs.path }}" "Hexis.apk"
+          echo "Copied ${{ steps.apk.outputs.path }} -> Hexis.apk"
 
       - name: Extract Release Notes from CHANGELOG
         if: steps.version.outputs.skip != 'true'
         run: |
+          echo "=== Extracting Release Notes ==="
           python3 -c "
           import re
           content = open('CHANGELOG.md', 'r', encoding='utf-8').read()
@@ -98,12 +123,15 @@ jobs:
           with open('release_notes.txt', 'w', encoding='utf-8') as f:
               f.write(notes)
           "
+          echo "Generated release_notes.txt:"
+          cat release_notes.txt
 
       - name: Create Release
         if: steps.version.outputs.skip != 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          echo "=== Creating GitHub Release v${{ steps.version.outputs.version }} ==="
           gh release create \
             "v${{ steps.version.outputs.version }}" \
             "Hexis.apk" \

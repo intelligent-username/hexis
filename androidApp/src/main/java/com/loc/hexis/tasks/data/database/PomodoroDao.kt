@@ -7,14 +7,14 @@ import com.loc.hexis.core.tasks.PomodoroStats
 import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.LocalDateTime
 
-data class EpochDayCount(val epochDay: Long, val count: Int)
+data class EpochDayCount(val epochDay: Long, val count: Int, val totalMinutes: Float = 0f)
 
 @Dao
 interface PomodoroDao {
     @Upsert suspend fun insert(session: PomodoroSessionEntity): Long
 
     @Query(
-        "UPDATE pomodoro_sessions SET timeFinished = :timeFinished, completed = :completed, timeCompletedMinutes = :timeCompletedMinutes WHERE id = :id"
+        "UPDATE pomodoro_sessions SET timeFinished = :timeFinished, completed = :completed, timeCompletedMinutes = COALESCE(timeCompletedMinutes, 0.0) + :timeCompletedMinutes WHERE id = :id"
     )
     suspend fun finish(
         id: Long,
@@ -24,7 +24,7 @@ interface PomodoroDao {
     )
 
     @Query(
-        "SELECT CAST(COUNT(*) AS INTEGER) AS sessionCount, CAST(COALESCE(SUM(timeCompletedMinutes), 0.0) AS REAL) AS totalMinutes FROM pomodoro_sessions WHERE timeStarted >= :todayStart"
+        "SELECT CAST(COUNT(*) AS INTEGER) AS sessionCount, CAST(COALESCE(SUM(timeCompletedMinutes), 0.0) AS REAL) AS totalMinutes FROM pomodoro_sessions WHERE completed = 1 AND timeStarted >= :todayStart"
     )
     suspend fun getTodayStats(todayStart: LocalDateTime): PomodoroStats
 
@@ -38,12 +38,23 @@ interface PomodoroDao {
         SELECT CAST(timeStarted / 86400 AS INTEGER) AS epochDay,
                COUNT(*) AS count
         FROM pomodoro_sessions
-        WHERE completed = 1
         GROUP BY epochDay
         ORDER BY epochDay
     """
     )
     fun getSessionCountsByDay(): Flow<List<EpochDayCount>>
+
+    @Query(
+        """
+        SELECT CAST(timeStarted / 86400 AS INTEGER) AS epochDay,
+               CAST(COUNT(*) AS INTEGER) AS count,
+               CAST(COALESCE(SUM(timeCompletedMinutes), 0.0) AS REAL) AS totalMinutes
+        FROM pomodoro_sessions
+        GROUP BY epochDay
+        ORDER BY epochDay
+    """
+    )
+    fun getSessionMinutesByDay(): Flow<List<EpochDayCount>>
 
     @Query("SELECT MIN(timeStarted) FROM pomodoro_sessions")
     suspend fun getEarliestSessionDate(): LocalDateTime?
@@ -52,7 +63,6 @@ interface PomodoroDao {
         """
         SELECT linkedHabitId, CAST(COUNT(*) AS INTEGER) AS count
         FROM pomodoro_sessions
-        WHERE completed = 1
         GROUP BY linkedHabitId
     """
     )

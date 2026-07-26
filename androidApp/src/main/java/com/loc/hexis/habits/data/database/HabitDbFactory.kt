@@ -11,6 +11,5 @@ class HabitDbFactory(private val context: Context) {
         val appContext = context.applicationContext
 
         return Room.databaseBuilder(appContext, HabitDatabase::class.java, HabitDatabase.DB_NAME)
-            .fallbackToDestructiveMigration(true)
     }
 }

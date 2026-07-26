@@ -1,5 +1,11 @@
 [
   {
+    "version": "1.6.1",
+    "changes": [
+      "Miscellaneous bug and UI fixes"
+    ]
+  },
+  {
     "version": "1.6.0",
     "changes": [
       "Refined Note Editor Rendering",

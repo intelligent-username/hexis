@@ -10,6 +10,9 @@ import com.loc.hexis.core.habits.HabitWithAnalytics
 import com.loc.hexis.core.habits.OverallAnalytics
 import com.loc.hexis.core.habits.PointsTrend
 import com.loc.hexis.core.habits.WeeklyPoints
+import com.loc.hexis.core.habits.countBestStreak
+import com.loc.hexis.core.habits.countCurrentStreak
+import com.loc.hexis.core.habits.countStreakAtDate
 import com.loc.hexis.core.interfaces.SettingsDatastore
 import com.loc.hexis.core.now
 import com.loc.hexis.habits.data.database.HabitStatusDao

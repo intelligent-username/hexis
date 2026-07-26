@@ -130,7 +130,7 @@ fun PomodoroPage(linkedHabitId: Long? = null, onDismiss: () -> Unit) {
 
     // --- helpers (defined before LaunchedEffects that use them) ---
 
-    fun savePartialSession() {
+    fun savePartialSession(closeSession: Boolean = true) {
         val nw = LocalDateTime.now()
         val id = currentSessionId
         val start = sessionStartTime
@@ -143,31 +143,33 @@ fun PomodoroPage(linkedHabitId: Long? = null, onDismiss: () -> Unit) {
                 todayStats = repo.getTodayStats()
             }
         }
-        currentSessionId = null
-        sessionStartTime = null
+        if (closeSession) {
+            currentSessionId = null
+            sessionStartTime = null
+        }
     }
 
     fun startSession() {
         savePartialSession()
         val nw = LocalDateTime.now()
         sessionStartTime = nw
+        secondsRemaining = (settings.focusMinutes * 60).toInt()
+        phase = PomodoroPhase.FOCUS
         scope.launch {
             currentSessionId =
                 repo.insertSession(
                     PomodoroSession(
-                        goalDurationMinutes = settings.focusMinutes.toInt(),
+                        goalDurationMinutes = settings.focusMinutes,
                         timeStarted = nw,
                         linkedHabitId = linkedHabitId,
                     )
                 )
+            isRunning = true
+            pomodoroAlarm.schedule(
+                LocalDateTime.now().toInstant(TimeZone.currentSystemDefault()).toEpochMilliseconds() +
+                    secondsRemaining * 1000L
+            )
         }
-        secondsRemaining = (settings.focusMinutes * 60).toInt()
-        phase = PomodoroPhase.FOCUS
-        isRunning = true
-        pomodoroAlarm.schedule(
-            LocalDateTime.now().toInstant(TimeZone.currentSystemDefault()).toEpochMilliseconds() +
-                secondsRemaining * 1000L
-        )
     }
 
     fun resetTimer() {
@@ -245,13 +247,13 @@ fun PomodoroPage(linkedHabitId: Long? = null, onDismiss: () -> Unit) {
                 transitionCountdown = 2
                 scope.launch {
                     delay(2000L)
-                    if (!isRunning && phase == PomodoroPhase.FOCUS) {
+                    if (!isRunning && phase == PomodoroPhase.FOCUS && currentSessionId == null) {
                         val nw2 = LocalDateTime.now()
                         sessionStartTime = nw2
                         currentSessionId =
                             repo.insertSession(
                                 PomodoroSession(
-                                    goalDurationMinutes = settings.focusMinutes.toInt(),
+                                    goalDurationMinutes = settings.focusMinutes,
                                     timeStarted = nw2,
                                     linkedHabitId = linkedHabitId,
                                 )
@@ -271,6 +273,7 @@ fun PomodoroPage(linkedHabitId: Long? = null, onDismiss: () -> Unit) {
     fun skipBreak() {
         pomodoroAlarm.cancel()
         isRunning = false
+        savePartialSession()
         phase = PomodoroPhase.FOCUS
         secondsRemaining = (settings.focusMinutes * 60).toInt()
     }
@@ -561,10 +564,13 @@ fun PomodoroPage(linkedHabitId: Long? = null, onDismiss: () -> Unit) {
                         ) {
                             if (isRunning) {
                                 pomodoroAlarm.cancel()
+                                savePartialSession(closeSession = false)
+                                sessionStartTime = LocalDateTime.now()
                                 isRunning = false
                             } else if (currentSessionId == null && phase == PomodoroPhase.FOCUS) {
                                 startSession()
                             } else {
+                                sessionStartTime = LocalDateTime.now()
                                 isRunning = true
                                 pomodoroAlarm.schedule(
                                     LocalDateTime.now()

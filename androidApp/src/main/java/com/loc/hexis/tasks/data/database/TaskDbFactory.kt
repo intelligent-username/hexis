@@ -14,7 +14,7 @@ class TaskDbFactory(private val context: Context) {
         val dbfile = appContext.getDatabasePath(TaskDatabase.DB_NAME)
 
         return Room.databaseBuilder<TaskDatabase>(appContext, dbfile.absolutePath)
-            .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+            .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
     }
 
     companion object {
@@ -35,5 +35,9 @@ class TaskDbFactory(private val context: Context) {
                 db.execSQL("ALTER TABLE notes ADD COLUMN metadata TEXT DEFAULT NULL")
                 db.execSQL("ALTER TABLE notes ADD COLUMN sortOrder INTEGER NOT NULL DEFAULT 0")
             }
+
+        // Non-destructive — goalDurationMinutes is Int in both v5 and v6.
+        private val MIGRATION_5_6 =
+            Migration(5, 6) { }
     }
 }

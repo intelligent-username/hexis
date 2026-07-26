@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.6.1: Bug fixes
+
+- Miscellaneous bug and UI fixes
+
 ## 1.6.0: Single Note Widget, Reactive Refresh & Editor Polishing
 
 2 New Widgets

@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -48,6 +49,8 @@ import com.kizitonwose.calendar.compose.heatmapcalendar.rememberHeatMapCalendarS
 import com.kizitonwose.calendar.core.minusMonths
 import com.kizitonwose.calendar.core.now
 import com.loc.hexis.core.habits.HabitRepo
+import com.loc.hexis.core.habits.countBestStreak
+import com.loc.hexis.core.habits.countCurrentStreak
 import com.loc.hexis.core.tasks.PomodoroDayCount
 import com.loc.hexis.core.tasks.PomodoroRepo
 import com.loc.hexis.shared.ui.components.HexisBottomSheet
@@ -70,12 +73,14 @@ fun PomodoroAnalytics(onDismiss: () -> Unit) {
     val repo: PomodoroRepo = koinInject()
 
     val dayCounts by repo.getSessionCountsByDay().collectAsState(initial = emptyList())
-    val dayCountMap = remember(dayCounts) { dayCounts.associateBy { it.date } }
-    val maxCount = remember(dayCounts) { dayCounts.maxOfOrNull { it.count } ?: 0 }
+    val dayMinutes by repo.getSessionMinutesByDay().collectAsState(initial = emptyList())
+    val dayMinutesMap = remember(dayMinutes) { dayMinutes.associateBy { it.date } }
+    val maxMinutes = remember(dayMinutes) { dayMinutes.maxOfOrNull { it.totalMinutes } ?: 0f }
     val dates = remember(dayCounts) { dayCounts.map { it.date } }
 
     val totalSessions = dayCounts.sumOf { it.count }
-    val (currentStreak, bestStreak) = remember(dates) { computeStreaks(dates) }
+    val currentStreak = remember(dates) { countCurrentStreak(dates) }
+    val bestStreak = remember(dates) { countBestStreak(dates) }
 
     var selectedDay by remember { mutableStateOf<LocalDate?>(null) }
 
@@ -123,14 +128,14 @@ fun PomodoroAnalytics(onDismiss: () -> Unit) {
                     bestStreak = bestStreak,
                 )
 
-                ThisWeekRow(dayCounts = dayCounts)
+                ThisWeekRow(dayMinutes = dayMinutes)
 
                 HabitBreakdownChart()
 
                 SessionHeatMap(
                     heatMapState = heatMapState,
-                    dayCountMap = dayCountMap,
-                    maxCount = maxCount,
+                    dayMinutesMap = dayMinutesMap,
+                    maxMinutes = maxMinutes,
                     onDayClick = { selectedDay = it },
                 )
             } else {
@@ -147,7 +152,8 @@ fun PomodoroAnalytics(onDismiss: () -> Unit) {
     }
 
     selectedDay?.let { date ->
-        val count = dayCountMap[date]?.count ?: 0
+        val minutes = dayMinutesMap[date]?.totalMinutes ?: 0f
+        val whole = minutes.toInt()
         HexisBottomSheet(onDismissRequest = { selectedDay = null }) {
             Column(
                 modifier = Modifier.fillMaxWidth().padding(24.dp),
@@ -161,7 +167,7 @@ fun PomodoroAnalytics(onDismiss: () -> Unit) {
                 )
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    text = "$count session${if (count != 1) "s" else ""} completed",
+                    text = "$whole minute${if (whole != 1) "s" else ""}",
                     style =
                         MaterialTheme.typography.displayMedium.copy(
                             fontWeight = FontWeight.Bold,
@@ -214,14 +220,15 @@ private fun StatPill(value: String, label: String, modifier: Modifier = Modifier
 }
 
 @Composable
-private fun ThisWeekRow(dayCounts: List<PomodoroDayCount>) {
+private fun ThisWeekRow(dayMinutes: List<PomodoroDayCount>) {
     val today = LocalDate.now()
     val startOfWeek =
         today.minus(today.dayOfWeek.isoDayNumber - DayOfWeek.MONDAY.isoDayNumber, DateTimeUnit.DAY)
-    val weekCount = dayCounts.filter { it.date in startOfWeek..today }.sumOf { it.count }
+    val weekMinutes = dayMinutes.filter { it.date in startOfWeek..today }.sumOf { it.totalMinutes.toDouble() }
+    val whole = weekMinutes.toInt()
 
     Text(
-        text = "This week: $weekCount session${if (weekCount != 1) "s" else ""}",
+        text = "This week: ${whole}m",
         style = MaterialTheme.typography.titleSmall,
         fontFamily = flexFontRounded(),
         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -231,8 +238,8 @@ private fun ThisWeekRow(dayCounts: List<PomodoroDayCount>) {
 @Composable
 private fun SessionHeatMap(
     heatMapState: HeatMapCalendarState,
-    dayCountMap: Map<LocalDate, PomodoroDayCount>,
-    maxCount: Int,
+    dayMinutesMap: Map<LocalDate, PomodoroDayCount>,
+    maxMinutes: Float,
     onDayClick: (LocalDate) -> Unit,
 ) {
     val today = LocalDate.now()
@@ -257,19 +264,19 @@ private fun SessionHeatMap(
             dayContent = { day, _ ->
                 if (day.date > today) return@HeatMapCalendar
 
-                val count = dayCountMap[day.date]?.count ?: 0
-                val alpha = if (maxCount > 0) (count.toFloat() / maxCount).coerceIn(0f, 1f) else 0f
+                val minutes = dayMinutesMap[day.date]?.totalMinutes ?: 0f
+                val alpha = if (maxMinutes > 0) (minutes / maxMinutes).coerceIn(0f, 1f) else 0f
 
                 val bgColor =
                     when {
                         day.date > today -> Color.Transparent
-                        count == 0 -> MaterialTheme.colorScheme.surfaceContainerHighest
+                        minutes == 0f -> MaterialTheme.colorScheme.surfaceContainerHighest
                         else -> MaterialTheme.colorScheme.primary.copy(alpha = alpha)
                     }
 
                 val textColor =
                     when {
-                        count == 0 -> MaterialTheme.colorScheme.onSurface
+                        minutes == 0f -> MaterialTheme.colorScheme.onSurface
                         alpha > 0.5f -> MaterialTheme.colorScheme.onPrimary
                         else -> MaterialTheme.colorScheme.primary
                     }
@@ -281,9 +288,9 @@ private fun SessionHeatMap(
                             .clickable { onDayClick(day.date) },
                     contentAlignment = Alignment.Center,
                 ) {
-                    if (count > 0) {
+                    if (minutes > 0f) {
                         Text(
-                            text = count.toString(),
+                            text = minutes.toInt().toString(),
                             style =
                                 MaterialTheme.typography.labelSmall.copy(
                                     fontSize = 10.sp,
@@ -297,36 +304,6 @@ private fun SessionHeatMap(
             },
         )
     }
-}
-
-private fun computeStreaks(dates: List<LocalDate>): Pair<Int, Int> {
-    if (dates.isEmpty()) return 0 to 0
-    val sorted = dates.sortedDescending()
-    val today = LocalDate.now()
-
-    var current = 0
-    for (i in 0 until 365) {
-        val check = today.minus(i, DateTimeUnit.DAY)
-        if (check in sorted) {
-            if (i == 0 || current > 0) current++ else break
-        } else if (i > 0) {
-            break
-        }
-    }
-
-    var best = 1
-    var streak = 1
-    for (i in 1 until sorted.size) {
-        if (sorted[i - 1].minus(1, DateTimeUnit.DAY) == sorted[i]) {
-            streak++
-        } else {
-            best = maxOf(best, streak)
-            streak = 1
-        }
-    }
-    best = maxOf(best, streak)
-
-    return current to best
 }
 
 @Composable
@@ -366,22 +343,15 @@ private fun HabitBreakdownChart() {
 
     Surface(
         shape = MaterialTheme.shapes.medium,
-        color = MaterialTheme.colorScheme.surfaceContainer,
+        color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.65f),
     ) {
-        Column(
+        val sweepAngles = displayData.map { (it.count.toFloat() / total) * 360f }
+        val donutSize = 100.dp
+
+        Row(
             modifier = Modifier.fillMaxWidth().padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(
-                text = "Session Source",
-                style = MaterialTheme.typography.titleSmall,
-                fontFamily = flexFontRounded(),
-            )
-            Spacer(Modifier.height(12.dp))
-
-            val sweepAngles = displayData.map { (it.count.toFloat() / total) * 360f }
-            val donutSize = 120.dp
-
             Canvas(modifier = Modifier.size(donutSize)) {
                 var startAngle = -90f
                 displayData.forEachIndexed { i, _ ->
@@ -393,31 +363,31 @@ private fun HabitBreakdownChart() {
                         useCenter = false,
                         topLeft = Offset.Zero,
                         size = Size(size.width, size.height),
-                        style = Stroke(width = 28f),
+                        style = Stroke(width = 24f),
                     )
                     startAngle += sweep
                 }
             }
 
-            Spacer(Modifier.height(12.dp))
+            Spacer(modifier = Modifier.width(20.dp))
 
-            displayData.forEachIndexed { i, entry ->
-                val pct = ((sweepAngles[i] / 360f) * 100f).toInt()
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    Box(
-                        modifier =
-                            Modifier.size(10.dp)
-                                .background(color = colors[i % colors.size], shape = CircleShape)
-                    )
-                    Text(
-                        text = "${entry.title} â€” $pct%",
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontFamily = flexFontRounded(),
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                displayData.forEachIndexed { i, entry ->
+                    val pct = ((sweepAngles[i] / 360f) * 100f).toInt()
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier =
+                                Modifier.size(10.dp)
+                                    .background(color = colors[i % colors.size], shape = CircleShape)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "${entry.title}  $pct%",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontFamily = flexFontRounded(),
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                    }
                 }
             }
         }

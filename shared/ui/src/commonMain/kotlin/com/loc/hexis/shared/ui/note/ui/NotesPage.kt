@@ -242,6 +242,18 @@ fun NotesPage(
             if (selectedNoteIds.contains(id)) selectedNoteIds - id else selectedNoteIds + id
     }
 
+    fun performDeleteNotes(targetNote: Note) {
+        val toDelete = if (isSelectionMode) notes.filter { selectedNoteIds.contains(it.id) } else listOf(targetNote)
+        if (toDelete.isEmpty()) return
+        scope.launch {
+            toDelete.forEach { repo.deleteNote(it.id) }
+            selectedNoteIds = emptySet()
+            showUndo(if (toDelete.size > 1) "${toDelete.size} notes deleted" else msgNoteDeleted) {
+                scope.launch { toDelete.forEach { repo.upsertNote(it) } }
+            }
+        }
+    }
+
     SystemBackHandler(enabled = true) {
         if (isSelectionMode) {
             selectedNoteIds = emptySet()
@@ -539,18 +551,10 @@ fun NotesPage(
                                         translationY = transY
                                         alpha = if (isDragging) 0.9f else 1.0f
                                     }
-                                    .pointerInput(note.id, isSelectionMode) {
-                                        detectTapGestures(
-                                            onTap = {
-                                                if (isSelectionMode) {
-                                                    toggleSelectNote(note.id)
-                                                } else {
-                                                    editingNote = note
-                                                    showEditor = true
-                                                }
-                                            },
-                                        )
-                                    }
+                                    .then(
+                                        if (isSelected) Modifier.border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(20.dp))
+                                        else Modifier
+                                    )
                                     .pointerInput(note.id, showArchived, searchQuery) {
                                         if (!showArchived && searchQuery.isEmpty()) {
                                             detectDragGesturesAfterLongPress(
@@ -669,15 +673,7 @@ fun NotesPage(
                                                 }
                                             }
                                         },
-                                        onDelete = {
-                                            scope.launch {
-                                                val deleted = note
-                                                repo.deleteNote(note.id)
-                                                showUndo(msgNoteDeleted) {
-                                                    scope.launch { repo.upsertNote(deleted) }
-                                                }
-                                            }
-                                        },
+                                        onDelete = { performDeleteNotes(note) },
                                     )
                                 } else if (note.type == NoteType.JOURNAL) {
                                     JournalCard(
@@ -717,15 +713,7 @@ fun NotesPage(
                                                 }
                                             }
                                         },
-                                        onDelete = {
-                                            scope.launch {
-                                                val deleted = note
-                                                repo.deleteNote(note.id)
-                                                showUndo(msgNoteDeleted) {
-                                                    scope.launch { repo.upsertNote(deleted) }
-                                                }
-                                            }
-                                        },
+                                        onDelete = { performDeleteNotes(note) },
                                     )
                                 } else if (note.type == NoteType.VAULT) {
                                     VaultCard(
@@ -767,15 +755,7 @@ fun NotesPage(
                                                 }
                                             }
                                         },
-                                        onDelete = {
-                                            scope.launch {
-                                                val deleted = note
-                                                repo.deleteNote(note.id)
-                                                showUndo(msgNoteDeleted) {
-                                                    scope.launch { repo.upsertNote(deleted) }
-                                                }
-                                            }
-                                        },
+                                        onDelete = { performDeleteNotes(note) },
                                     )
                                 } else {
                                     NoteCard(
@@ -817,15 +797,7 @@ fun NotesPage(
                                                 }
                                             }
                                         },
-                                        onDelete = {
-                                            scope.launch {
-                                                val deleted = note
-                                                repo.deleteNote(note.id)
-                                                showUndo(msgNoteDeleted) {
-                                                    scope.launch { repo.upsertNote(deleted) }
-                                                }
-                                            }
-                                        },
+                                        onDelete = { performDeleteNotes(note) },
                                     )
                                 }
                             }

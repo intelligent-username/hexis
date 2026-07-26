@@ -223,17 +223,18 @@ class NoteVisualTransformation(
                     val startLineTrans = currentTransformedLen
                     val isRule = trimmed.matches(Regex("""^[-*_]{3,}\s*$"""))
                     if (isRule) {
-                        val ruleDisplay = "\u2500".repeat(34)
-                        builder.append(ruleDisplay)
+                        val visualLine = "\u2501".repeat(25)
+                        builder.append(visualLine)
                         for (chIdx in 0 until lineLen) {
                             if (origPos + chIdx <= original.length) {
                                 origToTrans[origPos + chIdx] = startLineTrans
                             }
                         }
-                        repeat(ruleDisplay.length) { transToOrig.add(origPos.coerceAtMost(original.length)) }
-                        currentTransformedLen += ruleDisplay.length
+                        repeat(visualLine.length) {
+                            transToOrig.add(origPos)
+                        }
+                        currentTransformedLen += visualLine.length
                         origPos += lineLen
-
                         applyLineStyles(line, builder, startLineTrans, currentTransformedLen)
                     } else {
                         builder.append(line)
@@ -307,7 +308,7 @@ class NoteVisualTransformation(
                     SpanStyle(
                         fontSize = 19.sp,
                         fontWeight = FontWeight.Bold,
-                        color = primaryColor,
+                        color = mutedColor,
                     ),
                     start,
                     end,

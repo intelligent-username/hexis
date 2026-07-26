@@ -42,7 +42,7 @@ fun Category.toCategoryEntity(): CategoryEntity {
 fun PomodoroSessionEntity.toPomodoroSession(): PomodoroSession {
     return PomodoroSession(
         id = id,
-        goalDurationMinutes = goalDurationMinutes,
+        goalDurationMinutes = goalDurationMinutes.toFloat(),
         timeStarted = timeStarted,
         timeFinished = timeFinished,
         completed = completed,
@@ -54,7 +54,7 @@ fun PomodoroSessionEntity.toPomodoroSession(): PomodoroSession {
 fun PomodoroSession.toPomodoroSessionEntity(): PomodoroSessionEntity {
     return PomodoroSessionEntity(
         id = id,
-        goalDurationMinutes = goalDurationMinutes,
+        goalDurationMinutes = goalDurationMinutes.toInt(),
         timeStarted = timeStarted,
         timeFinished = timeFinished,
         completed = completed,
