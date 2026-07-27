@@ -54,6 +54,7 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.style.TextOverflow
 import com.loc.hexis.core.habits.DisplayMode
 import com.loc.hexis.core.habits.Habit
@@ -184,11 +185,14 @@ fun HabitUpsertSheetContent(
                     shape = MaterialTheme.shapes.medium,
                     keyboardOptions =
                         KeyboardOptions(
-                            capitalization = KeyboardCapitalization.Sentences,
+                            capitalization = KeyboardCapitalization.Words,
                             imeAction = ImeAction.Next,
                         ),
                     label = {
-                        if (titleTextFieldState.text.trimEnd().length <= 20) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        ) {
                             Text(
                                 text =
                                     stringResource(
@@ -196,11 +200,32 @@ fun HabitUpsertSheetContent(
                                         else Res.string.title
                                     )
                             )
-                        } else {
-                            Text(text = stringResource(Res.string.too_long))
+                            val titleText = titleTextFieldState.text.trimEnd()
+                            val titleError =
+                                when {
+                                    titleText.isEmpty() -> "Required"
+                                    titleText.length > 20 -> "Too long (max 20)"
+                                    else -> null
+                                }
+                            if (titleError != null) {
+                                androidx.compose.material3.Surface(
+                                    color = MaterialTheme.colorScheme.errorContainer,
+                                    contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                                    shape = androidx.compose.foundation.shape.RoundedCornerShape(4.dp),
+                                ) {
+                                    Text(
+                                        text = titleError,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontSize = 10.sp,
+                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
+                                    )
+                                }
+                            }
                         }
                     },
-                    isError = titleTextFieldState.text.trimEnd().length > 20,
+                    isError =
+                        titleTextFieldState.text.isBlank() ||
+                            titleTextFieldState.text.trimEnd().length > 20,
                     modifier = Modifier.fillMaxWidth().focusRequester(focusRequester),
                 )
             }
@@ -217,7 +242,10 @@ fun HabitUpsertSheetContent(
                         ),
                     modifier = Modifier.fillMaxWidth(),
                     label = {
-                        if (descTextFieldState.text.trimEnd().length <= 200) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        ) {
                             Text(
                                 text =
                                     stringResource(
@@ -225,8 +253,21 @@ fun HabitUpsertSheetContent(
                                         else Res.string.description
                                     )
                             )
-                        } else {
-                            Text(text = stringResource(Res.string.too_long))
+                            val descLen = descTextFieldState.text.trimEnd().length
+                            if (descLen > 200) {
+                                androidx.compose.material3.Surface(
+                                    color = MaterialTheme.colorScheme.errorContainer,
+                                    contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                                    shape = androidx.compose.foundation.shape.RoundedCornerShape(4.dp),
+                                ) {
+                                    Text(
+                                        text = "Too long (max 200)",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontSize = 10.sp,
+                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
+                                    )
+                                }
+                            }
                         }
                     },
                     isError = descTextFieldState.text.trimEnd().length > 200,

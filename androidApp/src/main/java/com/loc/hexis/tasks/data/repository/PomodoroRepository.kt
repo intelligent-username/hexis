@@ -34,15 +34,23 @@ class PomodoroRepository(private val pomodoroDao: PomodoroDao) : PomodoroRepo {
     }
 
     override suspend fun getTodayStats(): PomodoroStats {
-        val now = LocalDateTime.now()
-        val todayStart = LocalDateTime(now.year, now.month, now.day, 0, 0)
-        return withContext(Dispatchers.IO) { pomodoroDao.getTodayStats(todayStart) }
+        val today = LocalDate.now()
+        return withContext(Dispatchers.IO) {
+            val sessions = pomodoroDao.getAll().filter { it.timeStarted.date == today }
+            PomodoroStats(
+                sessionCount = sessions.size,
+                totalMinutes = sessions.sumOf { (it.timeCompletedMinutes ?: 0f).toDouble() }.toFloat(),
+            )
+        }
     }
 
     override fun getCompletedDates(): Flow<List<LocalDate>> {
-        return pomodoroDao.getCompletedDates().map { epochs ->
-            epochs.map { LocalDate.fromEpochDays(it.toInt()) }
-        }
+        return pomodoroDao
+            .getAllFlow()
+            .map { entities ->
+                entities.filter { it.completed }.map { it.timeStarted.date }.distinct()
+            }
+            .flowOn(Dispatchers.IO)
     }
 
     override suspend fun getEarliestSessionDate(): LocalDate? {
@@ -51,29 +59,35 @@ class PomodoroRepository(private val pomodoroDao: PomodoroDao) : PomodoroRepo {
 
     override fun getSessionCountsByDay(): Flow<List<PomodoroDayCount>> {
         return pomodoroDao
-            .getSessionCountsByDay()
-            .map { list ->
-                list.map {
-                    PomodoroDayCount(
-                        date = LocalDate.fromEpochDays(it.epochDay.toInt()),
-                        count = it.count,
-                    )
-                }
+            .getAllFlow()
+            .map { entities ->
+                entities
+                    .groupBy { it.timeStarted.date }
+                    .map { (date, group) ->
+                        PomodoroDayCount(
+                            date = date,
+                            count = group.size,
+                        )
+                    }
+                    .sortedBy { it.date }
             }
             .flowOn(Dispatchers.IO)
     }
 
     override fun getSessionMinutesByDay(): Flow<List<PomodoroDayCount>> {
         return pomodoroDao
-            .getSessionMinutesByDay()
-            .map { list ->
-                list.map {
-                    PomodoroDayCount(
-                        date = LocalDate.fromEpochDays(it.epochDay.toInt()),
-                        count = it.count,
-                        totalMinutes = it.totalMinutes,
-                    )
-                }
+            .getAllFlow()
+            .map { entities ->
+                entities
+                    .groupBy { it.timeStarted.date }
+                    .map { (date, group) ->
+                        PomodoroDayCount(
+                            date = date,
+                            count = group.size,
+                            totalMinutes = group.sumOf { (it.timeCompletedMinutes ?: 0f).toDouble() }.toFloat(),
+                        )
+                    }
+                    .sortedBy { it.date }
             }
             .flowOn(Dispatchers.IO)
     }

@@ -79,6 +79,7 @@ fun PomodoroAnalytics(onDismiss: () -> Unit) {
     val dates = remember(dayCounts) { dayCounts.map { it.date } }
 
     val totalSessions = dayCounts.sumOf { it.count }
+    val totalMinutes = remember(dayMinutes) { dayMinutes.sumOf { it.totalMinutes.toDouble() }.toFloat() }
     val currentStreak = remember(dates) { countCurrentStreak(dates) }
     val bestStreak = remember(dates) { countBestStreak(dates) }
 
@@ -124,6 +125,7 @@ fun PomodoroAnalytics(onDismiss: () -> Unit) {
             if (dayCounts.isNotEmpty()) {
                 StatsRow(
                     totalSessions = totalSessions,
+                    totalMinutes = totalMinutes,
                     currentStreak = currentStreak,
                     bestStreak = bestStreak,
                 )
@@ -152,8 +154,10 @@ fun PomodoroAnalytics(onDismiss: () -> Unit) {
     }
 
     selectedDay?.let { date ->
-        val minutes = dayMinutesMap[date]?.totalMinutes ?: 0f
+        val entry = dayMinutesMap[date]
+        val minutes = entry?.totalMinutes ?: 0f
         val whole = minutes.toInt()
+        val sessions = entry?.count ?: 0
         HexisBottomSheet(onDismissRequest = { selectedDay = null }) {
             Column(
                 modifier = Modifier.fillMaxWidth().padding(24.dp),
@@ -175,17 +179,35 @@ fun PomodoroAnalytics(onDismiss: () -> Unit) {
                         ),
                     color = MaterialTheme.colorScheme.primary,
                 )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = "$sessions session${if (sessions != 1) "s" else ""}",
+                    style =
+                        MaterialTheme.typography.titleMedium.copy(
+                            fontFamily = flexFontRounded(),
+                        ),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         }
     }
 }
 
 @Composable
-private fun StatsRow(totalSessions: Int, currentStreak: Int, bestStreak: Int) {
-    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        StatPill(value = "$totalSessions", label = "total", modifier = Modifier.weight(1f))
-        StatPill(value = "$currentStreak", label = "day streak", modifier = Modifier.weight(1f))
-        StatPill(value = "$bestStreak", label = "best streak", modifier = Modifier.weight(1f))
+private fun StatsRow(totalSessions: Int, totalMinutes: Float, currentStreak: Int, bestStreak: Int) {
+    val totalHours = (totalMinutes / 60).toInt()
+    val remMins = (totalMinutes % 60).toInt()
+    val formattedTime = if (totalHours > 0) "${totalHours}h ${remMins}m" else "${totalMinutes.toInt()}m"
+
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            StatPill(value = "$totalSessions", label = "sessions", modifier = Modifier.weight(1f))
+            StatPill(value = formattedTime, label = "time worked", modifier = Modifier.weight(1f))
+        }
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            StatPill(value = "$currentStreak", label = "day streak", modifier = Modifier.weight(1f))
+            StatPill(value = "$bestStreak", label = "best streak", modifier = Modifier.weight(1f))
+        }
     }
 }
 

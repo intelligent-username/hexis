@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.6.2: Pomodoro & Analytics Improvements
+
+- Pomodoro now tracks total time worked and per-day session counts in Session History
+- Pomodoro heat map now logs evening & partial sessions accurately to the current day
+- Progression trends chart now displays the exact week of the year
+- Habit creation now auto-capitalizes title words and shows inline validation badges
+- Progress widget preview restored in widget picker
+
 ## 1.6.1: Bug fixes
 
 - Miscellaneous bug and UI fixes

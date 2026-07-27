@@ -52,6 +52,18 @@ import hexis.shared.ui.generated.resources.*
 import kotlin.math.abs
 import org.jetbrains.compose.resources.stringResource
 
+import com.loc.hexis.core.now
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.isoDayNumber
+import kotlinx.datetime.minus
+
+private fun LocalDate.weekOfYear(): Int {
+    val firstDayOfYear = LocalDate(year, 1, 1)
+    val firstDayOfWeekOffset = firstDayOfYear.dayOfWeek.isoDayNumber - 1
+    return (dayOfYear + firstDayOfWeekOffset - 1) / 7 + 1
+}
+
 @Composable
 fun TrendLineChart(weeklyPointsHistory: List<Int>, modifier: Modifier = Modifier) {
     var selectedTimePeriod by rememberSaveable { mutableStateOf(WeeklyTimePeriod.MONTHS_2) }
@@ -115,7 +127,7 @@ fun TrendLineChart(weeklyPointsHistory: List<Int>, modifier: Modifier = Modifier
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Tooltip: shows selected point value, or is empty
+            // Tooltip: shows selected point value with week of year
             Box(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).height(28.dp),
                 contentAlignment = Alignment.CenterStart,
@@ -125,13 +137,17 @@ fun TrendLineChart(weeklyPointsHistory: List<Int>, modifier: Modifier = Modifier
                         visibleData[selectedIndex]
                     else null
                 if (tooltipVal != null) {
+                    val today = LocalDate.now()
+                    val currentWeekStart = today.minus(today.dayOfWeek.isoDayNumber - 1, DateTimeUnit.DAY)
+                    val weekDate = currentWeekStart.minus(visibleData.size - 1 - selectedIndex, DateTimeUnit.WEEK)
+                    val weekNum = weekDate.weekOfYear()
                     Surface(
                         shape = RoundedCornerShape(8.dp),
                         color = MaterialTheme.colorScheme.surfaceContainerHigh,
                         tonalElevation = 0.dp,
                     ) {
                         Text(
-                            text = "$tooltipVal pts · week ${selectedIndex + 1}",
+                            text = "$tooltipVal pts · week $weekNum",
                             style =
                                 MaterialTheme.typography.labelMedium.copy(
                                     fontFamily = flexFontRounded(),

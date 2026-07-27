@@ -14,7 +14,7 @@ interface PomodoroDao {
     @Upsert suspend fun insert(session: PomodoroSessionEntity): Long
 
     @Query(
-        "UPDATE pomodoro_sessions SET timeFinished = :timeFinished, completed = :completed, timeCompletedMinutes = COALESCE(timeCompletedMinutes, 0.0) + :timeCompletedMinutes WHERE id = :id"
+        "UPDATE pomodoro_sessions SET timeFinished = :timeFinished, completed = :completed, timeCompletedMinutes = :timeCompletedMinutes WHERE id = :id"
     )
     suspend fun finish(
         id: Long,
@@ -22,6 +22,9 @@ interface PomodoroDao {
         completed: Boolean,
         timeCompletedMinutes: Float,
     )
+
+    @Query("SELECT * FROM pomodoro_sessions ORDER BY timeStarted ASC")
+    fun getAllFlow(): Flow<List<PomodoroSessionEntity>>
 
     @Query(
         "SELECT CAST(COUNT(*) AS INTEGER) AS sessionCount, CAST(COALESCE(SUM(timeCompletedMinutes), 0.0) AS REAL) AS totalMinutes FROM pomodoro_sessions WHERE completed = 1 AND timeStarted >= :todayStart"
