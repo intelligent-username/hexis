@@ -73,4 +73,21 @@ interface SettingsDatastore {
     fun getVaultPasswordHash(): Flow<String?>
 
     suspend fun setVaultPasswordHash(hash: String?)
+
+    fun getActivePomodoroSessionData(): Flow<ActivePomodoroSessionData?>
+
+    suspend fun setActivePomodoroSessionData(data: ActivePomodoroSessionData?)
+
+    suspend fun clearActivePomodoroSessionData()
 }
+
+@kotlinx.serialization.Serializable
+data class ActivePomodoroSessionData(
+    val sessionId: Long,
+    val startTimeIso: String,
+    val targetEndTimeMillis: Long,
+    val focusMinutes: Float,
+    val linkedHabitId: Long? = null,
+    val phase: String = "FOCUS",
+)
+

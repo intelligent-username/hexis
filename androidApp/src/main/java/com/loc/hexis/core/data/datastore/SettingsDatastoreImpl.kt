@@ -37,6 +37,7 @@ class SettingsDatastoreImpl(private val datastore: DataStore<Preferences>) : Set
         private val firstLaunchDateKey = stringPreferencesKey("first_launch_date")
         private val lockVaultNotesKey = booleanPreferencesKey("lock_vault_notes")
         private val vaultPasswordHashKey = stringPreferencesKey("vault_password_hash")
+        private val activePomodoroDataKey = stringPreferencesKey("active_pomodoro_data")
     }
 
     override fun getStartOfTheWeekPref(): Flow<DayOfWeek> =
@@ -183,4 +184,25 @@ class SettingsDatastoreImpl(private val datastore: DataStore<Preferences>) : Set
             else prefs.remove(vaultPasswordHashKey)
         }
     }
+
+    override fun getActivePomodoroSessionData(): Flow<com.loc.hexis.core.interfaces.ActivePomodoroSessionData?> =
+        datastore.data.map { prefs ->
+            val rawJson = prefs[activePomodoroDataKey] ?: return@map null
+            runCatching { Json.decodeFromString<com.loc.hexis.core.interfaces.ActivePomodoroSessionData>(rawJson) }.getOrNull()
+        }
+
+    override suspend fun setActivePomodoroSessionData(data: com.loc.hexis.core.interfaces.ActivePomodoroSessionData?) {
+        datastore.edit { prefs ->
+            if (data == null) {
+                prefs.remove(activePomodoroDataKey)
+            } else {
+                prefs[activePomodoroDataKey] = Json.encodeToString(data)
+            }
+        }
+    }
+
+    override suspend fun clearActivePomodoroSessionData() {
+        setActivePomodoroSessionData(null)
+    }
 }
+

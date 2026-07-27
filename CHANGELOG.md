@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.6.3: Pomodoro Persistence & Tasks UI Refinement
+
+- Pomodoro timer background persistence: Wall-clock target tracking and alarm triggers ensure zero lost focus time when switching tabs, leaving the app, or with screen locked
+- Reactive Pomodoro preview: Real-time database updates for instant today stats (session count & minutes) refresh
+- Auto-collapsing Add Task FAB: Task creation button dynamically shrinks by 50% while scrolling down to keep tasks readable
+- Soft keyboard IME inset padding: Automatic keyboard IME padding in habit and task sheets keeps input details visible while typing
+
 ## 1.6.2: Pomodoro & Analytics Improvements
 
 - Pomodoro now tracks total time worked and per-day session counts in Session History

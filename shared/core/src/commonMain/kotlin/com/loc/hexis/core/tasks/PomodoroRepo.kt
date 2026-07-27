@@ -16,6 +16,8 @@ interface PomodoroRepo {
 
     suspend fun getTodayStats(): PomodoroStats
 
+    fun getTodayStatsFlow(): Flow<PomodoroStats>
+
     fun getCompletedDates(): Flow<List<LocalDate>>
 
     suspend fun getEarliestSessionDate(): LocalDate?

@@ -39,7 +39,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -52,16 +51,15 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.loc.hexis.core.habits.HabitRepo
-import com.loc.hexis.core.interfaces.PomodoroAlarm
-import com.loc.hexis.core.interfaces.VibratorUtil
-import com.loc.hexis.core.now
 import com.loc.hexis.core.tasks.PomodoroRepo
-import com.loc.hexis.core.tasks.PomodoroSession
 import com.loc.hexis.core.tasks.PomodoroSettings
 import com.loc.hexis.core.tasks.PomodoroStats
 import com.loc.hexis.shared.ui.app.SystemBackHandler
 import com.loc.hexis.shared.ui.components.HexisBottomSheet
+import com.loc.hexis.shared.ui.task.PomodoroManager
+import com.loc.hexis.shared.ui.task.PomodoroPhase
 import com.loc.hexis.shared.ui.theme.flexFontRounded
 import hexis.shared.ui.generated.resources.Res
 import hexis.shared.ui.generated.resources.chart_data
@@ -71,37 +69,21 @@ import hexis.shared.ui.generated.resources.pause
 import hexis.shared.ui.generated.resources.play_arrow
 import hexis.shared.ui.generated.resources.restart
 import hexis.shared.ui.generated.resources.skip
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
-import kotlinx.datetime.LocalDate
-import kotlinx.datetime.LocalDateTime
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toInstant
 import org.jetbrains.compose.resources.vectorResource
 import org.koin.compose.koinInject
 
-private enum class PomodoroPhase {
-    FOCUS,
-    SHORT_BREAK,
-    LONG_BREAK,
-}
-
 @Composable
 fun PomodoroPage(linkedHabitId: Long? = null, onDismiss: () -> Unit) {
-    val repo: PomodoroRepo = koinInject()
-    val settingsDatastore: com.loc.hexis.core.interfaces.SettingsDatastore = koinInject()
+    val pomodoroManager: PomodoroManager = koinInject()
+    val pomodoroState by pomodoroManager.state.collectAsStateWithLifecycle()
 
-    var settings by remember { mutableStateOf(PomodoroSettings()) }
-    var phase by remember { mutableStateOf(PomodoroPhase.FOCUS) }
-    var secondsRemaining by remember { mutableStateOf((settings.focusMinutes * 60).toInt()) }
-    var isRunning by remember { mutableStateOf(false) }
-    var cyclesCompleted by remember { mutableStateOf(0) }
-    var currentSessionInBatch by remember { mutableStateOf(1) }
-    var currentSessionId by remember { mutableStateOf<Long?>(null) }
-    var sessionStartTime by remember { mutableStateOf<LocalDateTime?>(null) }
-    var transitionCountdown by remember { mutableStateOf(0) }
-    var todayStats by remember { mutableStateOf<PomodoroStats?>(null) }
+    val settings = pomodoroState.settings
+    val phase = pomodoroState.phase
+    val secondsRemaining = pomodoroState.secondsRemaining
+    val isRunning = pomodoroState.isRunning
+    val currentSessionInBatch = pomodoroState.currentSessionInBatch
+    val todayStats = pomodoroState.todayStats
+
     var showSettings by remember { mutableStateOf(false) }
     var showAnalytics by remember { mutableStateOf(false) }
 
@@ -121,162 +103,8 @@ fun PomodoroPage(linkedHabitId: Long? = null, onDismiss: () -> Unit) {
         }
     }
 
-    val scope = rememberCoroutineScope()
-    val vibrator: VibratorUtil = koinInject()
-    val pomodoroAlarm: PomodoroAlarm = koinInject()
-
     fun formatMinutes(mins: Float): String =
         if (mins == mins.toInt().toFloat()) mins.toInt().toString() else mins.toString()
-
-    // --- helpers (defined before LaunchedEffects that use them) ---
-
-    fun savePartialSession(closeSession: Boolean = true) {
-        val nw = LocalDateTime.now()
-        val id = currentSessionId
-        val start = sessionStartTime
-        if (id != null && start != null) {
-            val elapsed =
-                (nw.toInstant(TimeZone.currentSystemDefault()).epochSeconds -
-                    start.toInstant(TimeZone.currentSystemDefault()).epochSeconds) / 60f
-            scope.launch {
-                repo.finishSession(id, nw, false, elapsed)
-                todayStats = repo.getTodayStats()
-            }
-        }
-        if (closeSession) {
-            currentSessionId = null
-            sessionStartTime = null
-        }
-    }
-
-    fun startSession() {
-        savePartialSession()
-        val nw = LocalDateTime.now()
-        sessionStartTime = nw
-        secondsRemaining = (settings.focusMinutes * 60).toInt()
-        phase = PomodoroPhase.FOCUS
-        scope.launch {
-            currentSessionId =
-                repo.insertSession(
-                    PomodoroSession(
-                        goalDurationMinutes = settings.focusMinutes,
-                        timeStarted = nw,
-                        linkedHabitId = linkedHabitId,
-                    )
-                )
-            isRunning = true
-            pomodoroAlarm.schedule(
-                LocalDateTime.now().toInstant(TimeZone.currentSystemDefault()).toEpochMilliseconds() +
-                    secondsRemaining * 1000L
-            )
-        }
-    }
-
-    fun resetTimer() {
-        pomodoroAlarm.cancel()
-        savePartialSession()
-        isRunning = false
-        when (phase) {
-            PomodoroPhase.FOCUS -> secondsRemaining = (settings.focusMinutes * 60).toInt()
-            PomodoroPhase.SHORT_BREAK ->
-                secondsRemaining = (settings.shortBreakMinutes * 60).toInt()
-            PomodoroPhase.LONG_BREAK -> secondsRemaining = (settings.longBreakMinutes * 60).toInt()
-        }
-    }
-
-    fun onPhaseComplete() {
-        pomodoroAlarm.cancel()
-        isRunning = false
-        when (phase) {
-            PomodoroPhase.FOCUS -> {
-                vibrator.buzz()
-                val nw = LocalDateTime.now()
-                val id = currentSessionId
-                val start = sessionStartTime
-                val elapsed =
-                    start?.let { s ->
-                        val diff =
-                            nw.toInstant(TimeZone.currentSystemDefault()).epochSeconds -
-                                s.toInstant(TimeZone.currentSystemDefault()).epochSeconds
-                        (diff / 60f).coerceAtMost(settings.focusMinutes)
-                    } ?: settings.focusMinutes
-                scope.launch {
-                    id?.let { repo.finishSession(it, nw, true, elapsed) }
-                    todayStats = repo.getTodayStats()
-                    val hId = linkedHabitId
-                    if (hId != null) {
-                        val habit = habitRepo.getHabitById(hId)
-                        if (habit != null) {
-                            habitRepo.incrementHabitProgress(
-                                hId,
-                                LocalDate.now(),
-                                habit.incrementBy,
-                            )
-                        }
-                    }
-                }
-                cyclesCompleted++
-                if (
-                    settings.longBreakInterval > 0 &&
-                        currentSessionInBatch >= settings.longBreakInterval
-                ) {
-                    currentSessionInBatch = 1
-                    phase = PomodoroPhase.LONG_BREAK
-                    secondsRemaining = (settings.longBreakMinutes * 60).toInt()
-                } else {
-                    currentSessionInBatch++
-                    phase = PomodoroPhase.SHORT_BREAK
-                    secondsRemaining = (settings.shortBreakMinutes * 60).toInt()
-                }
-                currentSessionId = null
-                sessionStartTime = null
-                transitionCountdown = 2
-                scope.launch {
-                    delay(2000L)
-                    if (!isRunning && phase != PomodoroPhase.FOCUS) isRunning = true
-                }
-            }
-            PomodoroPhase.SHORT_BREAK,
-            PomodoroPhase.LONG_BREAK -> {
-                vibrator.buzz()
-                if (phase == PomodoroPhase.LONG_BREAK) cyclesCompleted = 0
-                phase = PomodoroPhase.FOCUS
-                secondsRemaining = (settings.focusMinutes * 60).toInt()
-                sessionStartTime = null
-                currentSessionId = null
-                transitionCountdown = 2
-                scope.launch {
-                    delay(2000L)
-                    if (!isRunning && phase == PomodoroPhase.FOCUS && currentSessionId == null) {
-                        val nw2 = LocalDateTime.now()
-                        sessionStartTime = nw2
-                        currentSessionId =
-                            repo.insertSession(
-                                PomodoroSession(
-                                    goalDurationMinutes = settings.focusMinutes,
-                                    timeStarted = nw2,
-                                    linkedHabitId = linkedHabitId,
-                                )
-                            )
-                        isRunning = true
-                        pomodoroAlarm.schedule(
-                            LocalDateTime.now()
-                                .toInstant(TimeZone.currentSystemDefault())
-                                .toEpochMilliseconds() + secondsRemaining * 1000L
-                        )
-                    }
-                }
-            }
-        }
-    }
-
-    fun skipBreak() {
-        pomodoroAlarm.cancel()
-        isRunning = false
-        savePartialSession()
-        phase = PomodoroPhase.FOCUS
-        secondsRemaining = (settings.focusMinutes * 60).toInt()
-    }
 
     fun applyPomodoroSettings() {
         val ns =
@@ -286,16 +114,11 @@ fun PomodoroPage(linkedHabitId: Long? = null, onDismiss: () -> Unit) {
                 longBreakMinutes = longBreakText.toFloatOrNull() ?: settings.longBreakMinutes,
                 longBreakInterval = intervalText.toIntOrNull() ?: settings.longBreakInterval,
             )
-        scope.launch { settingsDatastore.setPomodoroSettings(ns) }
-        settings = ns
-        if (!isRunning && phase == PomodoroPhase.FOCUS) {
-            secondsRemaining = (ns.focusMinutes * 60).toInt()
-        }
+        pomodoroManager.applyPomodoroSettings(ns)
         showSettings = false
     }
 
     fun handleDismiss() {
-        savePartialSession()
         onDismiss()
     }
 
@@ -304,21 +127,6 @@ fun PomodoroPage(linkedHabitId: Long? = null, onDismiss: () -> Unit) {
             showAnalytics = false
         } else {
             handleDismiss()
-        }
-    }
-
-    // --- LaunchedEffects ---
-
-    LaunchedEffect(Unit) {
-        val loaded = settingsDatastore.getPomodoroSettings().first()
-        settings = loaded
-        secondsRemaining = (loaded.focusMinutes * 60).toInt()
-    }
-
-    LaunchedEffect(Unit) {
-        while (true) {
-            todayStats = repo.getTodayStats()
-            delay(5000)
         }
     }
 
@@ -331,29 +139,7 @@ fun PomodoroPage(linkedHabitId: Long? = null, onDismiss: () -> Unit) {
         }
     }
 
-    LaunchedEffect(isRunning) {
-        if (isRunning) {
-            while (secondsRemaining > 0) {
-                delay(1000L)
-                secondsRemaining--
-            }
-            onPhaseComplete()
-        }
-    }
-
-    LaunchedEffect(transitionCountdown) {
-        if (transitionCountdown > 0) {
-            delay(1000L)
-            transitionCountdown--
-        }
-    }
-
-    val totalSeconds =
-        when (phase) {
-            PomodoroPhase.FOCUS -> (settings.focusMinutes * 60).toInt()
-            PomodoroPhase.SHORT_BREAK -> (settings.shortBreakMinutes * 60).toInt()
-            PomodoroPhase.LONG_BREAK -> (settings.longBreakMinutes * 60).toInt()
-        }
+    val totalSeconds = pomodoroState.durationSeconds
 
     val progress by
         animateFloatAsState(
@@ -363,8 +149,6 @@ fun PomodoroPage(linkedHabitId: Long? = null, onDismiss: () -> Unit) {
             label = "progress",
         )
 
-    // --- colors ---
-
     val primary = MaterialTheme.colorScheme.primary
     val tertiary = MaterialTheme.colorScheme.tertiary
     val breakColor = if (phase != PomodoroPhase.FOCUS) tertiary else primary
@@ -373,8 +157,6 @@ fun PomodoroPage(linkedHabitId: Long? = null, onDismiss: () -> Unit) {
     val onSurfaceVariant = MaterialTheme.colorScheme.onSurfaceVariant
     val surfaceContainerHi = MaterialTheme.colorScheme.surfaceContainerHighest
     val surfaceContainerHigh = MaterialTheme.colorScheme.surfaceContainerHigh
-
-    // --- UI ---
 
     Box(modifier = Modifier.fillMaxSize().background(surface)) {
         Column(
@@ -502,20 +284,10 @@ fun PomodoroPage(linkedHabitId: Long? = null, onDismiss: () -> Unit) {
                         color = onSurface,
                         textAlign = TextAlign.Center,
                     )
-
-                    AnimatedVisibility(visible = transitionCountdown > 0) {
-                        Text(
-                            text = "Starting in $transitionCountdown...",
-                            fontFamily = flexFontRounded(),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = onSurfaceVariant,
-                            modifier = Modifier.padding(top = 4.dp),
-                        )
-                    }
                 }
             }
 
-            // cycle counter â€” shows current session number (1 to interval)
+            // cycle counter — shows current session number (1 to interval)
             if (settings.longBreakInterval > 0) {
                 Text(
                     text = "$currentSessionInBatch / ${settings.longBreakInterval} cycles",
@@ -535,7 +307,7 @@ fun PomodoroPage(linkedHabitId: Long? = null, onDismiss: () -> Unit) {
             ) {
                 // reset
                 FilledTonalIconButton(
-                    onClick = { resetTimer() },
+                    onClick = { pomodoroManager.resetTimer() },
                     modifier = Modifier.size(48.dp),
                     colors =
                         IconButtonDefaults.filledTonalIconButtonColors(
@@ -563,20 +335,11 @@ fun PomodoroPage(linkedHabitId: Long? = null, onDismiss: () -> Unit) {
                             indication = null,
                         ) {
                             if (isRunning) {
-                                pomodoroAlarm.cancel()
-                                savePartialSession(closeSession = false)
-                                sessionStartTime = LocalDateTime.now()
-                                isRunning = false
-                            } else if (currentSessionId == null && phase == PomodoroPhase.FOCUS) {
-                                startSession()
+                                pomodoroManager.pauseSession()
+                            } else if (pomodoroState.currentSessionId == null && phase == PomodoroPhase.FOCUS) {
+                                pomodoroManager.startSession(linkedHabitId)
                             } else {
-                                sessionStartTime = LocalDateTime.now()
-                                isRunning = true
-                                pomodoroAlarm.schedule(
-                                    LocalDateTime.now()
-                                        .toInstant(TimeZone.currentSystemDefault())
-                                        .toEpochMilliseconds() + secondsRemaining * 1000L
-                                )
+                                pomodoroManager.resumeSession(linkedHabitId)
                             }
                         },
                     contentAlignment = Alignment.Center,
@@ -595,7 +358,7 @@ fun PomodoroPage(linkedHabitId: Long? = null, onDismiss: () -> Unit) {
                 // settings / skip
                 if (phase != PomodoroPhase.FOCUS) {
                     FilledTonalIconButton(
-                        onClick = { skipBreak() },
+                        onClick = { pomodoroManager.skipBreak() },
                         modifier = Modifier.size(48.dp),
                         colors =
                             IconButtonDefaults.filledTonalIconButtonColors(

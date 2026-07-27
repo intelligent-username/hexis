@@ -38,10 +38,24 @@ class PomodoroRepository(private val pomodoroDao: PomodoroDao) : PomodoroRepo {
         return withContext(Dispatchers.IO) {
             val sessions = pomodoroDao.getAll().filter { it.timeStarted.date == today }
             PomodoroStats(
-                sessionCount = sessions.size,
+                sessionCount = sessions.count { it.completed },
                 totalMinutes = sessions.sumOf { (it.timeCompletedMinutes ?: 0f).toDouble() }.toFloat(),
             )
         }
+    }
+
+    override fun getTodayStatsFlow(): Flow<PomodoroStats> {
+        return pomodoroDao
+            .getAllFlow()
+            .map { entities ->
+                val today = LocalDate.now()
+                val sessions = entities.filter { it.timeStarted.date == today }
+                PomodoroStats(
+                    sessionCount = sessions.count { it.completed },
+                    totalMinutes = sessions.sumOf { (it.timeCompletedMinutes ?: 0f).toDouble() }.toFloat(),
+                )
+            }
+            .flowOn(Dispatchers.IO)
     }
 
     override fun getCompletedDates(): Flow<List<LocalDate>> {

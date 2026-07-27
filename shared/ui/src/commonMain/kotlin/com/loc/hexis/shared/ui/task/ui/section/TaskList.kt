@@ -3,6 +3,10 @@ package com.loc.hexis.shared.ui.task.ui.section
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
@@ -24,10 +28,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.items
@@ -111,6 +117,13 @@ fun TaskList(
     var editState by remember { mutableStateOf(false) }
     var editTask: Task? by remember { mutableStateOf(null) }
 
+    val taskListState = rememberLazyListState()
+    val isScrolled by remember {
+        derivedStateOf {
+            taskListState.firstVisibleItemIndex > 0 || taskListState.firstVisibleItemScrollOffset > 0
+        }
+    }
+
     androidx.compose.runtime.LaunchedEffect(state.showAddTaskSheet) {
         if (state.showAddTaskSheet) {
             showTaskAddSheet = true
@@ -148,11 +161,14 @@ fun TaskList(
                 onAction = onAction,
                 onEditTask = { editTask = it },
                 isCompact = windowSizeClass.widthSizeClass == WindowWidthSizeClass.Compact,
+                lazyListState = taskListState,
             )
         } else {
             ExpandedTasksView(state = state, onAction = onAction, onEditTask = { editTask = it })
         }
     }
+
+    val fabScale by animateFloatAsState(if (isScrolled) 0.5f else 1.0f)
 
     MediumFloatingActionButton(
         onClick = { showTaskAddSheet = true },
@@ -160,6 +176,11 @@ fun TaskList(
         contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
         modifier =
             Modifier.align(Alignment.BottomEnd)
+                .graphicsLayer {
+                    scaleX = fabScale
+                    scaleY = fabScale
+                    transformOrigin = TransformOrigin(1f, 1f)
+                }
                 .padding(16.dp)
                 .then(
                     if (windowSizeClass.widthSizeClass != WindowWidthSizeClass.Expanded) Modifier
@@ -180,8 +201,9 @@ fun TaskList(
             )
             AnimatedVisibility(
                 visible =
-                    state.tasks[state.currentCategory].isNullOrEmpty() ||
-                        windowSizeClass.widthSizeClass == WindowWidthSizeClass.Expanded,
+                    !isScrolled &&
+                        (state.tasks[state.currentCategory].isNullOrEmpty() ||
+                            windowSizeClass.widthSizeClass == WindowWidthSizeClass.Expanded),
                 enter = fadeIn(MaterialTheme.motionScheme.fastEffectsSpec()),
                 exit = fadeOut(MaterialTheme.motionScheme.fastEffectsSpec()),
             ) {
@@ -398,6 +420,7 @@ private fun CompactTasksView(
     onAction: (TaskAction) -> Unit,
     onEditTask: (Task) -> Unit,
     isCompact: Boolean,
+    lazyListState: LazyListState = rememberLazyListState(),
 ) {
     Surface(
         color = MaterialTheme.colorScheme.surfaceContainer,
@@ -414,7 +437,6 @@ private fun CompactTasksView(
         ) { categoryId ->
             val category = state.tasks.keys.firstOrNull { it.id == categoryId }
             if (category != null) {
-                val lazyListState = rememberLazyListState()
                 var reorderableTasks by
                     remember(state.tasks.values) {
                         mutableStateOf(

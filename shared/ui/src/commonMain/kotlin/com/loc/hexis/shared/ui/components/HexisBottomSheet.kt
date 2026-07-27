@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetState
@@ -26,7 +27,7 @@ fun HexisBottomSheet(
     ModalBottomSheet(
         onDismissRequest = onDismissRequest,
         sheetMaxWidth = 500.dp,
-        modifier = modifier,
+        modifier = modifier.imePadding(),
         sheetState = sheetState,
     ) {
         Column(
