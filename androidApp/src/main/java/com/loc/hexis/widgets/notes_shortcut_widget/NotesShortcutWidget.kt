@@ -136,7 +136,7 @@ class NotesShortcutWidget : GlanceAppWidget(), KoinComponent {
                 isMaterialYou = isMaterialYou,
             )
 
-            key(size) {
+            key(size, notes) {
                 GlanceTheme(colors = colors) {
                     NotesWidgetContent(
                         notes = notes,
@@ -303,14 +303,14 @@ private fun NotesWidgetContent(
 
             Row(modifier = GlanceModifier.fillMaxSize()) {
                 LazyColumn(modifier = GlanceModifier.defaultWeight()) {
-                    items(col1Notes, itemId = { note -> (note.id.toString() + "_" + note.payloadJson + "_" + note.updatedAt).hashCode().toLong() }) { note ->
+                    items(col1Notes, itemId = { note -> (note.id.toString() + "_" + note.title + "_" + note.content + "_" + note.payloadJson + "_" + note.updatedAt).hashCode().toLong() }) { note ->
                         NoteCardItem(note = note, isDark = isDark, onCounterAction = onCounterAction)
                         Spacer(modifier = GlanceModifier.height(6.dp))
                     }
                 }
                 Spacer(modifier = GlanceModifier.width(8.dp))
                 LazyColumn(modifier = GlanceModifier.defaultWeight()) {
-                    items(col2Notes, itemId = { note -> (note.id.toString() + "_" + note.payloadJson + "_" + note.updatedAt).hashCode().toLong() }) { note ->
+                    items(col2Notes, itemId = { note -> (note.id.toString() + "_" + note.title + "_" + note.content + "_" + note.payloadJson + "_" + note.updatedAt).hashCode().toLong() }) { note ->
                         NoteCardItem(note = note, isDark = isDark, onCounterAction = onCounterAction)
                         Spacer(modifier = GlanceModifier.height(6.dp))
                     }
@@ -320,7 +320,7 @@ private fun NotesWidgetContent(
             LazyColumn(
                 modifier = GlanceModifier.fillMaxSize(),
             ) {
-                items(notes, itemId = { note -> (note.id.toString() + "_" + note.payloadJson + "_" + note.updatedAt).hashCode().toLong() }) { note ->
+                items(notes, itemId = { note -> (note.id.toString() + "_" + note.title + "_" + note.content + "_" + note.payloadJson + "_" + note.updatedAt).hashCode().toLong() }) { note ->
                     NoteCardItem(note = note, isDark = isDark, onCounterAction = onCounterAction)
                     Spacer(modifier = GlanceModifier.height(6.dp))
                 }
@@ -388,7 +388,7 @@ private fun NoteCardItem(
                             modifier = GlanceModifier.clickable(openNoteAction),
                         )
                     } else {
-                        tableData.rows.take(3).forEachIndexed { index, row ->
+                        tableData.rows.forEachIndexed { index, row ->
                             val valText = if (row.value % 1.0 == 0.0) row.value.toLong().toString() else row.value.toString()
                             val labelText = row.label.ifBlank { "Item ${index + 1}" }
 

@@ -93,7 +93,7 @@ class HabitOverviewWidget : GlanceAppWidget(), KoinComponent {
                     isMaterialYou = isMaterialYou,
                 )
 
-            key(size) {
+            key(size, habits) {
                 GlanceTheme(colors = colors) {
                     Content(
                         habitsWithStatus =

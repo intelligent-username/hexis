@@ -46,6 +46,8 @@ sealed interface HabitsAction {
 
     data class UpdateHabit(val habit: Habit) : HabitsAction
 
+    data class UpdateHabitOrder(val habits: List<com.loc.hexis.core.habits.HabitWithAnalytics>) : HabitsAction
+
     data object ReorderHabits : HabitsAction
 
     data class FetchCompletedHabitsForDate(val date: LocalDate?) : HabitsAction

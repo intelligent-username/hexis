@@ -110,7 +110,7 @@ class HabitStreakWidget : GlanceAppWidget(), KoinComponent {
                     isMaterialYou = isMaterialYou,
                 )
 
-            key(size) {
+            key(size, currentData) {
                 GlanceTheme(colors = colors) {
                     Content(
                         habitWithAnalytics = currentData,

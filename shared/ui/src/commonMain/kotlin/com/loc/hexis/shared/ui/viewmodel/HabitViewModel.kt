@@ -80,6 +80,17 @@ class HabitViewModel(
 
                 is HabitsAction.UpdateHabit -> upsertHabit(action.habit)
 
+                is HabitsAction.UpdateHabitOrder -> {
+                    val ordered = action.habits
+                    _state.update { it.copy(habitsWithAnalytics = ordered) }
+                    val updatedHabits = ordered.mapIndexed { index, analytics ->
+                        analytics.habit.copy(index = index)
+                    }
+                    launch {
+                        updatedHabits.forEach { upsertHabit(it) }
+                    }
+                }
+
                 HabitsAction.ReorderHabits -> {
                     _state.update { it.copy(isReordering = true) }
                     val currentList =

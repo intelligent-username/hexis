@@ -24,6 +24,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.loc.hexis.core.app.Changelog
 import com.loc.hexis.core.app.VersionEntry
+import com.loc.hexis.shared.ui.components.FormattedChangelogItem
 import com.loc.hexis.shared.ui.components.detachedItemShape
 import com.loc.hexis.shared.ui.components.endItemShape
 import com.loc.hexis.shared.ui.components.leadingItemShape
@@ -97,7 +98,7 @@ fun Changelog(modifier: Modifier = Modifier, changelog: Changelog, onNavigateBac
                     ListItem(
                         colors = listItemColors(),
                         modifier = Modifier.clip(shape),
-                        headlineContent = { Text(text = change) },
+                        headlineContent = { FormattedChangelogItem(text = change) },
                     )
                 }
 

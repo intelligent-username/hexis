@@ -37,6 +37,11 @@ import org.jetbrains.compose.resources.vectorResource
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+
 @Composable
 fun HabitsList(
     state: HabitState,
@@ -46,9 +51,15 @@ fun HabitsList(
     modifier: Modifier = Modifier,
 ) {
     val windowSizeClass = LocalWindowSizeClass.current
+    var localHabits by remember(state.habitsWithAnalytics) {
+        mutableStateOf(state.habitsWithAnalytics)
+    }
+
     val reorderableListState =
         rememberReorderableLazyListState(lazyListState) { from, to ->
-            onAction(HabitsAction.OnTransientHabitReorder(from.index, to.index))
+            localHabits = localHabits.toMutableList().apply {
+                add(to.index, removeAt(from.index))
+            }
         }
 
     Column(modifier = modifier) {
@@ -60,11 +71,12 @@ fun HabitsList(
         ) {
             // habits
             val displayedHabits =
-                if (state.reorderHabits)
-                    state.habitsWithAnalytics.sortedBy {
+                if (state.reorderHabits && !state.editState)
+                    localHabits.sortedBy {
                         it.habit.id in state.completedHabitIds
                     }
-                else state.habitsWithAnalytics
+                else localHabits
+
             itemsIndexed(displayedHabits, key = { _, it -> it.habit.id }) {
                 index,
                 habitWithAnalytics ->
@@ -99,7 +111,9 @@ fun HabitsList(
                                 contentDescription = "Drag Indicator",
                                 modifier =
                                     Modifier.draggableHandle(
-                                        onDragStopped = { onAction(HabitsAction.ReorderHabits) }
+                                        onDragStopped = {
+                                            onAction(HabitsAction.UpdateHabitOrder(localHabits))
+                                        }
                                     ),
                             )
                         },

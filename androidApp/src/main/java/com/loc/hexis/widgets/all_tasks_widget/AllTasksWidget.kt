@@ -89,7 +89,7 @@ class AllTasksWidget : GlanceAppWidget(), KoinComponent {
                     isMaterialYou = isMaterialYou,
                 )
 
-            key(size) {
+            key(size, tasks) {
                 GlanceTheme(colors = colors) {
                     Content(
                         tasks = tasks.filter { it.value.isNotEmpty() },

@@ -140,7 +140,7 @@ class SingleNoteWidget : GlanceAppWidget(), KoinComponent {
                 isMaterialYou = isMaterialYou,
             )
 
-            key(size, storedNoteId, targetNote?.payloadJson, targetNote?.updatedAt) {
+            key(size, storedNoteId, targetNote) {
                 GlanceTheme(colors = colors) {
                     SingleNoteContent(
                         note = targetNote,
@@ -410,7 +410,7 @@ private fun SingleNoteContent(
                         LazyColumn(
                             modifier = GlanceModifier.fillMaxSize(),
                         ) {
-                            items(tableData.rows, itemId = { row -> (row.id + "_" + row.value).hashCode().toLong() }) { row ->
+                            items(tableData.rows, itemId = { row -> (row.id + "_" + row.label + "_" + row.value + "_" + row.step).hashCode().toLong() }) { row ->
                                 CounterWidgetRow(
                                     noteId = note.id,
                                     row = row,
@@ -445,7 +445,7 @@ private fun SingleNoteContent(
                         LazyColumn(
                             modifier = GlanceModifier.fillMaxSize(),
                         ) {
-                            items(journalData.entries) { entry ->
+                            items(journalData.entries, itemId = { entry -> (entry.id + "_" + entry.timestamp + "_" + entry.text).hashCode().toLong() }) { entry ->
                                 Box(
                                     modifier = GlanceModifier
                                         .fillMaxWidth()

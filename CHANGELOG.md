@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.6.4: Home Widgets & Habit Reordering Fixes
+
+- Instant real-time updates for notes, tasks, and habit widgets
+- Uncapped counting table previews on home widgets
+- Smooth habit reordering in move mode with zero drag jitter
+- Enabled Kotlin compiler daemon for faster incremental builds
+
 ## 1.6.3: Pomodoro Persistence & Tasks UI Refinement
 
 - Pomodoro timer background persistence: Wall-clock target tracking and alarm triggers ensure zero lost focus time when switching tabs, leaving the app, or with screen locked
