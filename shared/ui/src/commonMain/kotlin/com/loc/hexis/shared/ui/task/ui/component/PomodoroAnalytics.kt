@@ -67,10 +67,22 @@ import kotlinx.datetime.minus
 import org.jetbrains.compose.resources.vectorResource
 import org.koin.compose.koinInject
 
+import com.loc.hexis.core.interfaces.SettingsDatastore
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.pointer.pointerInput
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PomodoroAnalytics(onDismiss: () -> Unit) {
+fun PomodoroAnalytics(
+    onDismiss: () -> Unit,
+    onSelectHabit: (Long?, String) -> Unit = { _, _ -> },
+) {
     val repo: PomodoroRepo = koinInject()
+
+    val settingsDatastore: SettingsDatastore = koinInject()
+    val showPieChart by settingsDatastore.getShowPomodoroPieChartPref().collectAsState(initial = true)
 
     val dayCounts by repo.getSessionCountsByDay().collectAsState(initial = emptyList())
     val dayMinutes by repo.getSessionMinutesByDay().collectAsState(initial = emptyList())
@@ -132,7 +144,14 @@ fun PomodoroAnalytics(onDismiss: () -> Unit) {
 
                 ThisWeekRow(dayMinutes = dayMinutes)
 
-                HabitBreakdownChart()
+                if (showPieChart) {
+                    HabitBreakdownChart(
+                        onSelectHabit = { habitId, title ->
+                            onSelectHabit(habitId, title)
+                            onDismiss()
+                        }
+                    )
+                }
 
                 SessionHeatMap(
                     heatMapState = heatMapState,
@@ -329,7 +348,7 @@ private fun SessionHeatMap(
 }
 
 @Composable
-private fun HabitBreakdownChart() {
+private fun HabitBreakdownChart(onSelectHabit: (Long?, String) -> Unit = { _, _ -> }) {
     val repo: PomodoroRepo = koinInject()
     val habitRepo: HabitRepo = koinInject()
 
@@ -353,61 +372,124 @@ private fun HabitBreakdownChart() {
 
     val total = displayData.sumOf { it.count }.toFloat()
 
-    val colors =
+    val miscColor = MaterialTheme.colorScheme.outline
+    val basePalette =
         listOf(
             MaterialTheme.colorScheme.primary,
             MaterialTheme.colorScheme.tertiary,
             MaterialTheme.colorScheme.secondary,
             MaterialTheme.colorScheme.error,
-            MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
-            MaterialTheme.colorScheme.tertiary.copy(alpha = 0.7f),
+            Color(0xFFFF9800),
+            Color(0xFF00BCD4),
+            Color(0xFF4CAF50),
+            Color(0xFF9C27B0),
+            Color(0xFFE91E63),
+            Color(0xFF3F51B5),
+            Color(0xFFFFC107),
+            Color(0xFF009688),
         )
+
+    val nonMiscEntries = displayData.filter { it.id != null && !it.title.equals("Misc", ignoreCase = true) }
+
+    fun getEntryColor(entry: HabitCount): Color {
+        if (entry.id == null || entry.title.equals("Misc", ignoreCase = true)) {
+            return miscColor
+        }
+        val idx = nonMiscEntries.indexOf(entry).coerceAtLeast(0)
+        return if (idx < basePalette.size) {
+            basePalette[idx]
+        } else {
+            val hue = (idx * 137.5f) % 360f
+            Color.hsl(hue = hue, saturation = 0.75f, lightness = 0.55f)
+        }
+    }
 
     Surface(
         shape = MaterialTheme.shapes.medium,
         color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.65f),
     ) {
         val sweepAngles = displayData.map { (it.count.toFloat() / total) * 360f }
-        val donutSize = 100.dp
+        val donutSize = 136.dp
 
         Row(
             modifier = Modifier.fillMaxWidth().padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Canvas(modifier = Modifier.size(donutSize)) {
+            Canvas(
+                modifier =
+                    Modifier.size(donutSize).pointerInput(displayData, sweepAngles) {
+                        detectTapGestures { tapOffset ->
+                            val center = Offset(size.width / 2f, size.height / 2f)
+                            val dx = tapOffset.x - center.x
+                            val dy = tapOffset.y - center.y
+                            val angleRad = kotlin.math.atan2(dy, dx)
+                            var angleDeg = Math.toDegrees(angleRad.toDouble()).toFloat()
+                            if (angleDeg < 0) angleDeg += 360f
+                            val angleFromTop = (angleDeg - 270f + 360f) % 360f
+
+                            var currentAngle = 0f
+                            for (i in sweepAngles.indices) {
+                                val sweep = sweepAngles[i]
+                                if (angleFromTop >= currentAngle && angleFromTop < currentAngle + sweep) {
+                                    onSelectHabit(displayData[i].id, displayData[i].title)
+                                    break
+                                }
+                                currentAngle += sweep
+                            }
+                        }
+                    }
+            ) {
                 var startAngle = -90f
-                displayData.forEachIndexed { i, _ ->
+                displayData.forEachIndexed { i, entry ->
                     val sweep = sweepAngles[i]
                     drawArc(
-                        color = colors[i % colors.size],
+                        color = getEntryColor(entry),
                         startAngle = startAngle,
                         sweepAngle = sweep,
                         useCenter = false,
                         topLeft = Offset.Zero,
                         size = Size(size.width, size.height),
-                        style = Stroke(width = 24f),
+                        style = Stroke(width = 32f),
                     )
                     startAngle += sweep
                 }
             }
 
-            Spacer(modifier = Modifier.width(20.dp))
-
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Column(
+                modifier = Modifier.weight(1f).padding(start = 20.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
                 displayData.forEachIndexed { i, entry ->
                     val pct = ((sweepAngles[i] / 360f) * 100f).toInt()
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        modifier =
+                            Modifier.fillMaxWidth()
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable { onSelectHabit(entry.id, entry.title) }
+                                .padding(vertical = 4.dp, horizontal = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
                         Box(
                             modifier =
                                 Modifier.size(10.dp)
-                                    .background(color = colors[i % colors.size], shape = CircleShape)
+                                    .background(color = getEntryColor(entry), shape = CircleShape)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "${entry.title}  $pct%",
+                            text = entry.title,
                             style = MaterialTheme.typography.bodyMedium,
                             fontFamily = flexFontRounded(),
                             color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f),
+                        )
+                        Text(
+                            text = "$pct%",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontFamily = flexFontRounded(),
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }

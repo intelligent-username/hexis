@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.6.5: Misc. Stuff
+
+- Markdown notes' list are auto-incremented on newline
+- Notes in general are archived on delete
+- Note polymorphism got rid of 'archive' button, only pin is kept. Can still archive, of course, but must long press only.
+- Notes "Save" button was redundant, got rid.
+- Pomodoro pie chart redirection
+- Pomodoro hide pie chart setting
+
+
 ## 1.6.4: Home Widgets & Habit Reordering Fixes
 
 - Instant real-time updates for notes, tasks, and habit widgets

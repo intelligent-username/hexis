@@ -43,4 +43,6 @@ sealed interface SettingsAction {
     data class ChangeLockVaultNotes(val pref: Boolean) : SettingsAction
 
     data class SetVaultPasswordHash(val hash: String?) : SettingsAction
+
+    data class ChangeShowPomodoroPieChart(val pref: Boolean) : SettingsAction
 }

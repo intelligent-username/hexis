@@ -37,6 +37,7 @@ class SettingsDatastoreImpl(private val datastore: DataStore<Preferences>) : Set
         private val firstLaunchDateKey = stringPreferencesKey("first_launch_date")
         private val lockVaultNotesKey = booleanPreferencesKey("lock_vault_notes")
         private val vaultPasswordHashKey = stringPreferencesKey("vault_password_hash")
+        private val showPomodoroPieChartKey = booleanPreferencesKey("show_pomodoro_pie_chart")
         private val activePomodoroDataKey = stringPreferencesKey("active_pomodoro_data")
     }
 
@@ -183,6 +184,13 @@ class SettingsDatastoreImpl(private val datastore: DataStore<Preferences>) : Set
             if (hash != null) prefs[vaultPasswordHashKey] = hash
             else prefs.remove(vaultPasswordHashKey)
         }
+    }
+
+    override fun getShowPomodoroPieChartPref(): Flow<Boolean> =
+        datastore.data.map { prefs -> prefs[showPomodoroPieChartKey] ?: true }
+
+    override suspend fun setShowPomodoroPieChartPref(pref: Boolean) {
+        datastore.edit { prefs -> prefs[showPomodoroPieChartKey] = pref }
     }
 
     override fun getActivePomodoroSessionData(): Flow<com.loc.hexis.core.interfaces.ActivePomodoroSessionData?> =

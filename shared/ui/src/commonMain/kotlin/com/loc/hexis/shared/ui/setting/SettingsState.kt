@@ -28,6 +28,7 @@ data class SettingsState(
     val isBiometricLockAvailable: Boolean = false,
     val isLockVaultNotesOn: Boolean = false,
     val vaultPasswordHash: String? = null,
+    val showPomodoroPieChart: Boolean = true,
 )
 
 @Stable

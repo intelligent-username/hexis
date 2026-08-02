@@ -148,7 +148,6 @@ fun NoteEditorSheet(
     var colorPickerDialog by remember { mutableStateOf(false) }
     var showColorMenu by remember { mutableStateOf(false) }
 
-    var isSaved by remember { mutableStateOf(true) }
     var currentNoteId by remember(initialNoteId) { mutableStateOf(initialNoteId) }
     val contentFocusRequester = remember { FocusRequester() }
     val markdownScrollState = rememberScrollState()
@@ -182,11 +181,9 @@ fun NoteEditorSheet(
 
     // Auto-save debounce (1500ms)
     LaunchedEffect(title, selectedType, contentValue.text, counterRows.toList(), journalEntries.toList(), vaultNote.value, selectedColorHex) {
-        isSaved = false
         delay(1500)
         val noteToSave = buildCurrentNote()
         onSave(noteToSave)
-        isSaved = true
     }
 
     val wordCount = remember(contentValue.text) {
@@ -222,6 +219,33 @@ fun NoteEditorSheet(
         val lineStart = text.substring(0, cursor.coerceAtMost(text.length)).lastIndexOf('\n') + 1
         val newCursor = (lineStart + newLine.length).coerceAtMost(newText.length)
         contentValue = TextFieldValue(newText, TextRange(newCursor))
+    }
+
+    fun handleListEnter(oldValue: TextFieldValue, newValue: TextFieldValue): TextFieldValue? {
+        val oldText = oldValue.text
+        val newText = newValue.text
+
+        if (newText.length != oldText.length + 1) return null
+        val oldCursor = oldValue.selection.start
+        if (oldCursor < 0 || oldCursor > oldText.length) return null
+        if (newValue.selection.start != oldCursor + 1) return null
+        if (newText.getOrNull(oldCursor) != '\n') return null
+
+        val lineStart = oldText.substring(0, oldCursor).lastIndexOf('\n') + 1
+        val lineEnd = oldText.indexOf('\n', lineStart).let { if (it == -1) oldText.length else it }
+        val currentLine = oldText.substring(lineStart, lineEnd)
+
+        val prefix = getNextListPrefix(currentLine) ?: return null
+        val cleanLine = removePrefix(currentLine).trim()
+
+        return if (cleanLine.isEmpty()) {
+            val resultText = oldText.substring(0, lineStart) + oldText.substring(lineEnd)
+            TextFieldValue(resultText, TextRange(lineStart))
+        } else {
+            val resultText = oldText.substring(0, oldCursor) + "\n" + prefix + oldText.substring(oldCursor)
+            val newCursor = oldCursor + 1 + prefix.length
+            TextFieldValue(resultText, TextRange(newCursor))
+        }
     }
 
     val focusManager = LocalFocusManager.current
@@ -269,20 +293,7 @@ fun NoteEditorSheet(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                IconButton(
-                    onClick = {
-                        onSave(buildCurrentNote())
-                        onDismissRequest()
-                    }
-                ) {
-                    Icon(
-                        imageVector = vectorResource(Res.drawable.close),
-                        contentDescription = "Close",
-                        tint = onSurfaceVariantColor,
-                    )
-                }
-
-                Column(modifier = Modifier.weight(1f).padding(start = 4.dp)) {
+                Column(modifier = Modifier.weight(1f).padding(start = 6.dp)) {
                     Text(
                         text =
                             if (note == null) stringResource(Res.string.new_note)
@@ -372,43 +383,16 @@ fun NoteEditorSheet(
                     }
                 }
 
-                Button(
+                IconButton(
                     onClick = {
                         onSave(buildCurrentNote())
                         onDismissRequest()
-                    },
-                    shapes = ButtonShapes(shape = CircleShape, pressedShape = CircleShape),
-                    colors =
-                        if (isSaved) {
-                            if (hasEditorCustomColor) {
-                                ButtonDefaults.buttonColors(
-                                    containerColor = onSurfaceColor.copy(alpha = 0.15f),
-                                    contentColor = onSurfaceColor,
-                                )
-                            } else {
-                                ButtonDefaults.buttonColors(
-                                    containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-                        } else {
-                            if (hasEditorCustomColor) {
-                                ButtonDefaults.buttonColors(
-                                    containerColor = onSurfaceColor,
-                                    contentColor = if (editorCustomColor.luminance() < 0.5f) Color.Black else Color.White,
-                                )
-                            } else {
-                                ButtonDefaults.buttonColors(
-                                    containerColor = MaterialTheme.colorScheme.primary,
-                                    contentColor = MaterialTheme.colorScheme.onPrimary,
-                                )
-                            }
-                        },
-                    contentPadding = PaddingValues(horizontal = 18.dp, vertical = 6.dp),
+                    }
                 ) {
-                    Text(
-                        text = if (isSaved) "Saved" else "Done",
-                        fontFamily = flexFontRounded(),
+                    Icon(
+                        imageVector = vectorResource(Res.drawable.close),
+                        contentDescription = "Close",
+                        tint = onSurfaceVariantColor,
                     )
                 }
             }
@@ -616,17 +600,20 @@ fun NoteEditorSheet(
                     OutlinedTextField(
                         value = contentValue,
                         onValueChange = { newValue ->
-                            if (newValue.text.contains('\r')) {
+                            val cleanValue = if (newValue.text.contains('\r')) {
                                 val cleanText = newValue.text.replace("\r\n", "\n").replace('\r', '\n')
                                 val cursorOffset =
                                     newValue.text
                                         .substring(0, newValue.selection.start.coerceAtMost(newValue.text.length))
                                         .count { it == '\r' }
                                 val newCursor = (newValue.selection.start - cursorOffset).coerceIn(0, cleanText.length)
-                                contentValue = TextFieldValue(cleanText, TextRange(newCursor))
+                                TextFieldValue(cleanText, TextRange(newCursor))
                             } else {
-                                contentValue = newValue
+                                newValue
                             }
+
+                            val processed = handleListEnter(contentValue, cleanValue)
+                            contentValue = processed ?: cleanValue
                         },
                         keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                         visualTransformation =
@@ -666,33 +653,6 @@ fun NoteEditorSheet(
                                             }
                                         }
                                     }
-                                }
-                                .onPreviewKeyEvent { event ->
-                                    if (event.type == KeyEventType.KeyDown && event.key == Key.Enter) {
-                                        val text = contentValue.text
-                                        val cursor = contentValue.selection.start
-                                        val currentLine = getCurrentLine(text, cursor)
-                                        val lineStart = text.substring(0, cursor.coerceAtMost(text.length)).lastIndexOf('\n') + 1
-
-                                        if (cursor > lineStart) {
-                                            val prefix = getNextListPrefix(currentLine)
-                                            if (prefix != null) {
-                                                val before = text.substring(0, cursor.coerceAtMost(text.length))
-                                                val lineEnd = text.indexOf('\n', cursor).let { if (it == -1) text.length else it + 1 }
-                                                val after = text.substring(lineEnd)
-                                                val cleanLine = removePrefix(currentLine).trim()
-                                                if (cleanLine.isEmpty()) {
-                                                    val newText = text.substring(0, lineStart) + after
-                                                    contentValue = TextFieldValue(newText, TextRange(lineStart))
-                                                } else {
-                                                    val newText = before + "\n" + prefix + after
-                                                    val newCursor = before.length + 1 + prefix.length
-                                                    contentValue = TextFieldValue(newText, TextRange(newCursor))
-                                                }
-                                                true
-                                            } else false
-                                        } else false
-                                    } else false
                                 },
                         shape = RoundedCornerShape(20.dp),
                         colors =

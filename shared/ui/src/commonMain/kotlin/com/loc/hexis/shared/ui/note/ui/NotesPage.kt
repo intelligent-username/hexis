@@ -72,6 +72,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
@@ -243,13 +244,23 @@ fun NotesPage(
     }
 
     fun performDeleteNotes(targetNote: Note) {
-        val toDelete = if (isSelectionMode) notes.filter { selectedNoteIds.contains(it.id) } else listOf(targetNote)
-        if (toDelete.isEmpty()) return
+        val targetNotes = if (isSelectionMode) notes.filter { selectedNoteIds.contains(it.id) } else listOf(targetNote)
+        if (targetNotes.isEmpty()) return
         scope.launch {
-            toDelete.forEach { repo.deleteNote(it.id) }
-            selectedNoteIds = emptySet()
-            showUndo(if (toDelete.size > 1) "${toDelete.size} notes deleted" else msgNoteDeleted) {
-                scope.launch { toDelete.forEach { repo.upsertNote(it) } }
+            if (showArchived) {
+                targetNotes.forEach { repo.deleteNote(it.id) }
+                selectedNoteIds = emptySet()
+                val msg = if (targetNotes.size > 1) "${targetNotes.size} notes deleted" else msgNoteDeleted
+                showUndo(msg) {
+                    scope.launch { targetNotes.forEach { repo.upsertNote(it) } }
+                }
+            } else {
+                targetNotes.forEach { repo.upsertNote(it.copy(archived = true)) }
+                selectedNoteIds = emptySet()
+                val msg = if (targetNotes.size > 1) "${targetNotes.size} notes archived" else msgNoteArchived
+                showUndo(msg) {
+                    scope.launch { targetNotes.forEach { repo.upsertNote(it.copy(archived = false)) } }
+                }
             }
         }
     }
@@ -351,22 +362,16 @@ fun NotesPage(
                         // Batch Delete Button
                         IconButton(
                             onClick = {
-                                val toDelete = notes.filter { selectedNoteIds.contains(it.id) }
-                                scope.launch {
-                                    toDelete.forEach { repo.deleteNote(it.id) }
-                                    selectedNoteIds = emptySet()
-                                    showUndo("${toDelete.size} notes deleted") {
-                                        scope.launch {
-                                            toDelete.forEach { repo.upsertNote(it) }
-                                        }
-                                    }
+                                val firstSelected = notes.firstOrNull { selectedNoteIds.contains(it.id) }
+                                if (firstSelected != null) {
+                                    performDeleteNotes(firstSelected)
                                 }
                             },
                             modifier = Modifier.size(40.dp),
                         ) {
                             Icon(
                                 imageVector = vectorResource(Res.drawable.delete),
-                                contentDescription = "Delete Selected",
+                                contentDescription = if (showArchived) "Delete Selected Permanently" else "Archive Selected",
                                 tint = MaterialTheme.colorScheme.error,
                                 modifier = Modifier.size(20.dp),
                             )
@@ -983,15 +988,7 @@ fun NotesPage(
                                                 }
                                             }
                                         },
-                                        onDelete = {
-                                            scope.launch {
-                                                val deleted = note
-                                                repo.deleteNote(note.id)
-                                                showUndo(msgNoteDeleted) {
-                                                    scope.launch { repo.upsertNote(deleted) }
-                                                }
-                                            }
-                                        },
+                                        onDelete = { performDeleteNotes(note) },
                                     )
                                 } else if (note.type == NoteType.JOURNAL) {
                                     JournalCard(
@@ -1023,15 +1020,7 @@ fun NotesPage(
                                                 }
                                             }
                                         },
-                                        onDelete = {
-                                            scope.launch {
-                                                val deleted = note
-                                                repo.deleteNote(note.id)
-                                                showUndo(msgNoteDeleted) {
-                                                    scope.launch { repo.upsertNote(deleted) }
-                                                }
-                                            }
-                                        },
+                                        onDelete = { performDeleteNotes(note) },
                                     )
                                 } else if (note.type == NoteType.VAULT) {
                                     VaultCard(
@@ -1063,15 +1052,7 @@ fun NotesPage(
                                                 }
                                             }
                                         },
-                                        onDelete = {
-                                            scope.launch {
-                                                val deleted = note
-                                                repo.deleteNote(note.id)
-                                                showUndo(msgNoteDeleted) {
-                                                    scope.launch { repo.upsertNote(deleted) }
-                                                }
-                                            }
-                                        },
+                                        onDelete = { performDeleteNotes(note) },
                                     )
                                 } else {
                                     NoteCard(
@@ -1105,15 +1086,7 @@ fun NotesPage(
                                                 }
                                             }
                                         },
-                                        onDelete = {
-                                            scope.launch {
-                                                val deleted = note
-                                                repo.deleteNote(note.id)
-                                                showUndo(msgNoteDeleted) {
-                                                    scope.launch { repo.upsertNote(deleted) }
-                                                }
-                                            }
-                                        },
+                                        onDelete = { performDeleteNotes(note) },
                                     )
                                 }
                             }
@@ -1230,8 +1203,11 @@ fun NotesPage(
                     ) {
                         Text(
                             stringResource(Res.string.undo),
-                            color = MaterialTheme.colorScheme.primary,
-                            fontFamily = flexFontRounded(),
+                            color = MaterialTheme.colorScheme.inversePrimary,
+                            style = MaterialTheme.typography.labelLarge.copy(
+                                fontFamily = flexFontEmphasis(),
+                                fontWeight = FontWeight.Bold,
+                            ),
                         )
                     }
                 }

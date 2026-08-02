@@ -142,6 +142,8 @@ class SettingsViewModel(
                 is ChangeLockVaultNotes -> settingsDatastore.setLockVaultNotesPref(action.pref)
 
                 is SetVaultPasswordHash -> settingsDatastore.setVaultPasswordHash(action.hash)
+
+                is ChangeShowPomodoroPieChart -> settingsDatastore.setShowPomodoroPieChartPref(action.pref)
             }
         }
 
@@ -263,6 +265,13 @@ class SettingsViewModel(
                     .getVaultPasswordHash()
                     .onEach { hash ->
                         _state.update { it.copy(vaultPasswordHash = hash) }
+                    }
+                    .launchIn(this)
+
+                settingsDatastore
+                    .getShowPomodoroPieChartPref()
+                    .onEach { show ->
+                        _state.update { it.copy(showPomodoroPieChart = show) }
                     }
                     .launchIn(this)
             }

@@ -47,7 +47,7 @@ fun parseContentLines(content: String): List<FormattedLine> {
                 FormattedLine(LineType.BULLET_LIST, trimmed.removePrefix("- "), indent / 2)
             trimmed.startsWith("> ") ->
                 FormattedLine(LineType.QUOTE, trimmed.removePrefix("> "), indent / 2)
-            numberedListRegex.matches(trimmed) -> {
+            numberedListRegex.containsMatchIn(trimmed) -> {
                 val match = numberedListRegex.find(trimmed)!!
                 val num = match.groupValues[1].toIntOrNull()
                 val rest = trimmed.replaceFirst(numberedListRegex, "")
@@ -79,7 +79,7 @@ fun isListLine(text: String): Boolean {
     return trimmed.startsWith("* ") ||
         trimmed.startsWith("- ") ||
         checklistRegex.matches(trimmed) ||
-        numberedListRegex.matches(trimmed)
+        numberedListRegex.containsMatchIn(trimmed)
 }
 
 fun getListPrefix(text: String): String? {
@@ -92,10 +92,10 @@ fun getListPrefix(text: String): String? {
         }
         trimmed.startsWith("* ") -> "* "
         trimmed.startsWith("- ") -> "- "
-        numberedListRegex.matches(trimmed) -> {
+        numberedListRegex.containsMatchIn(trimmed) -> {
             val match = numberedListRegex.find(trimmed)!!
             val num = match.groupValues[1]
-            val sep = if (trimmed.contains(')')) ')' else '.'
+            val sep = if (match.value.contains(')')) ')' else '.'
             "$num$sep "
         }
         else -> null
@@ -108,10 +108,10 @@ fun getNextListPrefix(text: String): String? {
         checklistRegex.matches(trimmed) -> "- [ ] "
         trimmed.startsWith("* ") -> "* "
         trimmed.startsWith("- ") -> "- "
-        numberedListRegex.matches(trimmed) -> {
+        numberedListRegex.containsMatchIn(trimmed) -> {
             val match = numberedListRegex.find(trimmed)!!
             val num = match.groupValues[1].toIntOrNull() ?: return null
-            val sep = if (trimmed.contains(')')) ')' else '.'
+            val sep = if (match.value.contains(')')) ')' else '.'
             "${num + 1}$sep "
         }
         else -> null
@@ -131,7 +131,7 @@ fun removePrefix(text: String): String {
         trimmed.startsWith("* ") -> trimmed.removePrefix("* ")
         trimmed.startsWith("- ") -> trimmed.removePrefix("- ")
         trimmed.startsWith("> ") -> trimmed.removePrefix("> ")
-        numberedListRegex.matches(trimmed) -> trimmed.replaceFirst(numberedListRegex, "")
+        numberedListRegex.containsMatchIn(trimmed) -> trimmed.replaceFirst(numberedListRegex, "")
         trimmed.matches(Regex("""^[-*_]{3,}\s*$""")) -> ""
         else -> trimmed
     }

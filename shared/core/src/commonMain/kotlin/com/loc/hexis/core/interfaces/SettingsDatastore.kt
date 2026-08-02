@@ -74,6 +74,10 @@ interface SettingsDatastore {
 
     suspend fun setVaultPasswordHash(hash: String?)
 
+    fun getShowPomodoroPieChartPref(): Flow<Boolean>
+
+    suspend fun setShowPomodoroPieChartPref(pref: Boolean)
+
     fun getActivePomodoroSessionData(): Flow<ActivePomodoroSessionData?>
 
     suspend fun setActivePomodoroSessionData(data: ActivePomodoroSessionData?)

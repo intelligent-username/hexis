@@ -89,18 +89,6 @@ fun BaseNoteCard(
         else MaterialTheme.colorScheme.onSurfaceVariant
     }
 
-    val archiveBtnContainerColor = if (hasCustomColor) {
-        onSurfaceColor.copy(alpha = 0.1f)
-    } else {
-        MaterialTheme.colorScheme.surfaceContainerHigh
-    }
-
-    val archiveBtnContentColor = if (hasCustomColor) {
-        onSurfaceColor
-    } else {
-        MaterialTheme.colorScheme.error
-    }
-
     Card(
         onClick = onClick,
         shape = RoundedCornerShape(20.dp),
@@ -169,27 +157,6 @@ fun BaseNoteCard(
                                 Icon(
                                     imageVector = vectorResource(Res.drawable.flag),
                                     contentDescription = if (note.pinned) "Unpin" else "Pin",
-                                    modifier = Modifier.size(14.dp),
-                                )
-                            }
-
-                            FilledTonalIconButton(
-                                onClick = onArchive,
-                                modifier = Modifier.size(32.dp),
-                                colors =
-                                    IconButtonDefaults.filledTonalIconButtonColors(
-                                        containerColor = archiveBtnContainerColor,
-                                        contentColor = archiveBtnContentColor,
-                                    ),
-                                shapes =
-                                    IconButtonShapes(
-                                        shape = RoundedCornerShape(10.dp),
-                                        pressedShape = RoundedCornerShape(10.dp),
-                                    ),
-                            ) {
-                                Icon(
-                                    imageVector = vectorResource(Res.drawable.archive),
-                                    contentDescription = "Archive",
                                     modifier = Modifier.size(14.dp),
                                 )
                             }

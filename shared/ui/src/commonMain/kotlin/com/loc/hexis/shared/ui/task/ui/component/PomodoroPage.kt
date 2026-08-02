@@ -86,19 +86,19 @@ fun PomodoroPage(linkedHabitId: Long? = null, onDismiss: () -> Unit) {
 
     var showSettings by remember { mutableStateOf(false) }
     var showAnalytics by remember { mutableStateOf(false) }
-
     var focusText by remember { mutableStateOf("") }
     var shortBreakText by remember { mutableStateOf("") }
     var longBreakText by remember { mutableStateOf("") }
     var intervalText by remember { mutableStateOf("") }
+
+    var currentHabitId by remember(linkedHabitId) { mutableStateOf(linkedHabitId) }
     var habitTitle by remember { mutableStateOf("") }
 
     val habitRepo: HabitRepo = koinInject()
 
-    LaunchedEffect(linkedHabitId) {
-        habitTitle = ""
-        if (linkedHabitId != null) {
-            val h = habitRepo.getHabitById(linkedHabitId)
+    LaunchedEffect(currentHabitId) {
+        if (currentHabitId != null) {
+            val h = habitRepo.getHabitById(currentHabitId!!)
             if (h != null) habitTitle = h.title
         }
     }
@@ -337,9 +337,9 @@ fun PomodoroPage(linkedHabitId: Long? = null, onDismiss: () -> Unit) {
                             if (isRunning) {
                                 pomodoroManager.pauseSession()
                             } else if (pomodoroState.currentSessionId == null && phase == PomodoroPhase.FOCUS) {
-                                pomodoroManager.startSession(linkedHabitId)
+                                pomodoroManager.startSession(currentHabitId)
                             } else {
-                                pomodoroManager.resumeSession(linkedHabitId)
+                                pomodoroManager.resumeSession(currentHabitId)
                             }
                         },
                     contentAlignment = Alignment.Center,
@@ -456,7 +456,15 @@ fun PomodoroPage(linkedHabitId: Long? = null, onDismiss: () -> Unit) {
     }
 
     if (showAnalytics) {
-        PomodoroAnalytics(onDismiss = { showAnalytics = false })
+        PomodoroAnalytics(
+            onDismiss = { showAnalytics = false },
+            onSelectHabit = { selectedId, selectedTitle ->
+                showAnalytics = false
+                currentHabitId = selectedId
+                habitTitle = selectedTitle
+                pomodoroManager.setLinkedHabit(selectedId)
+            },
+        )
     }
 }
 

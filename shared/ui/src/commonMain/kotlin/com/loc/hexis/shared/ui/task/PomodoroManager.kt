@@ -128,6 +128,16 @@ class PomodoroManager(
         }
     }
 
+    fun setLinkedHabit(linkedHabitId: Long?) {
+        _state.update { it.copy(linkedHabitId = linkedHabitId) }
+        scope.launch {
+            val activeData = settingsDatastore.getActivePomodoroSessionData().first()
+            if (activeData != null) {
+                settingsDatastore.setActivePomodoroSessionData(activeData.copy(linkedHabitId = linkedHabitId))
+            }
+        }
+    }
+
     fun startSession(linkedHabitId: Long? = null) {
         scope.launch {
             savePartialSessionIfActive(closeSession = true)

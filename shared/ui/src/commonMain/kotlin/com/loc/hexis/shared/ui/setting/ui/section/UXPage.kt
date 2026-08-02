@@ -109,6 +109,23 @@ fun UXPage(state: SettingsState, onAction: (SettingsAction) -> Unit, onNavigateB
                     )
 
                     ListItem(
+                        headlineContent = { Text(text = "Show pie chart in Pomodoro History tab") },
+                        supportingContent = {
+                            Text(text = "Display category breakdown pie chart in Pomodoro history")
+                        },
+                        trailingContent = {
+                            ExpressiveSwitch(
+                                checked = state.showPomodoroPieChart,
+                                onCheckedChange = {
+                                    onAction(SettingsAction.ChangeShowPomodoroPieChart(it))
+                                },
+                            )
+                        },
+                        colors = listItemColors(),
+                        modifier = Modifier.clip(middleItemShape()),
+                    )
+
+                    ListItem(
                         headlineContent = { Text(text = stringResource(Res.string.use_24Hr)) },
                         supportingContent = {
                             Text(text = stringResource(Res.string.use_24Hr_desc))
