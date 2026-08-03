@@ -182,6 +182,7 @@ fun HabitsGraph(
                                     onNavigateToAnalytics = {
                                         backstack.add(HabitRoutes.HabitAnalytics)
                                     },
+                                    onPomodoroClick = onPomodoroClick,
                                     modifier = Modifier.fillMaxHeight(),
                                 )
 
@@ -286,6 +287,7 @@ private fun ExpandedScreen(
                     state = state,
                     onAction = onAction,
                     onNavigateToAnalytics = {},
+                    onPomodoroClick = onPomodoroClick,
                     lazyListState = lazyListState,
                     modifier = Modifier.fillMaxHeight().widthIn(max = 400.dp),
                 )

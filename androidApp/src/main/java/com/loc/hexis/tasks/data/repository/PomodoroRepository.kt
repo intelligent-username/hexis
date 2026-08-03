@@ -81,7 +81,10 @@ class PomodoroRepository(private val pomodoroDao: PomodoroDao) : PomodoroRepo {
         return pomodoroDao
             .getAllFlow()
             .map { entities ->
-                entities.filter { it.completed }.map { it.timeStarted.date }.distinct()
+                entities
+                    .filter { it.completed || (it.timeCompletedMinutes ?: 0f) > 0f }
+                    .map { it.timeStarted.date }
+                    .distinct()
             }
             .flowOn(Dispatchers.IO)
     }

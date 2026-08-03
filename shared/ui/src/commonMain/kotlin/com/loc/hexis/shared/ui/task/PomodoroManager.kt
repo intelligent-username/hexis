@@ -112,6 +112,8 @@ class PomodoroManager(
             settingsDatastore.clearActivePomodoroSessionData()
             refreshTodayStats()
         } else {
+            val focusMs = (activeData.focusMinutes * 60 * 1000).toLong()
+            val startMs = activeData.targetEndTimeMillis - focusMs
             _state.update {
                 it.copy(
                     phase = PomodoroPhase.FOCUS,
@@ -121,6 +123,7 @@ class PomodoroManager(
                     secondsRemaining =
                         max(0, ((activeData.targetEndTimeMillis - nowMs) / 1000).toInt()),
                     currentSessionId = activeData.sessionId,
+                    sessionStartTimeMillis = if (startMs <= nowMs) startMs else nowMs,
                     linkedHabitId = activeData.linkedHabitId,
                 )
             }
@@ -410,11 +413,13 @@ class PomodoroManager(
             val nowMs = Clock.System.now().toEpochMilliseconds()
             val elapsedMinutes = max(0f, (nowMs - startMs) / 60000f)
             if (elapsedMinutes > 0.1f) {
+                val existingSession = repo.getAllSessions().find { it.id == id }
+                val previousMinutes = existingSession?.timeCompletedMinutes ?: 0f
                 repo.finishSession(
                     id,
                     LocalDateTime.now(),
                     completed = false,
-                    timeCompletedMinutes = elapsedMinutes,
+                    timeCompletedMinutes = previousMinutes + elapsedMinutes,
                 )
                 refreshTodayStats()
             }

@@ -95,6 +95,7 @@ fun HabitCard(
     reorderHandle: @Composable () -> Unit,
     is24Hr: Boolean,
     shape: Shape,
+    onPomodoroClick: (Long?) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val today by rememberToday()
@@ -177,7 +178,9 @@ fun HabitCard(
                 contentColor = cardContent,
             ),
         onClick = {
-            if (canCompleteToday && !habitWithAnalytics.habit.pomodoroLinked) {
+            if (habitWithAnalytics.habit.pomodoroLinked) {
+                onPomodoroClick(habitWithAnalytics.habit.id)
+            } else if (canCompleteToday) {
                 action(HabitsAction.ToggleHabitProgress(habitWithAnalytics.habit, today))
             }
         },

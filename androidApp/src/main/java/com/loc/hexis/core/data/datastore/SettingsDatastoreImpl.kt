@@ -21,6 +21,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import com.loc.hexis.core.habits.TimeDivision
@@ -56,6 +57,8 @@ class SettingsDatastoreImpl(private val datastore: DataStore<Preferences>) : Set
         private val vaultPasswordHashKey = stringPreferencesKey("vault_password_hash")
         private val showPomodoroPieChartKey = booleanPreferencesKey("show_pomodoro_pie_chart")
         private val activePomodoroDataKey = stringPreferencesKey("active_pomodoro_data")
+        private val dayCutoffEnabledKey = booleanPreferencesKey("day_cutoff_enabled")
+        private val dayCutoffHourKey = intPreferencesKey("day_cutoff_hour")
     }
 
     override fun getStartOfTheWeekPref(): Flow<DayOfWeek> =
@@ -236,5 +239,19 @@ class SettingsDatastoreImpl(private val datastore: DataStore<Preferences>) : Set
 
     override suspend fun clearActivePomodoroSessionData() {
         setActivePomodoroSessionData(null)
+    }
+
+    override fun getDayCutoffEnabledPref(): Flow<Boolean> =
+        datastore.data.map { prefs -> prefs[dayCutoffEnabledKey] ?: false }
+
+    override suspend fun setDayCutoffEnabled(pref: Boolean) {
+        datastore.edit { prefs -> prefs[dayCutoffEnabledKey] = pref }
+    }
+
+    override fun getDayCutoffHourPref(): Flow<Int> =
+        datastore.data.map { prefs -> prefs[dayCutoffHourKey] ?: 4 }
+
+    override suspend fun setDayCutoffHour(hour: Int) {
+        datastore.edit { prefs -> prefs[dayCutoffHourKey] = hour }
     }
 }

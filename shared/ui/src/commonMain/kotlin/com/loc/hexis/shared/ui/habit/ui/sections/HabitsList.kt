@@ -61,6 +61,7 @@ fun HabitsList(
     lazyListState: LazyListState,
     onAction: (HabitsAction) -> Unit,
     onNavigateToAnalytics: () -> Unit,
+    onPomodoroClick: (Long?) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val windowSizeClass = LocalWindowSizeClass.current
@@ -113,6 +114,7 @@ fun HabitsList(
                         editState = state.editState,
                         onNavigateToAnalytics = onNavigateToAnalytics,
                         is24Hr = state.is24Hr,
+                        onPomodoroClick = onPomodoroClick,
                         reorderHandle = {
                             Icon(
                                 imageVector = vectorResource(Res.drawable.drag_indicator),

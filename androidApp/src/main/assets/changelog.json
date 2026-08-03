@@ -1,5 +1,13 @@
 [
   {
+    "version": "1.7.1",
+    "changes": [
+      "Pomodoro-based habits shortcut improvement",
+      "Habit category selection improvement",
+      "Rearranged settings under UX section"
+    ]
+  },
+  {
     "version": "1.7.0",
     "changes": [
       "Tasks accidental re-ordering bug fix",
@@ -78,18 +86,6 @@
       "Habit reordering setting",
       "Improved notes. No longer as",
       "General UI stuff"
-    ]
-  },
-  {
-    "version": "1.1.1",
-    "changes": [
-      "New notes feature in Tasks",
-      "UI improvements",
-      "Bug fixes like streak detection, week switching, analytics mismatch",
-      "Compiling optimzations for developers",
-      "Improved database migrations and thoroughness",
-      "Improved pomodoro calculations",
-      "Improved imports and exports"
     ]
   }
 ]

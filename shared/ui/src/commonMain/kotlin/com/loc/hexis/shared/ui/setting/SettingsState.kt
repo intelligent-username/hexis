@@ -46,6 +46,8 @@ data class SettingsState(
     val isLockVaultNotesOn: Boolean = false,
     val vaultPasswordHash: String? = null,
     val showPomodoroPieChart: Boolean = true,
+    val isDayCutoffEnabled: Boolean = false,
+    val dayCutoffHour: Int = 4,
 )
 
 @Stable

@@ -162,6 +162,12 @@ class SettingsViewModel(
 
                 is ChangeShowPomodoroPieChart ->
                     settingsDatastore.setShowPomodoroPieChartPref(action.pref)
+
+                is ChangeDayCutoffEnabled ->
+                    settingsDatastore.setDayCutoffEnabled(action.pref)
+
+                is ChangeDayCutoffHour ->
+                    settingsDatastore.setDayCutoffHour(action.hour)
             }
         }
 
@@ -287,6 +293,16 @@ class SettingsViewModel(
                 settingsDatastore
                     .getShowPomodoroPieChartPref()
                     .onEach { show -> _state.update { it.copy(showPomodoroPieChart = show) } }
+                    .launchIn(this)
+
+                settingsDatastore
+                    .getDayCutoffEnabledPref()
+                    .onEach { isEnabled -> _state.update { it.copy(isDayCutoffEnabled = isEnabled) } }
+                    .launchIn(this)
+
+                settingsDatastore
+                    .getDayCutoffHourPref()
+                    .onEach { hour -> _state.update { it.copy(dayCutoffHour = hour) } }
                     .launchIn(this)
             }
     }

@@ -62,4 +62,8 @@ sealed interface SettingsAction {
     data class SetVaultPasswordHash(val hash: String?) : SettingsAction
 
     data class ChangeShowPomodoroPieChart(val pref: Boolean) : SettingsAction
+
+    data class ChangeDayCutoffEnabled(val pref: Boolean) : SettingsAction
+
+    data class ChangeDayCutoffHour(val hour: Int) : SettingsAction
 }

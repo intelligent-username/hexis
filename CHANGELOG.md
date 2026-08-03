@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.7.1
+
+- Pomodoro-based habits shortcut improvement & tracking accuracy
+- Habit category selection improvement
+- Rearranged settings under UX section
+
 ## 1.7.0
 
 - Tasks accidental re-ordering bug fix

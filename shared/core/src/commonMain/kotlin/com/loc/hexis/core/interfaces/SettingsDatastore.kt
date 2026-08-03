@@ -100,6 +100,14 @@ interface SettingsDatastore {
     suspend fun setActivePomodoroSessionData(data: ActivePomodoroSessionData?)
 
     suspend fun clearActivePomodoroSessionData()
+
+    fun getDayCutoffEnabledPref(): Flow<Boolean>
+
+    suspend fun setDayCutoffEnabled(pref: Boolean)
+
+    fun getDayCutoffHourPref(): Flow<Int>
+
+    suspend fun setDayCutoffHour(hour: Int)
 }
 
 @kotlinx.serialization.Serializable
