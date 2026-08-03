@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 2025-2026 Hexis
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.loc.hexis.shared.ui.note.ui
 
 import androidx.compose.ui.graphics.Color
@@ -8,7 +25,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.sp
 
 class NoteVisualTransformation(
@@ -75,12 +91,13 @@ class NoteVisualTransformation(
             if (lineIdx in collapsedRanges) {
                 val trimmed = line.trimStart()
                 val indent = line.length - trimmed.length
-                val headerPrefixLen = when {
-                    trimmed.startsWith("# ") -> 2
-                    trimmed.startsWith("## ") -> 3
-                    trimmed.startsWith("### ") -> 4
-                    else -> 0
-                }
+                val headerPrefixLen =
+                    when {
+                        trimmed.startsWith("# ") -> 2
+                        trimmed.startsWith("## ") -> 3
+                        trimmed.startsWith("### ") -> 4
+                        else -> 0
+                    }
 
                 if (indent > 0) {
                     val indentStr = line.substring(0, indent)
@@ -115,11 +132,12 @@ class NoteVisualTransformation(
                 currentTransformedLen += bodyText.length
                 origPos += bodyText.length
 
-                val level = when {
-                    trimmed.startsWith("# ") -> 1
-                    trimmed.startsWith("## ") -> 2
-                    else -> 3
-                }
+                val level =
+                    when {
+                        trimmed.startsWith("# ") -> 1
+                        trimmed.startsWith("## ") -> 2
+                        else -> 3
+                    }
                 applyHeaderStyle(builder, level, bodyStartTrans, currentTransformedLen)
 
                 if (lineIdx < lines.size - 1) {
@@ -139,7 +157,8 @@ class NoteVisualTransformation(
                     hiddenChars += lines[h].length + 1
                 }
 
-                val placeholder = "  \u2026 $hiddenCount line${if (hiddenCount > 1) "s" else ""} hidden"
+                val placeholder =
+                    "  \u2026 $hiddenCount line${if (hiddenCount > 1) "s" else ""} hidden"
                 val placeholderStart = currentTransformedLen
                 builder.append(placeholder)
                 builder.addStyle(
@@ -172,12 +191,13 @@ class NoteVisualTransformation(
             } else {
                 val trimmed = line.trimStart()
                 val indent = line.length - trimmed.length
-                val headerPrefixLen = when {
-                    trimmed.startsWith("# ") -> 2
-                    trimmed.startsWith("## ") -> 3
-                    trimmed.startsWith("### ") -> 4
-                    else -> 0
-                }
+                val headerPrefixLen =
+                    when {
+                        trimmed.startsWith("# ") -> 2
+                        trimmed.startsWith("## ") -> 3
+                        trimmed.startsWith("### ") -> 4
+                        else -> 0
+                    }
 
                 if (headerPrefixLen > 0) {
                     if (indent > 0) {
@@ -213,11 +233,12 @@ class NoteVisualTransformation(
                     currentTransformedLen += bodyText.length
                     origPos += bodyText.length
 
-                    val level = when {
-                        trimmed.startsWith("# ") -> 1
-                        trimmed.startsWith("## ") -> 2
-                        else -> 3
-                    }
+                    val level =
+                        when {
+                            trimmed.startsWith("# ") -> 1
+                            trimmed.startsWith("## ") -> 2
+                            else -> 3
+                        }
                     applyHeaderStyle(builder, level, bodyStartTrans, currentTransformedLen)
                 } else {
                     val startLineTrans = currentTransformedLen
@@ -230,9 +251,7 @@ class NoteVisualTransformation(
                                 origToTrans[origPos + chIdx] = startLineTrans
                             }
                         }
-                        repeat(visualLine.length) {
-                            transToOrig.add(origPos)
-                        }
+                        repeat(visualLine.length) { transToOrig.add(origPos) }
                         currentTransformedLen += visualLine.length
                         origPos += lineLen
                         applyLineStyles(line, builder, startLineTrans, currentTransformedLen)
@@ -305,11 +324,7 @@ class NoteVisualTransformation(
                 )
             2 ->
                 builder.addStyle(
-                    SpanStyle(
-                        fontSize = 19.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = mutedColor,
-                    ),
+                    SpanStyle(fontSize = 19.sp, fontWeight = FontWeight.Bold, color = mutedColor),
                     start,
                     end,
                 )
@@ -371,10 +386,7 @@ class NoteVisualTransformation(
             }
             trimmed.matches(Regex("""^[-*_]{3,}\s*$""")) -> {
                 builder.addStyle(
-                    SpanStyle(
-                        color = ruleColor,
-                        fontWeight = FontWeight.Bold,
-                    ),
+                    SpanStyle(color = ruleColor, fontWeight = FontWeight.Bold),
                     prefixStart,
                     lineEndPos,
                 )

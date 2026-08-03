@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 2025-2026 Hexis
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.loc.hexis.shared.ui.habit.ui
 
 import androidx.compose.animation.AnimatedVisibility
@@ -25,12 +42,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.FilledTonalIconToggleButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconToggleButtonShapes
-import androidx.compose.material3.LargeFlexibleTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -42,9 +56,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
@@ -64,7 +77,6 @@ import com.loc.hexis.shared.ui.habit.ui.sections.HabitsList
 import com.loc.hexis.shared.ui.habit.ui.sections.OverallAnalytics
 import com.loc.hexis.shared.ui.navigation.horizontalTransitionMetadata
 import com.loc.hexis.shared.ui.navigation.verticalTransitionMetadata
-import com.loc.hexis.shared.ui.theme.flexFontEmphasis
 import com.loc.hexis.shared.ui.theme.flexFontRounded
 import hexis.shared.ui.generated.resources.*
 import kotlinx.serialization.Serializable
@@ -147,12 +159,10 @@ fun HabitsGraph(
                     entry<HabitRoutes.HabitList>(metadata = horizontalTransitionMetadata()) {
                         Column(
                             modifier =
-                                Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
+                                Modifier.fillMaxSize()
+                                    .background(MaterialTheme.colorScheme.background)
                         ) {
-                            HabitsTopAppBar(
-                                state = filteredState,
-                                onAction = onAction,
-                            )
+                            HabitsTopAppBar(state = filteredState, onAction = onAction)
 
                             TimeDivisionSelector(state = state, onAction = onAction)
 
@@ -511,12 +521,12 @@ private fun HabitsTopAppBar(
     modifier: Modifier = Modifier,
 ) {
     val completedDisplayed =
-        state.habitsWithAnalytics.count {
-            it.habit.id in state.completedHabitIds
-        }
+        state.habitsWithAnalytics.count { it.habit.id in state.completedHabitIds }
     MainTabHeader(
         title = stringResource(Res.string.habits),
-        subtitle = "$completedDisplayed/${state.habitsWithAnalytics.size} " + stringResource(Res.string.completed),
+        subtitle =
+            "$completedDisplayed/${state.habitsWithAnalytics.size} " +
+                stringResource(Res.string.completed),
         modifier = modifier,
         yOffset = 0.dp,
         actions = {

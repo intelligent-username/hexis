@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 2025-2026 Hexis
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.loc.hexis.core.data
 
 import android.content.BroadcastReceiver
@@ -10,6 +27,8 @@ import com.loc.hexis.core.habits.HabitStatus
 import com.loc.hexis.core.interfaces.AlarmScheduler
 import com.loc.hexis.core.interfaces.IntentActions
 import com.loc.hexis.core.interfaces.SettingsDatastore
+import com.loc.hexis.core.note.CountingTableData
+import com.loc.hexis.core.note.NoteRepo
 import com.loc.hexis.core.now
 import com.loc.hexis.core.tasks.TaskRepo
 import kotlinx.coroutines.CoroutineScope
@@ -21,9 +40,6 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.get
-
-import com.loc.hexis.core.note.CountingTableData
-import com.loc.hexis.core.note.NoteRepo
 
 class HexisIntentReceiver : BroadcastReceiver(), KoinComponent {
 
@@ -47,10 +63,12 @@ class HexisIntentReceiver : BroadcastReceiver(), KoinComponent {
                             val pauseNotifications = datastore.getNotificationsFlow().first()
                             if (!pauseNotifications) {
                                 when (intent.action) {
-                                    IntentActions.HABIT_NOTIFICATION.action -> habitNotification(intent)
+                                    IntentActions.HABIT_NOTIFICATION.action ->
+                                        habitNotification(intent)
                                     IntentActions.ADD_HABIT_STATUS.action -> addHabitStatus(intent)
                                     IntentActions.MARK_TASK_DONE.action -> markTaskDone(intent)
-                                    IntentActions.TASK_NOTIFICATION.action -> taskNotification(intent)
+                                    IntentActions.TASK_NOTIFICATION.action ->
+                                        taskNotification(intent)
                                     else -> return@launch
                                 }
                             }
@@ -73,11 +91,11 @@ class HexisIntentReceiver : BroadcastReceiver(), KoinComponent {
         val noteRepo = get<NoteRepo>()
         val note = noteRepo.getNoteById(noteId) ?: return
         val tableData = note.parseCountingTable()
-        val updatedRows = tableData.rows.map { r ->
-            if (r.id == rowId) r.copy(value = r.value + r.step) else r
-        }
+        val updatedRows =
+            tableData.rows.map { r -> if (r.id == rowId) r.copy(value = r.value + r.step) else r }
         noteRepo.upsertNote(
-            note.withCountingTable(CountingTableData(updatedRows))
+            note
+                .withCountingTable(CountingTableData(updatedRows))
                 .copy(updatedAt = LocalDateTime.now())
         )
     }
@@ -90,11 +108,13 @@ class HexisIntentReceiver : BroadcastReceiver(), KoinComponent {
         val noteRepo = get<NoteRepo>()
         val note = noteRepo.getNoteById(noteId) ?: return
         val tableData = note.parseCountingTable()
-        val updatedRows = tableData.rows.map { r ->
-            if (r.id == rowId) r.copy(value = (r.value - r.step).coerceAtLeast(0.0)) else r
-        }
+        val updatedRows =
+            tableData.rows.map { r ->
+                if (r.id == rowId) r.copy(value = (r.value - r.step).coerceAtLeast(0.0)) else r
+            }
         noteRepo.upsertNote(
-            note.withCountingTable(CountingTableData(updatedRows))
+            note
+                .withCountingTable(CountingTableData(updatedRows))
                 .copy(updatedAt = LocalDateTime.now())
         )
     }

@@ -1,6 +1,24 @@
+/*
+ * Copyright (C) 2025-2026 Hexis
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.loc.hexis.shared.ui.note.ui
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
@@ -10,6 +28,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -49,7 +68,6 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.animateFloatingActionButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -66,28 +84,24 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
-import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import com.loc.hexis.core.interfaces.SettingsDatastore
 import com.loc.hexis.core.note.CounterRow
 import com.loc.hexis.core.note.CountingTableData
-import com.loc.hexis.core.note.JournalEntry
 import com.loc.hexis.core.note.JournalNoteData
 import com.loc.hexis.core.note.Note
 import com.loc.hexis.core.note.NoteRepo
 import com.loc.hexis.core.note.NoteType
 import com.loc.hexis.core.note.VaultNote
 import com.loc.hexis.core.now
-import com.loc.hexis.core.interfaces.SettingsDatastore
 import com.loc.hexis.shared.ui.app.SystemBackHandler
 import com.loc.hexis.shared.ui.components.Empty
 import com.loc.hexis.shared.ui.note.ui.component.VaultLockDialog
@@ -96,7 +110,6 @@ import com.loc.hexis.shared.ui.theme.flexFontRounded
 import hexis.shared.ui.generated.resources.Res
 import hexis.shared.ui.generated.resources.add
 import hexis.shared.ui.generated.resources.archive
-import hexis.shared.ui.generated.resources.calendar_month
 import hexis.shared.ui.generated.resources.archived_notes
 import hexis.shared.ui.generated.resources.check
 import hexis.shared.ui.generated.resources.close
@@ -129,7 +142,7 @@ fun NotesPage(
     onDismiss: () -> Unit,
     initialNoteId: Long? = null,
     repo: NoteRepo = koinInject(),
-    settingsDatastore: SettingsDatastore = koinInject()
+    settingsDatastore: SettingsDatastore = koinInject(),
 ) {
     val scope = rememberCoroutineScope()
     val haptic = LocalHapticFeedback.current
@@ -190,7 +203,11 @@ fun NotesPage(
         if (initialNoteId != null && notesLoaded && !initialNoteOpened) {
             val target = notes.firstOrNull { it.id == initialNoteId }
             if (target != null) {
-                if (target.type == NoteType.VAULT && isLockVaultNotesOn && !vaultPasswordHash.isNullOrEmpty()) {
+                if (
+                    target.type == NoteType.VAULT &&
+                        isLockVaultNotesOn &&
+                        !vaultPasswordHash.isNullOrEmpty()
+                ) {
                     pendingVaultNote = target
                 } else {
                     editingNote = target
@@ -221,21 +238,23 @@ fun NotesPage(
         else
             notes.filter { note ->
                 note.title.contains(searchQuery, ignoreCase = true) ||
-                    (note.type == NoteType.MARKDOWN && note.content.contains(searchQuery, ignoreCase = true)) ||
-                    (note.type == NoteType.COUNTING_TABLE && note.parseCountingTable().rows.any { row ->
-                        row.label.contains(searchQuery, ignoreCase = true) ||
-                            (row.unit?.contains(searchQuery, ignoreCase = true) == true)
-                    }) ||
-                    (note.type == NoteType.JOURNAL && note.parseJournal().entries.any {
-                        it.text.contains(searchQuery, ignoreCase = true)
-                    }) ||
-                    (note.type == NoteType.VAULT && note.parseVault().entries.any {
-                        it.label.contains(searchQuery, ignoreCase = true) ||
-                            it.notes.contains(searchQuery, ignoreCase = true)
-                    })
+                    (note.type == NoteType.MARKDOWN &&
+                        note.content.contains(searchQuery, ignoreCase = true)) ||
+                    (note.type == NoteType.COUNTING_TABLE &&
+                        note.parseCountingTable().rows.any { row ->
+                            row.label.contains(searchQuery, ignoreCase = true) ||
+                                (row.unit?.contains(searchQuery, ignoreCase = true) == true)
+                        }) ||
+                    (note.type == NoteType.JOURNAL &&
+                        note.parseJournal().entries.any {
+                            it.text.contains(searchQuery, ignoreCase = true)
+                        }) ||
+                    (note.type == NoteType.VAULT &&
+                        note.parseVault().entries.any {
+                            it.label.contains(searchQuery, ignoreCase = true) ||
+                                it.notes.contains(searchQuery, ignoreCase = true)
+                        })
             }
-
-
 
     fun toggleSelectNote(id: Long) {
         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -244,22 +263,28 @@ fun NotesPage(
     }
 
     fun performDeleteNotes(targetNote: Note) {
-        val targetNotes = if (isSelectionMode) notes.filter { selectedNoteIds.contains(it.id) } else listOf(targetNote)
+        val targetNotes =
+            if (isSelectionMode) notes.filter { selectedNoteIds.contains(it.id) }
+            else listOf(targetNote)
         if (targetNotes.isEmpty()) return
         scope.launch {
             if (showArchived) {
                 targetNotes.forEach { repo.deleteNote(it.id) }
                 selectedNoteIds = emptySet()
-                val msg = if (targetNotes.size > 1) "${targetNotes.size} notes deleted" else msgNoteDeleted
-                showUndo(msg) {
-                    scope.launch { targetNotes.forEach { repo.upsertNote(it) } }
-                }
+                val msg =
+                    if (targetNotes.size > 1) "${targetNotes.size} notes deleted"
+                    else msgNoteDeleted
+                showUndo(msg) { scope.launch { targetNotes.forEach { repo.upsertNote(it) } } }
             } else {
                 targetNotes.forEach { repo.upsertNote(it.copy(archived = true)) }
                 selectedNoteIds = emptySet()
-                val msg = if (targetNotes.size > 1) "${targetNotes.size} notes archived" else msgNoteArchived
+                val msg =
+                    if (targetNotes.size > 1) "${targetNotes.size} notes archived"
+                    else msgNoteArchived
                 showUndo(msg) {
-                    scope.launch { targetNotes.forEach { repo.upsertNote(it.copy(archived = false)) } }
+                    scope.launch {
+                        targetNotes.forEach { repo.upsertNote(it.copy(archived = false)) }
+                    }
                 }
             }
         }
@@ -325,7 +350,9 @@ fun NotesPage(
                             }
                         ) {
                             Text(
-                                text = if (selectedNoteIds.size == filteredNotes.size) "Deselect" else "All",
+                                text =
+                                    if (selectedNoteIds.size == filteredNotes.size) "Deselect"
+                                    else "All",
                                 fontFamily = flexFontRounded(),
                             )
                         }
@@ -338,11 +365,7 @@ fun NotesPage(
                                 scope.launch {
                                     toDuplicate.forEach { note ->
                                         repo.upsertNote(
-                                            note.copy(
-                                                id = 0,
-                                                createdAt = now,
-                                                updatedAt = now,
-                                            )
+                                            note.copy(id = 0, createdAt = now, updatedAt = now)
                                         )
                                     }
                                     selectedNoteIds = emptySet()
@@ -362,7 +385,8 @@ fun NotesPage(
                         // Batch Delete Button
                         IconButton(
                             onClick = {
-                                val firstSelected = notes.firstOrNull { selectedNoteIds.contains(it.id) }
+                                val firstSelected =
+                                    notes.firstOrNull { selectedNoteIds.contains(it.id) }
                                 if (firstSelected != null) {
                                     performDeleteNotes(firstSelected)
                                 }
@@ -371,7 +395,9 @@ fun NotesPage(
                         ) {
                             Icon(
                                 imageVector = vectorResource(Res.drawable.delete),
-                                contentDescription = if (showArchived) "Delete Selected Permanently" else "Archive Selected",
+                                contentDescription =
+                                    if (showArchived) "Delete Selected Permanently"
+                                    else "Archive Selected",
                                 tint = MaterialTheme.colorScheme.error,
                                 modifier = Modifier.size(20.dp),
                             )
@@ -539,9 +565,22 @@ fun NotesPage(
                         val isDragging = draggingNoteId == note.id
                         val isSelected = selectedNoteIds.contains(note.id)
 
-                        val currentInfo = if (isDragging) gridState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == index } else null
-                        val transX = if (isDragging && currentInfo != null) (startItemOffset.x + totalDragOffset.x - currentInfo.offset.x).toFloat() else 0f
-                        val transY = if (isDragging && currentInfo != null) (startItemOffset.y + totalDragOffset.y - currentInfo.offset.y).toFloat() else 0f
+                        val currentInfo =
+                            if (isDragging)
+                                gridState.layoutInfo.visibleItemsInfo.firstOrNull {
+                                    it.index == index
+                                }
+                            else null
+                        val transX =
+                            if (isDragging && currentInfo != null)
+                                (startItemOffset.x + totalDragOffset.x - currentInfo.offset.x)
+                                    .toFloat()
+                            else 0f
+                        val transY =
+                            if (isDragging && currentInfo != null)
+                                (startItemOffset.y + totalDragOffset.y - currentInfo.offset.y)
+                                    .toFloat()
+                            else 0f
 
                         val modifier = if (isDragging) Modifier else Modifier.animateItem()
                         Box(
@@ -557,18 +596,27 @@ fun NotesPage(
                                         alpha = if (isDragging) 0.9f else 1.0f
                                     }
                                     .then(
-                                        if (isSelected) Modifier.border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(20.dp))
+                                        if (isSelected)
+                                            Modifier.border(
+                                                2.dp,
+                                                MaterialTheme.colorScheme.primary,
+                                                RoundedCornerShape(20.dp),
+                                            )
                                         else Modifier
                                     )
                                     .pointerInput(note.id, showArchived, searchQuery) {
                                         if (!showArchived && searchQuery.isEmpty()) {
                                             detectDragGesturesAfterLongPress(
                                                 onDragStart = {
-                                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                                    haptic.performHapticFeedback(
+                                                        HapticFeedbackType.LongPress
+                                                    )
                                                     draggingNoteId = note.id
                                                     totalDragOffset = Offset.Zero
                                                     hasMoved = false
-                                                    val info = gridState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == index }
+                                                    val info =
+                                                        gridState.layoutInfo.visibleItemsInfo
+                                                            .firstOrNull { it.index == index }
                                                     if (info != null) {
                                                         startItemOffset = info.offset
                                                         startItemSize = info.size
@@ -578,8 +626,15 @@ fun NotesPage(
                                                     draggingNoteId?.let { targetId ->
                                                         if (hasMoved) {
                                                             stopped_move = false
-                                                            val orderMap = notes.mapIndexed { i, n -> n.id to i }.toMap()
-                                                            scope.launch { repo.updateSortOrders(orderMap) }
+                                                            val orderMap =
+                                                                notes
+                                                                    .mapIndexed { i, n ->
+                                                                        n.id to i
+                                                                    }
+                                                                    .toMap()
+                                                            scope.launch {
+                                                                repo.updateSortOrders(orderMap)
+                                                            }
                                                         } else {
                                                             stopped_move = true
                                                             toggleSelectNote(targetId)
@@ -596,20 +651,40 @@ fun NotesPage(
                                                     change.consume()
                                                     totalDragOffset += amount
                                                     draggingNoteId?.let { noteId ->
-                                                        val currentIdx = notes.indexOfFirst { it.id == noteId }
+                                                        val currentIdx =
+                                                            notes.indexOfFirst { it.id == noteId }
                                                         if (currentIdx != -1) {
-                                                            val visibleItems = gridState.layoutInfo.visibleItemsInfo
-                                                            val fingerX = startItemOffset.x + (startItemSize.width / 2f) + totalDragOffset.x
-                                                            val fingerY = startItemOffset.y + (startItemSize.height / 2f) + totalDragOffset.y
+                                                            val visibleItems =
+                                                                gridState.layoutInfo
+                                                                    .visibleItemsInfo
+                                                            val fingerX =
+                                                                startItemOffset.x +
+                                                                    (startItemSize.width / 2f) +
+                                                                    totalDragOffset.x
+                                                            val fingerY =
+                                                                startItemOffset.y +
+                                                                    (startItemSize.height / 2f) +
+                                                                    totalDragOffset.y
 
-                                                            val hitItem = visibleItems.firstOrNull { item ->
-                                                                item.index != currentIdx &&
-                                                                    fingerX >= item.offset.x && fingerX <= item.offset.x + item.size.width &&
-                                                                    fingerY >= item.offset.y && fingerY <= item.offset.y + item.size.height
-                                                            }
+                                                            val hitItem =
+                                                                visibleItems.firstOrNull { item ->
+                                                                    item.index != currentIdx &&
+                                                                        fingerX >= item.offset.x &&
+                                                                        fingerX <=
+                                                                            item.offset.x +
+                                                                                item.size.width &&
+                                                                        fingerY >= item.offset.y &&
+                                                                        fingerY <=
+                                                                            item.offset.y +
+                                                                                item.size.height
+                                                                }
                                                             if (hitItem != null) {
-                                                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                                                val item = notes.removeAt(currentIdx)
+                                                                haptic.performHapticFeedback(
+                                                                    HapticFeedbackType
+                                                                        .TextHandleMove
+                                                                )
+                                                                val item =
+                                                                    notes.removeAt(currentIdx)
                                                                 notes.add(hitItem.index, item)
                                                                 hasMoved = true
                                                             }
@@ -626,10 +701,12 @@ fun NotesPage(
                                     scope.launch {
                                         repo.upsertNote(note.copy(archived = true))
                                         showUndo(msgNoteArchived) {
-                                            scope.launch { repo.upsertNote(note.copy(archived = false)) }
+                                            scope.launch {
+                                                repo.upsertNote(note.copy(archived = false))
+                                            }
                                         }
                                     }
-                                }
+                                },
                             ) {
                                 if (note.type == NoteType.COUNTING_TABLE) {
                                     CountingTableCard(
@@ -646,14 +723,22 @@ fun NotesPage(
                                             val data = note.parseCountingTable()
                                             val updatedRows =
                                                 data.rows.map { r ->
-                                                    if (r.id == rowId) r.copy(value = newValue) else r
+                                                    if (r.id == rowId) r.copy(value = newValue)
+                                                    else r
                                                 }
-                                            val updatedNote = note.withCountingTable(CountingTableData(updatedRows))
+                                            val updatedNote =
+                                                note.withCountingTable(
+                                                    CountingTableData(updatedRows)
+                                                )
                                             scope.launch { repo.upsertNote(updatedNote) }
                                         },
                                         onTogglePin = {
                                             if (!isSelectionMode) {
-                                                scope.launch { repo.upsertNote(note.copy(pinned = !note.pinned)) }
+                                                scope.launch {
+                                                    repo.upsertNote(
+                                                        note.copy(pinned = !note.pinned)
+                                                    )
+                                                }
                                             } else {
                                                 toggleSelectNote(note.id)
                                             }
@@ -663,7 +748,11 @@ fun NotesPage(
                                                 scope.launch {
                                                     repo.upsertNote(note.copy(archived = true))
                                                     showUndo(msgNoteArchived) {
-                                                        scope.launch { repo.upsertNote(note.copy(archived = false)) }
+                                                        scope.launch {
+                                                            repo.upsertNote(
+                                                                note.copy(archived = false)
+                                                            )
+                                                        }
                                                     }
                                                 }
                                             } else {
@@ -674,7 +763,9 @@ fun NotesPage(
                                             scope.launch {
                                                 repo.upsertNote(note.copy(archived = false))
                                                 showUndo(msgNoteUnarchived) {
-                                                    scope.launch { repo.upsertNote(note.copy(archived = true)) }
+                                                    scope.launch {
+                                                        repo.upsertNote(note.copy(archived = true))
+                                                    }
                                                 }
                                             }
                                         },
@@ -693,7 +784,11 @@ fun NotesPage(
                                         },
                                         onTogglePin = {
                                             if (!isSelectionMode) {
-                                                scope.launch { repo.upsertNote(note.copy(pinned = !note.pinned)) }
+                                                scope.launch {
+                                                    repo.upsertNote(
+                                                        note.copy(pinned = !note.pinned)
+                                                    )
+                                                }
                                             } else {
                                                 toggleSelectNote(note.id)
                                             }
@@ -703,7 +798,11 @@ fun NotesPage(
                                                 scope.launch {
                                                     repo.upsertNote(note.copy(archived = true))
                                                     showUndo(msgNoteArchived) {
-                                                        scope.launch { repo.upsertNote(note.copy(archived = false)) }
+                                                        scope.launch {
+                                                            repo.upsertNote(
+                                                                note.copy(archived = false)
+                                                            )
+                                                        }
                                                     }
                                                 }
                                             } else {
@@ -714,7 +813,9 @@ fun NotesPage(
                                             scope.launch {
                                                 repo.upsertNote(note.copy(archived = false))
                                                 showUndo(msgNoteUnarchived) {
-                                                    scope.launch { repo.upsertNote(note.copy(archived = true)) }
+                                                    scope.launch {
+                                                        repo.upsertNote(note.copy(archived = true))
+                                                    }
                                                 }
                                             }
                                         },
@@ -726,7 +827,10 @@ fun NotesPage(
                                         showArchived = showArchived,
                                         onClick = {
                                             if (isSelectionMode) toggleSelectNote(note.id)
-                                            else if (isLockVaultNotesOn && !vaultPasswordHash.isNullOrBlank()) {
+                                            else if (
+                                                isLockVaultNotesOn &&
+                                                    !vaultPasswordHash.isNullOrBlank()
+                                            ) {
                                                 pendingVaultNote = note
                                             } else {
                                                 editingNote = note
@@ -735,7 +839,11 @@ fun NotesPage(
                                         },
                                         onTogglePin = {
                                             if (!isSelectionMode) {
-                                                scope.launch { repo.upsertNote(note.copy(pinned = !note.pinned)) }
+                                                scope.launch {
+                                                    repo.upsertNote(
+                                                        note.copy(pinned = !note.pinned)
+                                                    )
+                                                }
                                             } else {
                                                 toggleSelectNote(note.id)
                                             }
@@ -745,7 +853,11 @@ fun NotesPage(
                                                 scope.launch {
                                                     repo.upsertNote(note.copy(archived = true))
                                                     showUndo(msgNoteArchived) {
-                                                        scope.launch { repo.upsertNote(note.copy(archived = false)) }
+                                                        scope.launch {
+                                                            repo.upsertNote(
+                                                                note.copy(archived = false)
+                                                            )
+                                                        }
                                                     }
                                                 }
                                             } else {
@@ -756,7 +868,9 @@ fun NotesPage(
                                             scope.launch {
                                                 repo.upsertNote(note.copy(archived = false))
                                                 showUndo(msgNoteUnarchived) {
-                                                    scope.launch { repo.upsertNote(note.copy(archived = true)) }
+                                                    scope.launch {
+                                                        repo.upsertNote(note.copy(archived = true))
+                                                    }
                                                 }
                                             }
                                         },
@@ -775,7 +889,11 @@ fun NotesPage(
                                         },
                                         onTogglePin = {
                                             if (!isSelectionMode) {
-                                                scope.launch { repo.upsertNote(note.copy(pinned = !note.pinned)) }
+                                                scope.launch {
+                                                    repo.upsertNote(
+                                                        note.copy(pinned = !note.pinned)
+                                                    )
+                                                }
                                             } else {
                                                 toggleSelectNote(note.id)
                                             }
@@ -786,7 +904,9 @@ fun NotesPage(
                                                     repo.upsertNote(note.copy(archived = true))
                                                     showUndo(msgNoteArchived) {
                                                         scope.launch {
-                                                            repo.upsertNote(note.copy(archived = false))
+                                                            repo.upsertNote(
+                                                                note.copy(archived = false)
+                                                            )
                                                         }
                                                     }
                                                 }
@@ -798,7 +918,9 @@ fun NotesPage(
                                             scope.launch {
                                                 repo.upsertNote(note.copy(archived = false))
                                                 showUndo(msgNoteUnarchived) {
-                                                    scope.launch { repo.upsertNote(note.copy(archived = true)) }
+                                                    scope.launch {
+                                                        repo.upsertNote(note.copy(archived = true))
+                                                    }
                                                 }
                                             }
                                         },
@@ -816,14 +938,19 @@ fun NotesPage(
                                             .size(24.dp)
                                             .background(
                                                 color =
-                                                    if (isSelected) MaterialTheme.colorScheme.primary
-                                                    else MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.8f),
+                                                    if (isSelected)
+                                                        MaterialTheme.colorScheme.primary
+                                                    else
+                                                        MaterialTheme.colorScheme
+                                                            .surfaceContainerHighest
+                                                            .copy(alpha = 0.8f),
                                                 shape = CircleShape,
                                             )
                                             .border(
                                                 width = 2.dp,
                                                 color =
-                                                    if (isSelected) MaterialTheme.colorScheme.primary
+                                                    if (isSelected)
+                                                        MaterialTheme.colorScheme.primary
                                                     else MaterialTheme.colorScheme.outline,
                                                 shape = CircleShape,
                                             ),
@@ -853,8 +980,17 @@ fun NotesPage(
                         val isDragging = draggingNoteId == note.id
                         val isSelected = selectedNoteIds.contains(note.id)
 
-                        val currentInfo = if (isDragging) listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == index } else null
-                        val transY = if (isDragging && currentInfo != null) (startItemListOffset + totalDragOffset.y - currentInfo.offset).toFloat() else 0f
+                        val currentInfo =
+                            if (isDragging)
+                                listState.layoutInfo.visibleItemsInfo.firstOrNull {
+                                    it.index == index
+                                }
+                            else null
+                        val transY =
+                            if (isDragging && currentInfo != null)
+                                (startItemListOffset + totalDragOffset.y - currentInfo.offset)
+                                    .toFloat()
+                            else 0f
 
                         val modifier = if (isDragging) Modifier else Modifier.animateItem()
                         Box(
@@ -877,18 +1013,22 @@ fun NotesPage(
                                                     editingNote = note
                                                     showEditor = true
                                                 }
-                                            },
+                                            }
                                         )
                                     }
                                     .pointerInput(note.id, showArchived, searchQuery) {
                                         if (!showArchived && searchQuery.isEmpty()) {
                                             detectDragGesturesAfterLongPress(
                                                 onDragStart = {
-                                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                                    haptic.performHapticFeedback(
+                                                        HapticFeedbackType.LongPress
+                                                    )
                                                     draggingNoteId = note.id
                                                     totalDragOffset = Offset.Zero
                                                     hasMoved = false
-                                                    val info = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == index }
+                                                    val info =
+                                                        listState.layoutInfo.visibleItemsInfo
+                                                            .firstOrNull { it.index == index }
                                                     if (info != null) {
                                                         startItemListOffset = info.offset
                                                         startItemListSize = info.size
@@ -898,8 +1038,15 @@ fun NotesPage(
                                                     draggingNoteId?.let { targetId ->
                                                         if (hasMoved) {
                                                             stopped_move = false
-                                                            val orderMap = notes.mapIndexed { i, n -> n.id to i }.toMap()
-                                                            scope.launch { repo.updateSortOrders(orderMap) }
+                                                            val orderMap =
+                                                                notes
+                                                                    .mapIndexed { i, n ->
+                                                                        n.id to i
+                                                                    }
+                                                                    .toMap()
+                                                            scope.launch {
+                                                                repo.updateSortOrders(orderMap)
+                                                            }
                                                         } else {
                                                             stopped_move = true
                                                             toggleSelectNote(targetId)
@@ -916,18 +1063,31 @@ fun NotesPage(
                                                     change.consume()
                                                     totalDragOffset += amount
                                                     draggingNoteId?.let { noteId ->
-                                                        val currentIdx = notes.indexOfFirst { it.id == noteId }
+                                                        val currentIdx =
+                                                            notes.indexOfFirst { it.id == noteId }
                                                         if (currentIdx != -1) {
-                                                            val visibleItems = listState.layoutInfo.visibleItemsInfo
-                                                            val fingerY = startItemListOffset + (startItemListSize / 2f) + totalDragOffset.y
+                                                            val visibleItems =
+                                                                listState.layoutInfo
+                                                                    .visibleItemsInfo
+                                                            val fingerY =
+                                                                startItemListOffset +
+                                                                    (startItemListSize / 2f) +
+                                                                    totalDragOffset.y
 
-                                                            val hitItem = visibleItems.firstOrNull { item ->
-                                                                item.index != currentIdx &&
-                                                                    fingerY >= item.offset && fingerY <= item.offset + item.size
-                                                            }
+                                                            val hitItem =
+                                                                visibleItems.firstOrNull { item ->
+                                                                    item.index != currentIdx &&
+                                                                        fingerY >= item.offset &&
+                                                                        fingerY <=
+                                                                            item.offset + item.size
+                                                                }
                                                             if (hitItem != null) {
-                                                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                                                val item = notes.removeAt(currentIdx)
+                                                                haptic.performHapticFeedback(
+                                                                    HapticFeedbackType
+                                                                        .TextHandleMove
+                                                                )
+                                                                val item =
+                                                                    notes.removeAt(currentIdx)
                                                                 notes.add(hitItem.index, item)
                                                                 hasMoved = true
                                                             }
@@ -944,10 +1104,12 @@ fun NotesPage(
                                     scope.launch {
                                         repo.upsertNote(note.copy(archived = true))
                                         showUndo(msgNoteArchived) {
-                                            scope.launch { repo.upsertNote(note.copy(archived = false)) }
+                                            scope.launch {
+                                                repo.upsertNote(note.copy(archived = false))
+                                            }
                                         }
                                     }
-                                }
+                                },
                             ) {
                                 if (note.type == NoteType.COUNTING_TABLE) {
                                     CountingTableCard(
@@ -964,19 +1126,27 @@ fun NotesPage(
                                             val data = note.parseCountingTable()
                                             val updatedRows =
                                                 data.rows.map { r ->
-                                                    if (r.id == rowId) r.copy(value = newValue) else r
+                                                    if (r.id == rowId) r.copy(value = newValue)
+                                                    else r
                                                 }
-                                            val updatedNote = note.withCountingTable(CountingTableData(updatedRows))
+                                            val updatedNote =
+                                                note.withCountingTable(
+                                                    CountingTableData(updatedRows)
+                                                )
                                             scope.launch { repo.upsertNote(updatedNote) }
                                         },
                                         onTogglePin = {
-                                            scope.launch { repo.upsertNote(note.copy(pinned = !note.pinned)) }
+                                            scope.launch {
+                                                repo.upsertNote(note.copy(pinned = !note.pinned))
+                                            }
                                         },
                                         onArchive = {
                                             scope.launch {
                                                 repo.upsertNote(note.copy(archived = true))
                                                 showUndo(msgNoteArchived) {
-                                                    scope.launch { repo.upsertNote(note.copy(archived = false)) }
+                                                    scope.launch {
+                                                        repo.upsertNote(note.copy(archived = false))
+                                                    }
                                                 }
                                             }
                                         },
@@ -984,7 +1154,9 @@ fun NotesPage(
                                             scope.launch {
                                                 repo.upsertNote(note.copy(archived = false))
                                                 showUndo(msgNoteUnarchived) {
-                                                    scope.launch { repo.upsertNote(note.copy(archived = true)) }
+                                                    scope.launch {
+                                                        repo.upsertNote(note.copy(archived = true))
+                                                    }
                                                 }
                                             }
                                         },
@@ -1002,13 +1174,17 @@ fun NotesPage(
                                             }
                                         },
                                         onTogglePin = {
-                                            scope.launch { repo.upsertNote(note.copy(pinned = !note.pinned)) }
+                                            scope.launch {
+                                                repo.upsertNote(note.copy(pinned = !note.pinned))
+                                            }
                                         },
                                         onArchive = {
                                             scope.launch {
                                                 repo.upsertNote(note.copy(archived = true))
                                                 showUndo(msgNoteArchived) {
-                                                    scope.launch { repo.upsertNote(note.copy(archived = false)) }
+                                                    scope.launch {
+                                                        repo.upsertNote(note.copy(archived = false))
+                                                    }
                                                 }
                                             }
                                         },
@@ -1016,7 +1192,9 @@ fun NotesPage(
                                             scope.launch {
                                                 repo.upsertNote(note.copy(archived = false))
                                                 showUndo(msgNoteUnarchived) {
-                                                    scope.launch { repo.upsertNote(note.copy(archived = true)) }
+                                                    scope.launch {
+                                                        repo.upsertNote(note.copy(archived = true))
+                                                    }
                                                 }
                                             }
                                         },
@@ -1034,13 +1212,17 @@ fun NotesPage(
                                             }
                                         },
                                         onTogglePin = {
-                                            scope.launch { repo.upsertNote(note.copy(pinned = !note.pinned)) }
+                                            scope.launch {
+                                                repo.upsertNote(note.copy(pinned = !note.pinned))
+                                            }
                                         },
                                         onArchive = {
                                             scope.launch {
                                                 repo.upsertNote(note.copy(archived = true))
                                                 showUndo(msgNoteArchived) {
-                                                    scope.launch { repo.upsertNote(note.copy(archived = false)) }
+                                                    scope.launch {
+                                                        repo.upsertNote(note.copy(archived = false))
+                                                    }
                                                 }
                                             }
                                         },
@@ -1048,7 +1230,9 @@ fun NotesPage(
                                             scope.launch {
                                                 repo.upsertNote(note.copy(archived = false))
                                                 showUndo(msgNoteUnarchived) {
-                                                    scope.launch { repo.upsertNote(note.copy(archived = true)) }
+                                                    scope.launch {
+                                                        repo.upsertNote(note.copy(archived = true))
+                                                    }
                                                 }
                                             }
                                         },
@@ -1066,7 +1250,9 @@ fun NotesPage(
                                             }
                                         },
                                         onTogglePin = {
-                                            scope.launch { repo.upsertNote(note.copy(pinned = !note.pinned)) }
+                                            scope.launch {
+                                                repo.upsertNote(note.copy(pinned = !note.pinned))
+                                            }
                                         },
                                         onArchive = {
                                             scope.launch {
@@ -1082,7 +1268,9 @@ fun NotesPage(
                                             scope.launch {
                                                 repo.upsertNote(note.copy(archived = false))
                                                 showUndo(msgNoteUnarchived) {
-                                                    scope.launch { repo.upsertNote(note.copy(archived = true)) }
+                                                    scope.launch {
+                                                        repo.upsertNote(note.copy(archived = true))
+                                                    }
                                                 }
                                             }
                                         },
@@ -1100,14 +1288,19 @@ fun NotesPage(
                                             .size(24.dp)
                                             .background(
                                                 color =
-                                                    if (isSelected) MaterialTheme.colorScheme.primary
-                                                    else MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.8f),
+                                                    if (isSelected)
+                                                        MaterialTheme.colorScheme.primary
+                                                    else
+                                                        MaterialTheme.colorScheme
+                                                            .surfaceContainerHighest
+                                                            .copy(alpha = 0.8f),
                                                 shape = CircleShape,
                                             )
                                             .border(
                                                 width = 2.dp,
                                                 color =
-                                                    if (isSelected) MaterialTheme.colorScheme.primary
+                                                    if (isSelected)
+                                                        MaterialTheme.colorScheme.primary
                                                     else MaterialTheme.colorScheme.outline,
                                                 shape = CircleShape,
                                             ),
@@ -1204,10 +1397,11 @@ fun NotesPage(
                         Text(
                             stringResource(Res.string.undo),
                             color = MaterialTheme.colorScheme.inversePrimary,
-                            style = MaterialTheme.typography.labelLarge.copy(
-                                fontFamily = flexFontEmphasis(),
-                                fontWeight = FontWeight.Bold,
-                            ),
+                            style =
+                                MaterialTheme.typography.labelLarge.copy(
+                                    fontFamily = flexFontEmphasis(),
+                                    fontWeight = FontWeight.Bold,
+                                ),
                         )
                     }
                 }
@@ -1229,7 +1423,8 @@ fun NotesPage(
             ) {
                 Text(
                     text = "Create New Note",
-                    style = MaterialTheme.typography.titleLarge.copy(fontFamily = flexFontEmphasis()),
+                    style =
+                        MaterialTheme.typography.titleLarge.copy(fontFamily = flexFontEmphasis()),
                     color = MaterialTheme.colorScheme.onSurface,
                 )
 
@@ -1262,7 +1457,10 @@ fun NotesPage(
                         Column {
                             Text(
                                 text = "Markdown Note",
-                                style = MaterialTheme.typography.titleMedium.copy(fontFamily = flexFontEmphasis()),
+                                style =
+                                    MaterialTheme.typography.titleMedium.copy(
+                                        fontFamily = flexFontEmphasis()
+                                    ),
                             )
                             Text(
                                 text = "Free-form text, headers, lists, and formatting",
@@ -1281,16 +1479,21 @@ fun NotesPage(
                             showCreateTypeSheet = false
                             val now = LocalDateTime.now()
                             val newId = Random.nextLong(100_000_000L, 999_999_999L)
-                            val initialRow = CounterRow(id = "row_${Random.nextLong(100_000, 999_999)}_0", label = "")
+                            val initialRow =
+                                CounterRow(
+                                    id = "row_${Random.nextLong(100_000, 999_999)}_0",
+                                    label = "",
+                                )
                             editingNote =
                                 Note(
-                                    id = newId,
-                                    title = "",
-                                    content = "",
-                                    type = NoteType.COUNTING_TABLE,
-                                    createdAt = now,
-                                    updatedAt = now,
-                                ).withCountingTable(CountingTableData(rows = listOf(initialRow)))
+                                        id = newId,
+                                        title = "",
+                                        content = "",
+                                        type = NoteType.COUNTING_TABLE,
+                                        createdAt = now,
+                                        updatedAt = now,
+                                    )
+                                    .withCountingTable(CountingTableData(rows = listOf(initialRow)))
                             showEditor = true
                         },
                 ) {
@@ -1303,7 +1506,10 @@ fun NotesPage(
                         Column {
                             Text(
                                 text = "Counting Table Note",
-                                style = MaterialTheme.typography.titleMedium.copy(fontFamily = flexFontEmphasis()),
+                                style =
+                                    MaterialTheme.typography.titleMedium.copy(
+                                        fontFamily = flexFontEmphasis()
+                                    ),
                             )
                             Text(
                                 text = "Interactive tally counters",
@@ -1324,13 +1530,14 @@ fun NotesPage(
                             val newId = Random.nextLong(100_000_000L, 999_999_999L)
                             editingNote =
                                 Note(
-                                    id = newId,
-                                    title = "",
-                                    content = "",
-                                    type = NoteType.JOURNAL,
-                                    createdAt = now,
-                                    updatedAt = now,
-                                ).withJournal(JournalNoteData())
+                                        id = newId,
+                                        title = "",
+                                        content = "",
+                                        type = NoteType.JOURNAL,
+                                        createdAt = now,
+                                        updatedAt = now,
+                                    )
+                                    .withJournal(JournalNoteData())
                             showEditor = true
                         },
                 ) {
@@ -1343,7 +1550,10 @@ fun NotesPage(
                         Column {
                             Text(
                                 text = "Journal",
-                                style = MaterialTheme.typography.titleMedium.copy(fontFamily = flexFontEmphasis()),
+                                style =
+                                    MaterialTheme.typography.titleMedium.copy(
+                                        fontFamily = flexFontEmphasis()
+                                    ),
                             )
                             Text(
                                 text = "Chronological log of thoughts and mood",
@@ -1364,13 +1574,14 @@ fun NotesPage(
                             val newId = Random.nextLong(100_000_000L, 999_999_999L)
                             editingNote =
                                 Note(
-                                    id = newId,
-                                    title = "",
-                                    content = "",
-                                    type = NoteType.VAULT,
-                                    createdAt = now,
-                                    updatedAt = now,
-                                ).withVault(VaultNote())
+                                        id = newId,
+                                        title = "",
+                                        content = "",
+                                        type = NoteType.VAULT,
+                                        createdAt = now,
+                                        updatedAt = now,
+                                    )
+                                    .withVault(VaultNote())
                             showEditor = true
                         },
                 ) {
@@ -1383,7 +1594,10 @@ fun NotesPage(
                         Column {
                             Text(
                                 text = "Secret Vault",
-                                style = MaterialTheme.typography.titleMedium.copy(fontFamily = flexFontEmphasis()),
+                                style =
+                                    MaterialTheme.typography.titleMedium.copy(
+                                        fontFamily = flexFontEmphasis()
+                                    ),
                             )
                             Text(
                                 text = "Encrypted key-value store for secrets & credentials",
@@ -1407,9 +1621,7 @@ fun NotesPage(
                 showEditor = false
                 editingNote = null
             },
-            onSave = { saved ->
-                scope.launch { repo.upsertNote(saved) }
-            },
+            onSave = { saved -> scope.launch { repo.upsertNote(saved) } },
             onArchive = { noteId ->
                 scope.launch {
                     val noteToArchive = notes.firstOrNull { it.id == noteId } ?: editingNote
@@ -1439,14 +1651,10 @@ fun NotesPage(
                 pendingVaultNote = null
                 showEditor = true
             },
-            onDismissRequest = {
-                pendingVaultNote = null
-            }
+            onDismissRequest = { pendingVaultNote = null },
         )
     }
 }
-
-
 
 internal fun formatNoteDate(dateTime: LocalDateTime): String {
     val now = LocalDateTime.now()
@@ -1467,7 +1675,7 @@ internal fun formatNoteDate(dateTime: LocalDateTime): String {
 private fun SwipeToArchiveWrapper(
     enabled: Boolean,
     onArchive: () -> Unit,
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
     if (!enabled) {
         content()
@@ -1480,9 +1688,8 @@ private fun SwipeToArchiveWrapper(
     val thresholdPx = with(density) { 100.dp.toPx() }
 
     Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .pointerInput(Unit) {
+        modifier =
+            Modifier.fillMaxWidth().pointerInput(Unit) {
                 detectHorizontalDragGestures(
                     onDragEnd = {
                         if (kotlin.math.abs(offsetX) > thresholdPx) {
@@ -1490,45 +1697,37 @@ private fun SwipeToArchiveWrapper(
                         }
                         offsetX = 0f
                     },
-                    onDragCancel = {
-                        offsetX = 0f
-                    },
+                    onDragCancel = { offsetX = 0f },
                     onHorizontalDrag = { change, dragAmount ->
                         change.consume()
-                        offsetX = (offsetX + dragAmount).coerceIn(-thresholdPx * 1.5f, thresholdPx * 1.5f)
-                    }
+                        offsetX =
+                            (offsetX + dragAmount).coerceIn(-thresholdPx * 1.5f, thresholdPx * 1.5f)
+                    },
                 )
             }
     ) {
         if (offsetX != 0f) {
             Box(
-                modifier = Modifier
-                    .matchParentSize()
-                    .background(
-                        color = MaterialTheme.colorScheme.primaryContainer,
-                        shape = RoundedCornerShape(20.dp)
-                    )
-                    .padding(horizontal = 16.dp),
-                contentAlignment = if (offsetX > 0) Alignment.CenterStart else Alignment.CenterEnd
+                modifier =
+                    Modifier.matchParentSize()
+                        .background(
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                            shape = RoundedCornerShape(20.dp),
+                        )
+                        .padding(horizontal = 16.dp),
+                contentAlignment = if (offsetX > 0) Alignment.CenterStart else Alignment.CenterEnd,
             ) {
                 Icon(
                     imageVector = vectorResource(Res.drawable.archive),
                     contentDescription = "Archive",
                     tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(24.dp),
                 )
             }
         }
 
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .graphicsLayer {
-                    translationX = animatedOffsetX
-                }
-        ) {
+        Box(modifier = Modifier.fillMaxWidth().graphicsLayer { translationX = animatedOffsetX }) {
             content()
         }
     }
 }
-

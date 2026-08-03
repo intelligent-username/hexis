@@ -1,8 +1,25 @@
+/*
+ * Copyright (C) 2025-2026 Hexis
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.loc.hexis.shared.ui.habit.ui.sections
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
-import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,12 +41,12 @@ import androidx.compose.material3.ButtonShapes
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonShapes
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MediumFlexibleTopAppBar
 import androidx.compose.material3.OutlinedIconButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
@@ -45,10 +62,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.clickable
-import androidx.compose.material3.Surface
 import androidx.compose.ui.unit.sp
 import com.kizitonwose.calendar.compose.heatmapcalendar.rememberHeatMapCalendarState
 import com.kizitonwose.calendar.compose.rememberCalendarState
@@ -75,7 +90,6 @@ import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.minus
 import kotlinx.datetime.plus
 import kotlinx.datetime.yearMonth
-import androidx.compose.ui.text.font.FontWeight
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.resources.vectorResource
 
@@ -123,7 +137,9 @@ fun AnalyticsPage(
                     scrolledContainerColor = Color.Transparent,
                     containerColor = Color.Transparent,
                 ),
-            title = { Text(text = currentHabit.habit.title, maxLines = 1, fontFamily = flexFontEmphasis()) },
+            title = {
+                Text(text = currentHabit.habit.title, maxLines = 1, fontFamily = flexFontEmphasis())
+            },
             subtitle = {
                 if (currentHabit.habit.description.isNotEmpty()) {
                     Text(
@@ -251,24 +267,29 @@ fun AnalyticsPage(
             item {
                 TrendLineChart(
                     weeklyPointsHistory = currentHabit.pointsSummary.weeklyPointsHistory,
+                    dailyPointsHistory = currentHabit.pointsSummary.dailyPointsHistory,
                     modifier = Modifier.widthIn(max = maxWidth),
                 )
             }
 
             if (currentHabit.habit.displayMode == com.loc.hexis.core.habits.DisplayMode.PROGRESS) {
-                val currentValue = currentHabit.statuses.find { it.date == selectedDate }?.value ?: 0.0
+                val currentValue =
+                    currentHabit.statuses.find { it.date == selectedDate }?.value ?: 0.0
                 val targetValue = currentHabit.habit.targetValue ?: 1.0
                 val incrementBy = currentHabit.habit.incrementBy
-                val progressFraction = if (targetValue > 0.0) (currentValue / targetValue).coerceIn(0.0, 1.0).toFloat() else 0f
+                val progressFraction =
+                    if (targetValue > 0.0) (currentValue / targetValue).coerceIn(0.0, 1.0).toFloat()
+                    else 0f
                 val isTargetReached = currentValue >= (targetValue - 0.001)
 
                 item {
                     val dateDiff = selectedDate.toEpochDays() - today.toEpochDays()
-                    val dateTitle = when (dateDiff) {
-                        0L -> "Today's Progress"
-                        -1L -> "Yesterday's Progress"
-                        else -> "${selectedDate.toFormattedString()} Progress"
-                    }
+                    val dateTitle =
+                        when (dateDiff) {
+                            0L -> "Today's Progress"
+                            -1L -> "Yesterday's Progress"
+                            else -> "${selectedDate.toFormattedString()} Progress"
+                        }
 
                     Surface(
                         shape = MaterialTheme.shapes.large,
@@ -304,10 +325,11 @@ fun AnalyticsPage(
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                     Text(
                                         text = dateTitle,
-                                        style = MaterialTheme.typography.titleMedium.copy(
-                                            fontFamily = flexFontEmphasis(),
-                                            fontWeight = FontWeight.Bold,
-                                        ),
+                                        style =
+                                            MaterialTheme.typography.titleMedium.copy(
+                                                fontFamily = flexFontEmphasis(),
+                                                fontWeight = FontWeight.Bold,
+                                            ),
                                         color = MaterialTheme.colorScheme.onSurface,
                                     )
 
@@ -315,19 +337,29 @@ fun AnalyticsPage(
                                         Spacer(modifier = Modifier.height(2.dp))
                                         Surface(
                                             shape = RoundedCornerShape(12.dp),
-                                            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.8f),
-                                            modifier = Modifier.clip(RoundedCornerShape(12.dp)).clickable {
-                                                selectedDate = today
-                                            },
+                                            color =
+                                                MaterialTheme.colorScheme.primaryContainer.copy(
+                                                    alpha = 0.8f
+                                                ),
+                                            modifier =
+                                                Modifier.clip(RoundedCornerShape(12.dp)).clickable {
+                                                    selectedDate = today
+                                                },
                                         ) {
                                             Text(
                                                 text = "Reset to Today",
-                                                style = MaterialTheme.typography.labelSmall.copy(
-                                                    fontFamily = flexFontRounded(),
-                                                    fontSize = 11.sp,
-                                                ),
-                                                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                                                style =
+                                                    MaterialTheme.typography.labelSmall.copy(
+                                                        fontFamily = flexFontRounded(),
+                                                        fontSize = 11.sp,
+                                                    ),
+                                                color =
+                                                    MaterialTheme.colorScheme.onPrimaryContainer,
+                                                modifier =
+                                                    Modifier.padding(
+                                                        horizontal = 8.dp,
+                                                        vertical = 2.dp,
+                                                    ),
                                             )
                                         }
                                     }
@@ -355,47 +387,61 @@ fun AnalyticsPage(
                             // Counter Controls & Value
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween,
+                                horizontalArrangement =
+                                    if (!currentHabit.habit.pomodoroLinked) Arrangement.SpaceBetween
+                                    else Arrangement.Center,
                                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                             ) {
-                                FilledTonalIconButton(
-                                    onClick = {
-                                        if (currentValue > 0.0) {
-                                            onAction(
-                                                HabitsAction.DecrementHabitProgress(
-                                                    currentHabit.habit,
-                                                    selectedDate,
+                                if (!currentHabit.habit.pomodoroLinked) {
+                                    FilledTonalIconButton(
+                                        onClick = {
+                                            if (currentValue > 0.0) {
+                                                onAction(
+                                                    HabitsAction.DecrementHabitProgress(
+                                                        currentHabit.habit,
+                                                        selectedDate,
+                                                    )
                                                 )
-                                            )
-                                        }
-                                    },
-                                    enabled = currentValue > 0.0,
-                                    modifier = Modifier.size(48.dp),
-                                ) {
-                                    Text(
-                                        text = "−",
-                                        style = MaterialTheme.typography.headlineMedium.copy(
-                                            fontFamily = flexFontRounded(),
-                                            fontWeight = FontWeight.Bold,
-                                        ),
-                                    )
+                                            }
+                                        },
+                                        enabled = currentValue > 0.0,
+                                        modifier = Modifier.size(48.dp),
+                                    ) {
+                                        Text(
+                                            text = "−",
+                                            style =
+                                                MaterialTheme.typography.headlineMedium.copy(
+                                                    fontFamily = flexFontRounded(),
+                                                    fontWeight = FontWeight.Bold,
+                                                ),
+                                        )
+                                    }
                                 }
 
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                     Row(verticalAlignment = Alignment.Bottom) {
                                         Text(
-                                            text = if (currentValue % 1.0 == 0.0) currentValue.toLong().toString() else currentValue.toString(),
-                                            style = MaterialTheme.typography.displayMedium.copy(
-                                                fontFamily = flexFontRounded(),
-                                                fontWeight = FontWeight.Bold,
-                                            ),
-                                            color = if (isTargetReached) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                                            text =
+                                                if (currentValue % 1.0 == 0.0)
+                                                    currentValue.toLong().toString()
+                                                else currentValue.toString(),
+                                            style =
+                                                MaterialTheme.typography.displayMedium.copy(
+                                                    fontFamily = flexFontRounded(),
+                                                    fontWeight = FontWeight.Bold,
+                                                ),
+                                            color =
+                                                if (isTargetReached)
+                                                    MaterialTheme.colorScheme.primary
+                                                else MaterialTheme.colorScheme.onSurface,
                                         )
                                         Text(
-                                            text = " / ${if (targetValue % 1.0 == 0.0) targetValue.toLong().toString() else targetValue.toString()}",
-                                            style = MaterialTheme.typography.headlineSmall.copy(
-                                                fontFamily = flexFontRounded(),
-                                            ),
+                                            text =
+                                                " / ${if (targetValue % 1.0 == 0.0) targetValue.toLong().toString() else targetValue.toString()}",
+                                            style =
+                                                MaterialTheme.typography.headlineSmall.copy(
+                                                    fontFamily = flexFontRounded()
+                                                ),
                                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                                             modifier = Modifier.padding(bottom = 6.dp),
                                         )
@@ -404,38 +450,45 @@ fun AnalyticsPage(
                                     if (isTargetReached) {
                                         Text(
                                             text = "Target Met",
-                                            style = MaterialTheme.typography.labelMedium.copy(
-                                                fontFamily = flexFontRounded(),
-                                                fontWeight = FontWeight.SemiBold,
-                                            ),
+                                            style =
+                                                MaterialTheme.typography.labelMedium.copy(
+                                                    fontFamily = flexFontRounded(),
+                                                    fontWeight = FontWeight.SemiBold,
+                                                ),
                                             color = MaterialTheme.colorScheme.primary,
                                         )
-                                    } else if (incrementBy != 1.0) {
+                                    } else if (!currentHabit.habit.pomodoroLinked && incrementBy != 1.0) {
                                         Text(
-                                            text = "Step: ±${if (incrementBy % 1.0 == 0.0) incrementBy.toLong().toString() else incrementBy.toString()}",
+                                            text =
+                                                "Step: ±${if (incrementBy % 1.0 == 0.0) incrementBy.toLong().toString() else incrementBy.toString()}",
                                             style = MaterialTheme.typography.labelSmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                                            color =
+                                                MaterialTheme.colorScheme.onSurfaceVariant.copy(
+                                                    alpha = 0.7f
+                                                ),
                                         )
                                     }
                                 }
 
-                                FilledIconButton(
-                                    onClick = {
-                                        onAction(
-                                            HabitsAction.IncrementHabitProgress(
-                                                currentHabit.habit,
-                                                selectedDate,
+                                if (!currentHabit.habit.pomodoroLinked) {
+                                    FilledIconButton(
+                                        onClick = {
+                                            onAction(
+                                                HabitsAction.IncrementHabitProgress(
+                                                    currentHabit.habit,
+                                                    selectedDate,
+                                                )
                                             )
+                                        },
+                                        enabled = selectedDate <= today,
+                                        modifier = Modifier.size(48.dp),
+                                    ) {
+                                        Icon(
+                                            imageVector = vectorResource(Res.drawable.add),
+                                            contentDescription = "Increment",
+                                            modifier = Modifier.size(24.dp),
                                         )
-                                    },
-                                    enabled = selectedDate <= today,
-                                    modifier = Modifier.size(48.dp),
-                                ) {
-                                    Icon(
-                                        imageVector = vectorResource(Res.drawable.add),
-                                        contentDescription = "Increment",
-                                        modifier = Modifier.size(24.dp),
-                                    )
+                                    }
                                 }
                             }
 
@@ -444,7 +497,10 @@ fun AnalyticsPage(
                             // Animated Linear Progress Bar
                             androidx.compose.material3.LinearProgressIndicator(
                                 progress = { progressFraction },
-                                modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)),
+                                modifier =
+                                    Modifier.fillMaxWidth()
+                                        .height(6.dp)
+                                        .clip(RoundedCornerShape(3.dp)),
                                 color = MaterialTheme.colorScheme.primary,
                                 trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
                             )
@@ -463,7 +519,10 @@ fun AnalyticsPage(
                     startDate = currentHabit.habit.time.date,
                     onDateClick = {
                         selectedDate = it
-                        if (currentHabit.habit.displayMode != com.loc.hexis.core.habits.DisplayMode.PROGRESS) {
+                        if (
+                            currentHabit.habit.displayMode !=
+                                com.loc.hexis.core.habits.DisplayMode.PROGRESS
+                        ) {
                             onAction(HabitsAction.ToggleHabitProgress(currentHabit.habit, it))
                         }
                     },
@@ -481,9 +540,15 @@ fun AnalyticsPage(
                     onNavigateToCalendar = onNavigateToCalendar,
                     onDateClick = {
                         selectedDate = it
-                        if (currentHabit.habit.displayMode != com.loc.hexis.core.habits.DisplayMode.PROGRESS) {
+                        if (
+                            currentHabit.habit.displayMode !=
+                                com.loc.hexis.core.habits.DisplayMode.PROGRESS
+                        ) {
                             onAction(
-                                HabitsAction.ToggleHabitProgress(habit = currentHabit.habit, date = it)
+                                HabitsAction.ToggleHabitProgress(
+                                    habit = currentHabit.habit,
+                                    date = it,
+                                )
                             )
                         }
                     },

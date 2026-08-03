@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 2025-2026 Hexis
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.loc.hexis.habits.data.repository
 
 import com.loc.hexis.core.habits.DisplayMode
@@ -9,17 +26,13 @@ import com.loc.hexis.core.habits.WeeklyComparisonData
 import com.loc.hexis.core.habits.countStreakAtDate
 import com.loc.hexis.core.now
 import kotlin.math.roundToInt
-import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
-import kotlinx.datetime.daysUntil
 import kotlinx.datetime.format.DayOfWeekNames
 import kotlinx.datetime.isoDayNumber
 import kotlinx.datetime.minus
 import kotlinx.datetime.plus
-
-
 
 fun prepareLineChartData(
     firstDay: DayOfWeek,
@@ -95,30 +108,34 @@ fun computePointsSummary(
     val targetVal = habit.targetValue ?: 1.0
 
     val weeklyPoints = mutableMapOf<LocalDate, Int>()
+    val dailyPoints = mutableMapOf<LocalDate, Int>()
     var totalPoints = 0
 
     val completedStatusesSoFar = mutableListOf<HabitStatus>()
 
     for (status in allStatuses.sortedBy { it.date }) {
         val isCompleted = status.value >= targetVal - 0.001
-        val pts: Int = if (isCompleted) {
-            completedStatusesSoFar.add(status)
-            val streak = countStreakAtDate(completedStatusesSoFar.map { it.date }, eligible, status.date)
-            val basePts = 10 + (streak * 2)
-            if (isCounter) (basePts * 1.10).roundToInt() else basePts
-        } else if (isCounter && status.value > 0.0 && targetVal > 0.0) {
-            val fraction = (status.value / targetVal).coerceIn(0.0, 1.0)
-            val baseDayPts = 10.0 * 1.10
-            (0.5 * fraction * baseDayPts).roundToInt()
-        } else {
-            0
-        }
+        val pts: Int =
+            if (isCompleted) {
+                completedStatusesSoFar.add(status)
+                val streak =
+                    countStreakAtDate(completedStatusesSoFar.map { it.date }, eligible, status.date)
+                val basePts = 10 + (streak * 2)
+                if (isCounter) (basePts * 1.10).roundToInt() else basePts
+            } else if (isCounter && status.value > 0.0 && targetVal > 0.0) {
+                val fraction = (status.value / targetVal).coerceIn(0.0, 1.0)
+                val baseDayPts = 10.0 * 1.10
+                (0.5 * fraction * baseDayPts).roundToInt()
+            } else {
+                0
+            }
 
         if (pts > 0) {
             totalPoints += pts
             val daysFromFirst = (status.date.dayOfWeek.isoDayNumber - firstDay.isoDayNumber + 7) % 7
             val weekStart = status.date.minus(daysFromFirst, DateTimeUnit.DAY)
             weeklyPoints[weekStart] = (weeklyPoints[weekStart] ?: 0) + pts
+            dailyPoints[status.date] = (dailyPoints[status.date] ?: 0) + pts
         }
     }
 
@@ -131,6 +148,8 @@ fun computePointsSummary(
 
     val history =
         (0..totalWeeks).map { i -> weeklyPoints[periodStart.plus(i, DateTimeUnit.WEEK)] ?: 0 }
+    val dailyHistory =
+        (0..6).map { i -> dailyPoints[today.minus(6 - i, DateTimeUnit.DAY)] ?: 0 }
 
     val currentWeekStart = todayWeekStart
     val lastWeekStart = currentWeekStart.minus(1, DateTimeUnit.WEEK)
@@ -140,6 +159,7 @@ fun computePointsSummary(
         lastWeekPoints = weeklyPoints[lastWeekStart] ?: 0,
         totalPoints = totalPoints,
         weeklyPointsHistory = history,
+        dailyPointsHistory = dailyHistory,
     )
 }
 

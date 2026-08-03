@@ -1,8 +1,26 @@
+/*
+ * Copyright (C) 2025-2026 Hexis
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.loc.hexis.shared.ui.task.ui.component
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,8 +31,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -31,16 +49,20 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kizitonwose.calendar.compose.HeatMapCalendar
@@ -51,6 +73,8 @@ import com.kizitonwose.calendar.core.now
 import com.loc.hexis.core.habits.HabitRepo
 import com.loc.hexis.core.habits.countBestStreak
 import com.loc.hexis.core.habits.countCurrentStreak
+import com.loc.hexis.core.interfaces.SettingsDatastore
+import com.loc.hexis.core.interfaces.ThemeDatastore
 import com.loc.hexis.core.tasks.PomodoroDayCount
 import com.loc.hexis.core.tasks.PomodoroRepo
 import com.loc.hexis.shared.ui.components.HexisBottomSheet
@@ -67,22 +91,16 @@ import kotlinx.datetime.minus
 import org.jetbrains.compose.resources.vectorResource
 import org.koin.compose.koinInject
 
-import com.loc.hexis.core.interfaces.SettingsDatastore
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.input.pointer.pointerInput
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PomodoroAnalytics(
-    onDismiss: () -> Unit,
-    onSelectHabit: (Long?, String) -> Unit = { _, _ -> },
-) {
+fun PomodoroAnalytics(onDismiss: () -> Unit, onSelectHabit: (Long?, String) -> Unit = { _, _ -> }) {
     val repo: PomodoroRepo = koinInject()
 
     val settingsDatastore: SettingsDatastore = koinInject()
-    val showPieChart by settingsDatastore.getShowPomodoroPieChartPref().collectAsState(initial = true)
+    val themeDatastore: ThemeDatastore = koinInject()
+    val isAmoled by themeDatastore.getAmoledPref().collectAsState(initial = false)
+    val showPieChart by
+        settingsDatastore.getShowPomodoroPieChartPref().collectAsState(initial = true)
 
     val dayCounts by repo.getSessionCountsByDay().collectAsState(initial = emptyList())
     val dayMinutes by repo.getSessionMinutesByDay().collectAsState(initial = emptyList())
@@ -91,24 +109,40 @@ fun PomodoroAnalytics(
     val dates = remember(dayCounts) { dayCounts.map { it.date } }
 
     val totalSessions = dayCounts.sumOf { it.count }
-    val totalMinutes = remember(dayMinutes) { dayMinutes.sumOf { it.totalMinutes.toDouble() }.toFloat() }
+    val totalMinutes =
+        remember(dayMinutes) { dayMinutes.sumOf { it.totalMinutes.toDouble() }.toFloat() }
     val currentStreak = remember(dates) { countCurrentStreak(dates) }
     val bestStreak = remember(dates) { countBestStreak(dates) }
 
     var selectedDay by remember { mutableStateOf<LocalDate?>(null) }
 
+    val startOfWeekPref by
+        settingsDatastore.getStartOfTheWeekPref().collectAsState(initial = DayOfWeek.MONDAY)
+
+    val firstLaunchDate by
+        settingsDatastore.getFirstLaunchDate().collectAsState(initial = null)
+
     val currentMonth = remember { YearMonth.now() }
+    val startMonth = remember(firstLaunchDate) {
+        firstLaunchDate?.let { YearMonth(it.year, it.month) } ?: currentMonth
+    }
     val heatMapState: HeatMapCalendarState =
-        rememberHeatMapCalendarState(
-            startMonth = currentMonth.minusMonths(12),
-            endMonth = currentMonth,
-            firstVisibleMonth = currentMonth,
-            firstDayOfWeek = DayOfWeek.MONDAY,
-        )
+        key(startMonth, startOfWeekPref) {
+            rememberHeatMapCalendarState(
+                startMonth = startMonth,
+                endMonth = currentMonth,
+                firstVisibleMonth = currentMonth,
+                firstDayOfWeek = startOfWeekPref,
+            )
+        }
 
     Scaffold(
+        containerColor = if (isAmoled) Color.Black else MaterialTheme.colorScheme.surface,
         topBar = {
             TopAppBar(
+                colors =
+                    if (isAmoled) TopAppBarDefaults.topAppBarColors(containerColor = Color.Black)
+                    else TopAppBarDefaults.topAppBarColors(),
                 title = { Text(text = "Session History", fontFamily = flexFontEmphasis()) },
                 navigationIcon = {
                     FilledTonalIconButton(onClick = onDismiss) {
@@ -142,8 +176,6 @@ fun PomodoroAnalytics(
                     bestStreak = bestStreak,
                 )
 
-                ThisWeekRow(dayMinutes = dayMinutes)
-
                 if (showPieChart) {
                     HabitBreakdownChart(
                         onSelectHabit = { habitId, title ->
@@ -152,6 +184,8 @@ fun PomodoroAnalytics(
                         }
                     )
                 }
+
+                ThisWeekRow(dayMinutes = dayMinutes, startOfWeekPref = startOfWeekPref)
 
                 SessionHeatMap(
                     heatMapState = heatMapState,
@@ -202,9 +236,7 @@ fun PomodoroAnalytics(
                 Text(
                     text = "$sessions session${if (sessions != 1) "s" else ""}",
                     style =
-                        MaterialTheme.typography.titleMedium.copy(
-                            fontFamily = flexFontRounded(),
-                        ),
+                        MaterialTheme.typography.titleMedium.copy(fontFamily = flexFontRounded()),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -216,14 +248,21 @@ fun PomodoroAnalytics(
 private fun StatsRow(totalSessions: Int, totalMinutes: Float, currentStreak: Int, bestStreak: Int) {
     val totalHours = (totalMinutes / 60).toInt()
     val remMins = (totalMinutes % 60).toInt()
-    val formattedTime = if (totalHours > 0) "${totalHours}h ${remMins}m" else "${totalMinutes.toInt()}m"
+    val formattedTime =
+        if (totalHours > 0) "${totalHours}h ${remMins}m" else "${totalMinutes.toInt()}m"
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
             StatPill(value = "$totalSessions", label = "sessions", modifier = Modifier.weight(1f))
             StatPill(value = formattedTime, label = "time worked", modifier = Modifier.weight(1f))
         }
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
             StatPill(value = "$currentStreak", label = "day streak", modifier = Modifier.weight(1f))
             StatPill(value = "$bestStreak", label = "best streak", modifier = Modifier.weight(1f))
         }
@@ -261,19 +300,34 @@ private fun StatPill(value: String, label: String, modifier: Modifier = Modifier
 }
 
 @Composable
-private fun ThisWeekRow(dayMinutes: List<PomodoroDayCount>) {
+private fun ThisWeekRow(dayMinutes: List<PomodoroDayCount>, startOfWeekPref: DayOfWeek) {
     val today = LocalDate.now()
-    val startOfWeek =
-        today.minus(today.dayOfWeek.isoDayNumber - DayOfWeek.MONDAY.isoDayNumber, DateTimeUnit.DAY)
-    val weekMinutes = dayMinutes.filter { it.date in startOfWeek..today }.sumOf { it.totalMinutes.toDouble() }
+    val daysFromStart = (today.dayOfWeek.isoDayNumber - startOfWeekPref.isoDayNumber + 7) % 7
+    val daysElapsed = daysFromStart + 1
+    val startOfWeek = today.minus(daysFromStart, DateTimeUnit.DAY)
+    val weekMinutes =
+        dayMinutes.filter { it.date in startOfWeek..today }.sumOf { it.totalMinutes.toDouble() }
     val whole = weekMinutes.toInt()
+    val avg = (weekMinutes / daysElapsed.toDouble()).toInt()
 
-    Text(
-        text = "This week: ${whole}m",
-        style = MaterialTheme.typography.titleSmall,
-        fontFamily = flexFontRounded(),
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = "This week: ${whole}m",
+            style = MaterialTheme.typography.titleSmall,
+            fontFamily = flexFontRounded(),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            text = "avg: ${avg}m/d",
+            style = MaterialTheme.typography.titleSmall,
+            fontFamily = flexFontRounded(),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
 }
 
 @Composable
@@ -358,13 +412,28 @@ private fun HabitBreakdownChart(onSelectHabit: (Long?, String) -> Unit = { _, _ 
 
     androidx.compose.runtime.LaunchedEffect(Unit) {
         val counts = repo.getSessionCountsByHabit()
+        val allEntries =
+            counts
+                .map { (id, c) ->
+                    val title =
+                        if (id != null) {
+                            (habitRepo.getHabitById(id))?.title ?: "Unknown"
+                        } else "Misc."
+                    HabitCount(id, c, title)
+                }
+                .sortedByDescending { it.count }
+
         displayData =
-            counts.map { (id, c) ->
-                val title =
-                    if (id != null) {
-                        (habitRepo.getHabitById(id))?.title ?: "Unknown"
-                    } else "Misc"
-                HabitCount(id, c, title)
+            if (allEntries.size > 4) {
+                val top3 = allEntries.take(3)
+                val remainingCount = allEntries.drop(3).sumOf { it.count }
+                if (remainingCount > 0) {
+                    top3 + HabitCount(null, remainingCount, "Other")
+                } else {
+                    top3
+                }
+            } else {
+                allEntries
             }
     }
 
@@ -372,37 +441,15 @@ private fun HabitBreakdownChart(onSelectHabit: (Long?, String) -> Unit = { _, _ 
 
     val total = displayData.sumOf { it.count }.toFloat()
 
-    val miscColor = MaterialTheme.colorScheme.outline
-    val basePalette =
+    val palette =
         listOf(
             MaterialTheme.colorScheme.primary,
             MaterialTheme.colorScheme.tertiary,
             MaterialTheme.colorScheme.secondary,
             MaterialTheme.colorScheme.error,
-            Color(0xFFFF9800),
-            Color(0xFF00BCD4),
-            Color(0xFF4CAF50),
-            Color(0xFF9C27B0),
-            Color(0xFFE91E63),
-            Color(0xFF3F51B5),
-            Color(0xFFFFC107),
-            Color(0xFF009688),
         )
 
-    val nonMiscEntries = displayData.filter { it.id != null && !it.title.equals("Misc", ignoreCase = true) }
-
-    fun getEntryColor(entry: HabitCount): Color {
-        if (entry.id == null || entry.title.equals("Misc", ignoreCase = true)) {
-            return miscColor
-        }
-        val idx = nonMiscEntries.indexOf(entry).coerceAtLeast(0)
-        return if (idx < basePalette.size) {
-            basePalette[idx]
-        } else {
-            val hue = (idx * 137.5f) % 360f
-            Color.hsl(hue = hue, saturation = 0.75f, lightness = 0.55f)
-        }
-    }
+    fun getEntryColor(index: Int): Color = palette[index % palette.size]
 
     Surface(
         shape = MaterialTheme.shapes.medium,
@@ -411,10 +458,22 @@ private fun HabitBreakdownChart(onSelectHabit: (Long?, String) -> Unit = { _, _ 
         val sweepAngles = displayData.map { (it.count.toFloat() / total) * 360f }
         val donutSize = 136.dp
 
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
+        Column(
+            modifier =
+                Modifier.fillMaxWidth()
+                    .padding(top = 8.dp, bottom = 16.dp, start = 16.dp, end = 16.dp)
         ) {
+            Text(
+                text = "All-Time Breakdown",
+                style = MaterialTheme.typography.titleSmall,
+                fontFamily = flexFontRounded(),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(16.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
             Canvas(
                 modifier =
                     Modifier.size(donutSize).pointerInput(displayData, sweepAngles) {
@@ -430,7 +489,10 @@ private fun HabitBreakdownChart(onSelectHabit: (Long?, String) -> Unit = { _, _ 
                             var currentAngle = 0f
                             for (i in sweepAngles.indices) {
                                 val sweep = sweepAngles[i]
-                                if (angleFromTop >= currentAngle && angleFromTop < currentAngle + sweep) {
+                                if (
+                                    angleFromTop >= currentAngle &&
+                                        angleFromTop < currentAngle + sweep
+                                ) {
                                     onSelectHabit(displayData[i].id, displayData[i].title)
                                     break
                                 }
@@ -443,7 +505,7 @@ private fun HabitBreakdownChart(onSelectHabit: (Long?, String) -> Unit = { _, _ 
                 displayData.forEachIndexed { i, entry ->
                     val sweep = sweepAngles[i]
                     drawArc(
-                        color = getEntryColor(entry),
+                        color = getEntryColor(i),
                         startAngle = startAngle,
                         sweepAngle = sweep,
                         useCenter = false,
@@ -472,7 +534,7 @@ private fun HabitBreakdownChart(onSelectHabit: (Long?, String) -> Unit = { _, _ 
                         Box(
                             modifier =
                                 Modifier.size(10.dp)
-                                    .background(color = getEntryColor(entry), shape = CircleShape)
+                                    .background(color = getEntryColor(i), shape = CircleShape)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
@@ -496,4 +558,5 @@ private fun HabitBreakdownChart(onSelectHabit: (Long?, String) -> Unit = { _, _ 
             }
         }
     }
+}
 }

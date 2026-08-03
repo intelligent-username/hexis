@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 2025-2026 Hexis
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.loc.hexis.shared.ui.note.ui
 
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -33,7 +50,6 @@ import com.loc.hexis.shared.ui.note.getNoteColor
 import com.loc.hexis.shared.ui.theme.flexFontEmphasis
 import com.loc.hexis.shared.ui.theme.flexFontRounded
 import hexis.shared.ui.generated.resources.Res
-import hexis.shared.ui.generated.resources.archive
 import hexis.shared.ui.generated.resources.delete
 import hexis.shared.ui.generated.resources.flag
 import hexis.shared.ui.generated.resources.unarchive
@@ -58,36 +74,44 @@ fun BaseNoteCard(
     val customColor = getNoteColor(note.getColorHex(), isDark)
     val hasCustomColor = customColor != Color.Unspecified
 
-    val containerColor = if (hasCustomColor) customColor else {
-        if (showArchived) MaterialTheme.colorScheme.surfaceContainerLow
-        else MaterialTheme.colorScheme.surfaceContainerHigh
-    }
+    val containerColor =
+        if (hasCustomColor) customColor
+        else {
+            if (showArchived) MaterialTheme.colorScheme.surfaceContainerLow
+            else MaterialTheme.colorScheme.surfaceContainerHigh
+        }
 
-    val onSurfaceColor = if (hasCustomColor) {
-        if (customColor.luminance() < 0.5f) Color.White else Color.Black
-    } else {
-        MaterialTheme.colorScheme.onSurface
-    }
+    val onSurfaceColor =
+        if (hasCustomColor) {
+            if (customColor.luminance() < 0.5f) Color.White else Color.Black
+        } else {
+            MaterialTheme.colorScheme.onSurface
+        }
 
-    val onSurfaceVariantColor = if (hasCustomColor) {
-        if (customColor.luminance() < 0.5f) Color.White.copy(alpha = 0.7f) else Color.Black.copy(alpha = 0.7f)
-    } else {
-        MaterialTheme.colorScheme.onSurfaceVariant
-    }
+    val onSurfaceVariantColor =
+        if (hasCustomColor) {
+            if (customColor.luminance() < 0.5f) Color.White.copy(alpha = 0.7f)
+            else Color.Black.copy(alpha = 0.7f)
+        } else {
+            MaterialTheme.colorScheme.onSurfaceVariant
+        }
 
-    val pinBtnContainerColor = if (hasCustomColor) {
-        if (note.pinned) onSurfaceColor.copy(alpha = 0.25f) else onSurfaceColor.copy(alpha = 0.1f)
-    } else {
-        if (note.pinned) MaterialTheme.colorScheme.primaryContainer
-        else MaterialTheme.colorScheme.surfaceContainerHigh
-    }
+    val pinBtnContainerColor =
+        if (hasCustomColor) {
+            if (note.pinned) onSurfaceColor.copy(alpha = 0.25f)
+            else onSurfaceColor.copy(alpha = 0.1f)
+        } else {
+            if (note.pinned) MaterialTheme.colorScheme.primaryContainer
+            else MaterialTheme.colorScheme.surfaceContainerHigh
+        }
 
-    val pinBtnContentColor = if (hasCustomColor) {
-        onSurfaceColor
-    } else {
-        if (note.pinned) MaterialTheme.colorScheme.onPrimaryContainer
-        else MaterialTheme.colorScheme.onSurfaceVariant
-    }
+    val pinBtnContentColor =
+        if (hasCustomColor) {
+            onSurfaceColor
+        } else {
+            if (note.pinned) MaterialTheme.colorScheme.onPrimaryContainer
+            else MaterialTheme.colorScheme.onSurfaceVariant
+        }
 
     Card(
         onClick = onClick,
@@ -103,7 +127,8 @@ fun BaseNoteCard(
             ) {
                 Text(
                     text = note.title.ifEmpty { stringResource(Res.string.untitled) },
-                    style = MaterialTheme.typography.titleMedium.copy(fontFamily = flexFontEmphasis()),
+                    style =
+                        MaterialTheme.typography.titleMedium.copy(fontFamily = flexFontEmphasis()),
                     color = onSurfaceColor,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -114,7 +139,9 @@ fun BaseNoteCard(
                     Icon(
                         imageVector = vectorResource(Res.drawable.flag),
                         contentDescription = null,
-                        tint = if (hasCustomColor) onSurfaceColor else MaterialTheme.colorScheme.primary,
+                        tint =
+                            if (hasCustomColor) onSurfaceColor
+                            else MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(18.dp).padding(start = 4.dp),
                     )
                 }
@@ -134,7 +161,10 @@ fun BaseNoteCard(
                 ) {
                     Text(
                         text = formatNoteDate(note.updatedAt),
-                        style = MaterialTheme.typography.labelSmall.copy(fontFamily = flexFontRounded()),
+                        style =
+                            MaterialTheme.typography.labelSmall.copy(
+                                fontFamily = flexFontRounded()
+                            ),
                         color = onSurfaceVariantColor.copy(alpha = 0.6f),
                     )
 
@@ -165,7 +195,9 @@ fun BaseNoteCard(
                                 Icon(
                                     imageVector = vectorResource(Res.drawable.unarchive),
                                     contentDescription = "Unarchive Note",
-                                    tint = if (hasCustomColor) onSurfaceColor else MaterialTheme.colorScheme.primary,
+                                    tint =
+                                        if (hasCustomColor) onSurfaceColor
+                                        else MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(16.dp),
                                 )
                             }
@@ -173,7 +205,9 @@ fun BaseNoteCard(
                                 Icon(
                                     imageVector = vectorResource(Res.drawable.delete),
                                     contentDescription = "Delete Note",
-                                    tint = if (hasCustomColor) onSurfaceColor else MaterialTheme.colorScheme.error,
+                                    tint =
+                                        if (hasCustomColor) onSurfaceColor
+                                        else MaterialTheme.colorScheme.error,
                                     modifier = Modifier.size(16.dp),
                                 )
                             }
@@ -199,11 +233,13 @@ fun NoteCard(
     val isDark = isSystemInDarkTheme()
     val customColor = getNoteColor(note.getColorHex(), isDark)
     val hasCustomColor = customColor != Color.Unspecified
-    val onSurfaceVariantColor = if (hasCustomColor) {
-        if (customColor.luminance() < 0.5f) Color.White.copy(alpha = 0.7f) else Color.Black.copy(alpha = 0.7f)
-    } else {
-        MaterialTheme.colorScheme.onSurfaceVariant
-    }
+    val onSurfaceVariantColor =
+        if (hasCustomColor) {
+            if (customColor.luminance() < 0.5f) Color.White.copy(alpha = 0.7f)
+            else Color.Black.copy(alpha = 0.7f)
+        } else {
+            MaterialTheme.colorScheme.onSurfaceVariant
+        }
 
     BaseNoteCard(
         note = note,

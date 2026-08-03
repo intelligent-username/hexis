@@ -1,7 +1,22 @@
+/*
+ * Copyright (C) 2025-2026 Hexis
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.loc.hexis.widgets.notes_shortcut_widget
 
-import android.appwidget.AppWidgetManager
-import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import androidx.compose.runtime.Composable
@@ -22,10 +37,10 @@ import androidx.glance.Image
 import androidx.glance.ImageProvider
 import androidx.glance.LocalContext
 import androidx.glance.LocalSize
+import androidx.glance.action.ActionParameters
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.SizeMode
-import androidx.glance.action.ActionParameters
 import androidx.glance.appwidget.action.ActionCallback
 import androidx.glance.appwidget.action.actionRunCallback
 import androidx.glance.appwidget.action.actionStartActivity
@@ -33,7 +48,6 @@ import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.lazy.LazyColumn
 import androidx.glance.appwidget.lazy.items
 import androidx.glance.appwidget.provideContent
-import androidx.glance.appwidget.updateAll
 import androidx.glance.background
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
@@ -53,7 +67,6 @@ import com.loc.hexis.R
 import com.loc.hexis.app.MainActivity
 import com.loc.hexis.core.interfaces.ThemeDatastore
 import com.loc.hexis.core.interfaces.WidgetActions
-import com.loc.hexis.core.note.CounterRow
 import com.loc.hexis.core.note.CountingTableData
 import com.loc.hexis.core.note.Note
 import com.loc.hexis.core.note.NoteRepo
@@ -80,7 +93,8 @@ private fun getNoteCardColors(note: Note, isDark: Boolean): NoteCardColors {
     return if (customColor != Color.Unspecified) {
         val isDarkBg = customColor.luminance() < 0.5f
         val textColor = if (isDarkBg) Color.White else Color.Black
-        val variantColor = if (isDarkBg) Color.White.copy(alpha = 0.7f) else Color.Black.copy(alpha = 0.7f)
+        val variantColor =
+            if (isDarkBg) Color.White.copy(alpha = 0.7f) else Color.Black.copy(alpha = 0.7f)
         NoteCardColors(
             background = ColorProvider(customColor),
             onSurface = ColorProvider(textColor),
@@ -120,21 +134,28 @@ class NotesShortcutWidget : GlanceAppWidget(), KoinComponent {
             val size = LocalSize.current
             val notes by repo.getNotesFlow().collectAsState(emptyList())
 
-            val appTheme by themeDatastore.getAppThemeFlow().collectAsState(com.loc.hexis.core.theme.AppTheme.SYSTEM)
+            val appTheme by
+                themeDatastore
+                    .getAppThemeFlow()
+                    .collectAsState(com.loc.hexis.core.theme.AppTheme.SYSTEM)
             val seedColor by themeDatastore.getSeedColorFlow().collectAsState(0xFFFFFF)
             val isAmoled by themeDatastore.getAmoledPref().collectAsState(false)
-            val paletteStyle by themeDatastore.getPaletteStyle().collectAsState(com.loc.hexis.core.theme.PaletteStyle.TONALSPOT)
+            val paletteStyle by
+                themeDatastore
+                    .getPaletteStyle()
+                    .collectAsState(com.loc.hexis.core.theme.PaletteStyle.TONALSPOT)
             val isMaterialYou by themeDatastore.getMaterialYouFlow().collectAsState(false)
 
             val isDark = appTheme == com.loc.hexis.core.theme.AppTheme.DARK || isAmoled
 
-            val colors = rememberWidgetColorProviders(
-                appTheme = appTheme,
-                seedColor = seedColor,
-                isAmoled = isAmoled,
-                paletteStyle = paletteStyle,
-                isMaterialYou = isMaterialYou,
-            )
+            val colors =
+                rememberWidgetColorProviders(
+                    appTheme = appTheme,
+                    seedColor = seedColor,
+                    isAmoled = isAmoled,
+                    paletteStyle = paletteStyle,
+                    isMaterialYou = isMaterialYou,
+                )
 
             key(size, notes) {
                 GlanceTheme(colors = colors) {
@@ -145,14 +166,19 @@ class NotesShortcutWidget : GlanceAppWidget(), KoinComponent {
                             scope.launch {
                                 val note = repo.getNoteById(noteId) ?: return@launch
                                 val tableData = note.parseCountingTable()
-                                val updatedRows = tableData.rows.map { r ->
-                                    if (r.id == rowId) {
-                                        if (isIncrement) r.copy(value = r.value + r.step)
-                                        else r.copy(value = (r.value - r.step).coerceAtLeast(0.0))
-                                    } else r
-                                }
+                                val updatedRows =
+                                    tableData.rows.map { r ->
+                                        if (r.id == rowId) {
+                                            if (isIncrement) r.copy(value = r.value + r.step)
+                                            else
+                                                r.copy(
+                                                    value = (r.value - r.step).coerceAtLeast(0.0)
+                                                )
+                                        } else r
+                                    }
                                 repo.upsertNote(
-                                    note.withCountingTable(CountingTableData(updatedRows))
+                                    note
+                                        .withCountingTable(CountingTableData(updatedRows))
                                         .copy(updatedAt = LocalDateTime.now())
                                 )
                             }
@@ -165,41 +191,47 @@ class NotesShortcutWidget : GlanceAppWidget(), KoinComponent {
 
     override suspend fun providePreview(context: Context, widgetCategory: Int) {
         val now = LocalDateTime.now()
-        val sampleNotes = listOf(
-            Note(
-                id = 1,
-                title = "Shopping List",
-                content = "# Groceries\n- Apples\n- Almond Milk\n- Whole Wheat Bread",
-                type = NoteType.MARKDOWN,
-                createdAt = now,
-                updatedAt = now,
-            ),
-            Note(
-                id = 2,
-                title = "Daily Workout Tracker",
-                type = NoteType.COUNTING_TABLE,
-                createdAt = now,
-                updatedAt = now,
-            ),
-            Note(
-                id = 3,
-                title = "Private Vault",
-                type = NoteType.VAULT,
-                createdAt = now,
-                updatedAt = now,
-            ),
-        )
+        val sampleNotes =
+            listOf(
+                Note(
+                    id = 1,
+                    title = "Shopping List",
+                    content = "# Groceries\n- Apples\n- Almond Milk\n- Whole Wheat Bread",
+                    type = NoteType.MARKDOWN,
+                    createdAt = now,
+                    updatedAt = now,
+                ),
+                Note(
+                    id = 2,
+                    title = "Daily Workout Tracker",
+                    type = NoteType.COUNTING_TABLE,
+                    createdAt = now,
+                    updatedAt = now,
+                ),
+                Note(
+                    id = 3,
+                    title = "Private Vault",
+                    type = NoteType.VAULT,
+                    createdAt = now,
+                    updatedAt = now,
+                ),
+            )
 
         provideContent {
-            val colors = rememberWidgetColorProviders(
-                appTheme = com.loc.hexis.core.theme.AppTheme.LIGHT,
-                seedColor = 0xFFFFFF,
-                isAmoled = false,
-                paletteStyle = com.loc.hexis.core.theme.PaletteStyle.TONALSPOT,
-                isMaterialYou = false,
-            )
+            val colors =
+                rememberWidgetColorProviders(
+                    appTheme = com.loc.hexis.core.theme.AppTheme.LIGHT,
+                    seedColor = 0xFFFFFF,
+                    isAmoled = false,
+                    paletteStyle = com.loc.hexis.core.theme.PaletteStyle.TONALSPOT,
+                    isMaterialYou = false,
+                )
             GlanceTheme(colors = colors) {
-                NotesWidgetContent(notes = sampleNotes, isDark = false, onCounterAction = { _, _, _ -> })
+                NotesWidgetContent(
+                    notes = sampleNotes,
+                    isDark = false,
+                    onCounterAction = { _, _, _ -> },
+                )
             }
         }
     }
@@ -214,21 +246,22 @@ private fun NotesWidgetContent(
 ) {
     val context = LocalContext.current
     val size = LocalSize.current
-    val openNotesAction = actionStartActivity(
-        Intent(context, MainActivity::class.java).apply {
-            putExtra("shortcut_action", WidgetActions.OPEN_NOTES)
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-        }
-    )
+    val openNotesAction =
+        actionStartActivity(
+            Intent(context, MainActivity::class.java).apply {
+                putExtra("shortcut_action", WidgetActions.OPEN_NOTES)
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            }
+        )
 
     val useTwoColumns = size.width >= 220.dp
 
     Column(
-        modifier = GlanceModifier
-            .fillMaxSize()
-            .background(GlanceTheme.colors.widgetBackground)
-            .clickable(openNotesAction)
-            .padding(12.dp),
+        modifier =
+            GlanceModifier.fillMaxSize()
+                .background(GlanceTheme.colors.widgetBackground)
+                .clickable(openNotesAction)
+                .padding(12.dp)
     ) {
         Row(
             modifier = GlanceModifier.fillMaxWidth().padding(bottom = 8.dp),
@@ -241,19 +274,20 @@ private fun NotesWidgetContent(
             )
             Text(
                 text = "Notes",
-                style = TextStyle(
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 15.sp,
-                    color = GlanceTheme.colors.onSurface,
-                ),
+                style =
+                    TextStyle(
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 15.sp,
+                        color = GlanceTheme.colors.onSurface,
+                    ),
             )
             Spacer(modifier = GlanceModifier.defaultWeight())
             Box(
-                modifier = GlanceModifier
-                    .cornerRadius(8.dp)
-                    .background(GlanceTheme.colors.surfaceVariant)
-                    .padding(horizontal = 4.dp, vertical = 4.dp)
-                    .clickable(actionRunCallback<RefreshNotesShortcutWidgetActionCallback>()),
+                modifier =
+                    GlanceModifier.cornerRadius(8.dp)
+                        .background(GlanceTheme.colors.surfaceVariant)
+                        .padding(horizontal = 4.dp, vertical = 4.dp)
+                        .clickable(actionRunCallback<RefreshNotesShortcutWidgetActionCallback>()),
                 contentAlignment = Alignment.Center,
             ) {
                 Image(
@@ -266,34 +300,26 @@ private fun NotesWidgetContent(
             Spacer(modifier = GlanceModifier.width(8.dp))
             Text(
                 text = "${notes.size} ${if (notes.size == 1) "note" else "notes"}",
-                style = TextStyle(
-                    fontSize = 12.sp,
-                    color = GlanceTheme.colors.outline,
-                ),
+                style = TextStyle(fontSize = 12.sp, color = GlanceTheme.colors.outline),
             )
         }
 
         if (notes.isEmpty()) {
-            Box(
-                modifier = GlanceModifier.fillMaxSize(),
-                contentAlignment = Alignment.Center,
-            ) {
+            Box(modifier = GlanceModifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
                         text = "No notes yet",
-                        style = TextStyle(
-                            fontWeight = FontWeight.Medium,
-                            fontSize = 13.sp,
-                            color = GlanceTheme.colors.onSurfaceVariant,
-                        ),
+                        style =
+                            TextStyle(
+                                fontWeight = FontWeight.Medium,
+                                fontSize = 13.sp,
+                                color = GlanceTheme.colors.onSurfaceVariant,
+                            ),
                     )
                     Spacer(modifier = GlanceModifier.height(2.dp))
                     Text(
                         text = "Tap to open Notes tab",
-                        style = TextStyle(
-                            fontSize = 11.sp,
-                            color = GlanceTheme.colors.outline,
-                        ),
+                        style = TextStyle(fontSize = 11.sp, color = GlanceTheme.colors.outline),
                     )
                 }
             }
@@ -303,24 +329,75 @@ private fun NotesWidgetContent(
 
             Row(modifier = GlanceModifier.fillMaxSize()) {
                 LazyColumn(modifier = GlanceModifier.defaultWeight()) {
-                    items(col1Notes, itemId = { note -> (note.id.toString() + "_" + note.title + "_" + note.content + "_" + note.payloadJson + "_" + note.updatedAt).hashCode().toLong() }) { note ->
-                        NoteCardItem(note = note, isDark = isDark, onCounterAction = onCounterAction)
+                    items(
+                        col1Notes,
+                        itemId = { note ->
+                            (note.id.toString() +
+                                    "_" +
+                                    note.title +
+                                    "_" +
+                                    note.content +
+                                    "_" +
+                                    note.payloadJson +
+                                    "_" +
+                                    note.updatedAt)
+                                .hashCode()
+                                .toLong()
+                        },
+                    ) { note ->
+                        NoteCardItem(
+                            note = note,
+                            isDark = isDark,
+                            onCounterAction = onCounterAction,
+                        )
                         Spacer(modifier = GlanceModifier.height(6.dp))
                     }
                 }
                 Spacer(modifier = GlanceModifier.width(8.dp))
                 LazyColumn(modifier = GlanceModifier.defaultWeight()) {
-                    items(col2Notes, itemId = { note -> (note.id.toString() + "_" + note.title + "_" + note.content + "_" + note.payloadJson + "_" + note.updatedAt).hashCode().toLong() }) { note ->
-                        NoteCardItem(note = note, isDark = isDark, onCounterAction = onCounterAction)
+                    items(
+                        col2Notes,
+                        itemId = { note ->
+                            (note.id.toString() +
+                                    "_" +
+                                    note.title +
+                                    "_" +
+                                    note.content +
+                                    "_" +
+                                    note.payloadJson +
+                                    "_" +
+                                    note.updatedAt)
+                                .hashCode()
+                                .toLong()
+                        },
+                    ) { note ->
+                        NoteCardItem(
+                            note = note,
+                            isDark = isDark,
+                            onCounterAction = onCounterAction,
+                        )
                         Spacer(modifier = GlanceModifier.height(6.dp))
                     }
                 }
             }
         } else {
-            LazyColumn(
-                modifier = GlanceModifier.fillMaxSize(),
-            ) {
-                items(notes, itemId = { note -> (note.id.toString() + "_" + note.title + "_" + note.content + "_" + note.payloadJson + "_" + note.updatedAt).hashCode().toLong() }) { note ->
+            LazyColumn(modifier = GlanceModifier.fillMaxSize()) {
+                items(
+                    notes,
+                    itemId = { note ->
+                        (note.id.toString() +
+                                "_" +
+                                note.title +
+                                "_" +
+                                note.content +
+                                "_" +
+                                note.payloadJson +
+                                "_" +
+                                note.updatedAt)
+                            .hashCode()
+                            .toLong()
+                    },
+                ) { note ->
                     NoteCardItem(note = note, isDark = isDark, onCounterAction = onCounterAction)
                     Spacer(modifier = GlanceModifier.height(6.dp))
                 }
@@ -338,13 +415,14 @@ private fun NoteCardItem(
 ) {
     val context = LocalContext.current
     val titleText = note.title.ifBlank { "Untitled Note" }
-    val openNoteAction = actionStartActivity(
-        Intent(context, MainActivity::class.java).apply {
-            putExtra("shortcut_action", WidgetActions.OPEN_NOTE)
-            putExtra("note_id", note.id)
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-        }
-    )
+    val openNoteAction =
+        actionStartActivity(
+            Intent(context, MainActivity::class.java).apply {
+                putExtra("shortcut_action", WidgetActions.OPEN_NOTE)
+                putExtra("note_id", note.id)
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            }
+        )
 
     val cardColors = getNoteCardColors(note, isDark)
 
@@ -353,11 +431,11 @@ private fun NoteCardItem(
             val tableData = note.parseCountingTable()
 
             Box(
-                modifier = GlanceModifier
-                    .fillMaxWidth()
-                    .cornerRadius(12.dp)
-                    .background(cardColors.background)
-                    .padding(10.dp),
+                modifier =
+                    GlanceModifier.fillMaxWidth()
+                        .cornerRadius(12.dp)
+                        .background(cardColors.background)
+                        .padding(10.dp)
             ) {
                 Column(modifier = GlanceModifier.fillMaxWidth()) {
                     Row(
@@ -366,11 +444,12 @@ private fun NoteCardItem(
                     ) {
                         Text(
                             text = titleText,
-                            style = TextStyle(
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 13.sp,
-                                color = cardColors.onSurface,
-                            ),
+                            style =
+                                TextStyle(
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 13.sp,
+                                    color = cardColors.onSurface,
+                                ),
                             maxLines = 1,
                             modifier = GlanceModifier.defaultWeight().clickable(openNoteAction),
                         )
@@ -381,15 +460,15 @@ private fun NoteCardItem(
                     if (tableData.rows.isEmpty()) {
                         Text(
                             text = "No counters added yet",
-                            style = TextStyle(
-                                fontSize = 11.sp,
-                                color = cardColors.onSurfaceVariant,
-                            ),
+                            style =
+                                TextStyle(fontSize = 11.sp, color = cardColors.onSurfaceVariant),
                             modifier = GlanceModifier.clickable(openNoteAction),
                         )
                     } else {
                         tableData.rows.forEachIndexed { index, row ->
-                            val valText = if (row.value % 1.0 == 0.0) row.value.toLong().toString() else row.value.toString()
+                            val valText =
+                                if (row.value % 1.0 == 0.0) row.value.toLong().toString()
+                                else row.value.toString()
                             val labelText = row.label.ifBlank { "Item ${index + 1}" }
 
                             if (index > 0) {
@@ -402,12 +481,14 @@ private fun NoteCardItem(
                             ) {
                                 Text(
                                     text = labelText,
-                                    style = TextStyle(
-                                        fontSize = 11.sp,
-                                        color = cardColors.onSurfaceVariant,
-                                    ),
+                                    style =
+                                        TextStyle(
+                                            fontSize = 11.sp,
+                                            color = cardColors.onSurfaceVariant,
+                                        ),
                                     maxLines = 1,
-                                    modifier = GlanceModifier.defaultWeight().clickable(openNoteAction),
+                                    modifier =
+                                        GlanceModifier.defaultWeight().clickable(openNoteAction),
                                 )
 
                                 Spacer(modifier = GlanceModifier.width(6.dp))
@@ -415,20 +496,23 @@ private fun NoteCardItem(
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     // Minus Button
                                     Box(
-                                        modifier = GlanceModifier
-                                            .cornerRadius(6.dp)
-                                            .background(GlanceTheme.colors.secondaryContainer)
-                                            .padding(horizontal = 8.dp, vertical = 2.dp)
-                                            .clickable { onCounterAction(note.id, row.id, false) },
+                                        modifier =
+                                            GlanceModifier.cornerRadius(6.dp)
+                                                .background(GlanceTheme.colors.secondaryContainer)
+                                                .padding(horizontal = 8.dp, vertical = 2.dp)
+                                                .clickable {
+                                                    onCounterAction(note.id, row.id, false)
+                                                },
                                         contentAlignment = Alignment.Center,
                                     ) {
                                         Text(
                                             text = "−",
-                                            style = TextStyle(
-                                                fontWeight = FontWeight.Bold,
-                                                fontSize = 12.sp,
-                                                color = GlanceTheme.colors.onSecondaryContainer,
-                                            ),
+                                            style =
+                                                TextStyle(
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontSize = 12.sp,
+                                                    color = GlanceTheme.colors.onSecondaryContainer,
+                                                ),
                                         )
                                     }
 
@@ -438,30 +522,34 @@ private fun NoteCardItem(
                                     ) {
                                         Text(
                                             text = valText,
-                                            style = TextStyle(
-                                                fontWeight = FontWeight.Bold,
-                                                fontSize = 11.sp,
-                                                color = cardColors.primary,
-                                            ),
+                                            style =
+                                                TextStyle(
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontSize = 11.sp,
+                                                    color = cardColors.primary,
+                                                ),
                                         )
                                     }
 
                                     // Plus Button
                                     Box(
-                                        modifier = GlanceModifier
-                                            .cornerRadius(6.dp)
-                                            .background(GlanceTheme.colors.primary)
-                                            .padding(horizontal = 8.dp, vertical = 2.dp)
-                                            .clickable { onCounterAction(note.id, row.id, true) },
+                                        modifier =
+                                            GlanceModifier.cornerRadius(6.dp)
+                                                .background(GlanceTheme.colors.primary)
+                                                .padding(horizontal = 8.dp, vertical = 2.dp)
+                                                .clickable {
+                                                    onCounterAction(note.id, row.id, true)
+                                                },
                                         contentAlignment = Alignment.Center,
                                     ) {
                                         Text(
                                             text = "+",
-                                            style = TextStyle(
-                                                fontWeight = FontWeight.Bold,
-                                                fontSize = 12.sp,
-                                                color = GlanceTheme.colors.onPrimary,
-                                            ),
+                                            style =
+                                                TextStyle(
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontSize = 12.sp,
+                                                    color = GlanceTheme.colors.onPrimary,
+                                                ),
                                         )
                                     }
                                 }
@@ -473,36 +561,40 @@ private fun NoteCardItem(
         }
 
         else -> {
-            val previewText = when (note.type) {
-                NoteType.MARKDOWN -> {
-                    val parsed = getContentPreview(note.content)
-                    parsed.ifBlank { "No content" }
+            val previewText =
+                when (note.type) {
+                    NoteType.MARKDOWN -> {
+                        val parsed = getContentPreview(note.content)
+                        parsed.ifBlank { "No content" }
+                    }
+                    NoteType.JOURNAL -> {
+                        val entries = note.parseJournal().entries
+                        if (entries.isEmpty()) "Journal entry"
+                        else
+                            entries.lastOrNull()?.let { "${it.mood ?: ""} ${it.text}".trim() }
+                                ?: "Journal entry"
+                    }
+                    NoteType.VAULT -> "Vault Note (Protected)"
+                    else -> ""
                 }
-                NoteType.JOURNAL -> {
-                    val entries = note.parseJournal().entries
-                    if (entries.isEmpty()) "Journal entry"
-                    else entries.lastOrNull()?.let { "${it.mood ?: ""} ${it.text}".trim() } ?: "Journal entry"
-                }
-                NoteType.VAULT -> "Vault Note (Protected)"
-                else -> ""
-            }
 
             Box(
-                modifier = GlanceModifier
-                    .fillMaxWidth()
-                    .cornerRadius(12.dp)
-                    .background(cardColors.background)
-                    .padding(10.dp)
-                    .clickable(openNoteAction),
+                modifier =
+                    GlanceModifier.fillMaxWidth()
+                        .cornerRadius(12.dp)
+                        .background(cardColors.background)
+                        .padding(10.dp)
+                        .clickable(openNoteAction)
             ) {
                 Column(modifier = GlanceModifier.fillMaxWidth()) {
                     Text(
                         text = titleText,
-                        style = TextStyle(
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 13.sp,
-                            color = cardColors.onSurface,
-                        ),
+                        style =
+                            TextStyle(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp,
+                                color = cardColors.onSurface,
+                            ),
                         maxLines = 1,
                         modifier = GlanceModifier.fillMaxWidth(),
                     )
@@ -511,10 +603,7 @@ private fun NoteCardItem(
 
                     Text(
                         text = previewText,
-                        style = TextStyle(
-                            fontSize = 11.sp,
-                            color = cardColors.onSurfaceVariant,
-                        ),
+                        style = TextStyle(fontSize = 11.sp, color = cardColors.onSurfaceVariant),
                         maxLines = 2,
                     )
                 }

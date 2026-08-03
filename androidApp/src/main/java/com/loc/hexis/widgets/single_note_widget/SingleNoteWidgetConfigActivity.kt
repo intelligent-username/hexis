@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 2025-2026 Hexis
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.loc.hexis.widgets.single_note_widget
 
 import android.app.Activity
@@ -36,6 +53,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.glance.appwidget.GlanceAppWidgetManager
+import androidx.glance.appwidget.state.updateAppWidgetState
 import androidx.lifecycle.lifecycleScope
 import com.loc.hexis.core.note.Note
 import com.loc.hexis.core.note.NoteRepo
@@ -46,7 +64,6 @@ import com.loc.hexis.shared.ui.theme.HexisTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import androidx.glance.appwidget.state.updateAppWidgetState
 import org.koin.android.ext.android.inject
 
 class SingleNoteWidgetConfigActivity : ComponentActivity() {
@@ -58,10 +75,11 @@ class SingleNoteWidgetConfigActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setResult(RESULT_CANCELED)
 
-        appWidgetId = intent?.extras?.getInt(
-            AppWidgetManager.EXTRA_APPWIDGET_ID,
-            AppWidgetManager.INVALID_APPWIDGET_ID
-        ) ?: AppWidgetManager.INVALID_APPWIDGET_ID
+        appWidgetId =
+            intent
+                ?.extras
+                ?.getInt(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID)
+                ?: AppWidgetManager.INVALID_APPWIDGET_ID
 
         if (appWidgetId == AppWidgetManager.INVALID_APPWIDGET_ID) {
             finish()
@@ -72,12 +90,8 @@ class SingleNoteWidgetConfigActivity : ComponentActivity() {
             HexisTheme(theme = Theme()) {
                 SingleNoteConfigScreen(
                     noteRepo = noteRepo,
-                    onNoteSelected = { note ->
-                        saveWidgetStateAndFinish(note.id)
-                    },
-                    onDismiss = {
-                        finish()
-                    }
+                    onNoteSelected = { note -> saveWidgetStateAndFinish(note.id) },
+                    onDismiss = { finish() },
                 )
             }
         }
@@ -94,9 +108,8 @@ class SingleNoteWidgetConfigActivity : ComponentActivity() {
             } catch (_: Exception) {}
 
             withContext(Dispatchers.Main) {
-                val resultValue = Intent().apply {
-                    putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
-                }
+                val resultValue =
+                    Intent().apply { putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId) }
                 setResult(Activity.RESULT_OK, resultValue)
                 finish()
             }
@@ -114,28 +127,19 @@ private fun SingleNoteConfigScreen(
     val eligibleNotes = notes.filter { it.type != NoteType.VAULT }
 
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.6f))
-            .clickable { onDismiss() },
+        modifier =
+            Modifier.fillMaxSize()
+                .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.6f))
+                .clickable { onDismiss() },
         contentAlignment = Alignment.Center,
     ) {
         Card(
-            modifier = Modifier
-                .fillMaxWidth(0.9f)
-                .padding(16.dp)
-                .clickable(enabled = false) {},
+            modifier = Modifier.fillMaxWidth(0.9f).padding(16.dp).clickable(enabled = false) {},
             shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface,
-            ),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(20.dp),
-            ) {
+            Column(modifier = Modifier.fillMaxWidth().padding(20.dp)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -148,11 +152,11 @@ private fun SingleNoteConfigScreen(
                         color = MaterialTheme.colorScheme.onSurface,
                     )
                     Box(
-                        modifier = Modifier
-                            .size(32.dp)
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(MaterialTheme.colorScheme.surfaceVariant)
-                            .clickable { onDismiss() },
+                        modifier =
+                            Modifier.size(32.dp)
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(MaterialTheme.colorScheme.surfaceVariant)
+                                .clickable { onDismiss() },
                         contentAlignment = Alignment.Center,
                     ) {
                         Text(
@@ -179,10 +183,7 @@ private fun SingleNoteConfigScreen(
                         contentPadding = PaddingValues(vertical = 4.dp),
                     ) {
                         items(eligibleNotes) { note ->
-                            NoteSelectorItem(
-                                note = note,
-                                onClick = { onNoteSelected(note) },
-                            )
+                            NoteSelectorItem(note = note, onClick = { onNoteSelected(note) })
                         }
                     }
                 }
@@ -192,26 +193,18 @@ private fun SingleNoteConfigScreen(
 }
 
 @Composable
-private fun NoteSelectorItem(
-    note: Note,
-    onClick: () -> Unit,
-) {
+private fun NoteSelectorItem(note: Note, onClick: () -> Unit) {
     val parsedContent = getContentPreview(note.content)
 
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() },
+        modifier = Modifier.fillMaxWidth().clickable { onClick() },
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-        ),
+        colors =
+            CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+            ),
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-        ) {
+        Column(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
             Text(
                 text = note.title.ifBlank { "Untitled Note" },
                 style = MaterialTheme.typography.bodyLarge,

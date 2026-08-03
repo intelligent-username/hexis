@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 2025-2026 Hexis
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.loc.hexis.shared.ui.habit.ui.component.stats
 
 import androidx.compose.animation.core.Animatable
@@ -45,18 +62,17 @@ import androidx.compose.ui.unit.dp
 import com.loc.hexis.core.habits.WeeklyTimePeriod
 import com.loc.hexis.core.habits.WeeklyTimePeriod.Companion.toDisplayString
 import com.loc.hexis.core.habits.WeeklyTimePeriod.Companion.toWeeks
+import com.loc.hexis.core.now
 import com.loc.hexis.shared.ui.habit.ui.component.AnalyticsCard
 import com.loc.hexis.shared.ui.habit.ui.component.NotEnoughData
 import com.loc.hexis.shared.ui.theme.flexFontRounded
 import hexis.shared.ui.generated.resources.*
 import kotlin.math.abs
-import org.jetbrains.compose.resources.stringResource
-
-import com.loc.hexis.core.now
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.isoDayNumber
 import kotlinx.datetime.minus
+import org.jetbrains.compose.resources.stringResource
 
 private fun LocalDate.weekOfYear(): Int {
     val firstDayOfYear = LocalDate(year, 1, 1)
@@ -65,11 +81,20 @@ private fun LocalDate.weekOfYear(): Int {
 }
 
 @Composable
-fun TrendLineChart(weeklyPointsHistory: List<Int>, modifier: Modifier = Modifier) {
-    var selectedTimePeriod by rememberSaveable { mutableStateOf(WeeklyTimePeriod.MONTHS_2) }
+fun TrendLineChart(
+    weeklyPointsHistory: List<Int>,
+    dailyPointsHistory: List<Int> = emptyList(),
+    modifier: Modifier = Modifier,
+) {
+    var selectedTimePeriod by rememberSaveable { mutableStateOf(WeeklyTimePeriod.DAYS_7) }
     val visibleData =
-        remember(selectedTimePeriod, weeklyPointsHistory) {
-            weeklyPointsHistory.takeLast(selectedTimePeriod.toWeeks())
+        remember(selectedTimePeriod, weeklyPointsHistory, dailyPointsHistory) {
+            if (selectedTimePeriod == WeeklyTimePeriod.DAYS_7) {
+                if (dailyPointsHistory.isNotEmpty()) dailyPointsHistory
+                else listOf(0, 0, 0, 0, 0, 0, 0)
+            } else {
+                weeklyPointsHistory.takeLast(selectedTimePeriod.toWeeks())
+            }
         }
     val maxVal =
         remember(visibleData) {
@@ -108,7 +133,7 @@ fun TrendLineChart(weeklyPointsHistory: List<Int>, modifier: Modifier = Modifier
                         },
                         shapes =
                             when (period) {
-                                WeeklyTimePeriod.MONTHS_2 ->
+                                WeeklyTimePeriod.DAYS_7 ->
                                     ButtonGroupDefaults.connectedLeadingButtonShapes()
                                 WeeklyTimePeriod.YEARS_1 ->
                                     ButtonGroupDefaults.connectedTrailingButtonShapes()
@@ -127,7 +152,7 @@ fun TrendLineChart(weeklyPointsHistory: List<Int>, modifier: Modifier = Modifier
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Tooltip: shows selected point value with week of year
+            // Tooltip: shows selected point value with week of year or day of week
             Box(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).height(28.dp),
                 contentAlignment = Alignment.CenterStart,
@@ -138,16 +163,28 @@ fun TrendLineChart(weeklyPointsHistory: List<Int>, modifier: Modifier = Modifier
                     else null
                 if (tooltipVal != null) {
                     val today = LocalDate.now()
-                    val currentWeekStart = today.minus(today.dayOfWeek.isoDayNumber - 1, DateTimeUnit.DAY)
-                    val weekDate = currentWeekStart.minus(visibleData.size - 1 - selectedIndex, DateTimeUnit.WEEK)
-                    val weekNum = weekDate.weekOfYear()
+                    val labelText =
+                        if (selectedTimePeriod == WeeklyTimePeriod.DAYS_7) {
+                            val dayDate =
+                                today.minus(visibleData.size - 1 - selectedIndex, DateTimeUnit.DAY)
+                            "$tooltipVal pts · ${dayDate.dayOfWeek.name.take(3)}"
+                        } else {
+                            val currentWeekStart =
+                                today.minus(today.dayOfWeek.isoDayNumber - 1, DateTimeUnit.DAY)
+                            val weekDate =
+                                currentWeekStart.minus(
+                                    visibleData.size - 1 - selectedIndex,
+                                    DateTimeUnit.WEEK,
+                                )
+                            "$tooltipVal pts · week ${weekDate.weekOfYear()}"
+                        }
                     Surface(
                         shape = RoundedCornerShape(8.dp),
                         color = MaterialTheme.colorScheme.surfaceContainerHigh,
                         tonalElevation = 0.dp,
                     ) {
                         Text(
-                            text = "$tooltipVal pts · week $weekNum",
+                            text = labelText,
                             style =
                                 MaterialTheme.typography.labelMedium.copy(
                                     fontFamily = flexFontRounded(),

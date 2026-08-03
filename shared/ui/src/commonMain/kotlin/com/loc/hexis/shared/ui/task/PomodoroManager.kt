@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 2025-2026 Hexis
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.loc.hexis.shared.ui.task
 
 import com.loc.hexis.core.habits.HabitRepo
@@ -10,6 +27,8 @@ import com.loc.hexis.core.tasks.PomodoroRepo
 import com.loc.hexis.core.tasks.PomodoroSession
 import com.loc.hexis.core.tasks.PomodoroSettings
 import com.loc.hexis.core.tasks.PomodoroStats
+import kotlin.math.max
+import kotlin.time.Clock
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -18,17 +37,14 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
-import kotlin.math.max
-import kotlin.time.Clock
 import org.koin.core.annotation.Provided
 import org.koin.core.annotation.Single
-
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
 
 enum class PomodoroPhase {
     FOCUS,
@@ -77,11 +93,11 @@ class PomodoroManager(
             startTickerLoop()
         }
 
-        repo.getTodayStatsFlow()
+        repo
+            .getTodayStatsFlow()
             .onEach { stats -> _state.update { it.copy(todayStats = stats) } }
             .launchIn(scope)
     }
-
 
     private suspend fun restoreAndSyncActiveSession() {
         val activeData = settingsDatastore.getActivePomodoroSessionData().first() ?: return
@@ -102,7 +118,8 @@ class PomodoroManager(
                     isRunning = true,
                     targetEndTimeMillis = activeData.targetEndTimeMillis,
                     durationSeconds = (activeData.focusMinutes * 60).toInt(),
-                    secondsRemaining = max(0, ((activeData.targetEndTimeMillis - nowMs) / 1000).toInt()),
+                    secondsRemaining =
+                        max(0, ((activeData.targetEndTimeMillis - nowMs) / 1000).toInt()),
                     currentSessionId = activeData.sessionId,
                     linkedHabitId = activeData.linkedHabitId,
                 )
@@ -118,7 +135,8 @@ class PomodoroManager(
                 val currentState = _state.value
                 if (currentState.isRunning && currentState.targetEndTimeMillis != null) {
                     val nowMs = Clock.System.now().toEpochMilliseconds()
-                    val remaining = max(0, ((currentState.targetEndTimeMillis - nowMs) / 1000).toInt())
+                    val remaining =
+                        max(0, ((currentState.targetEndTimeMillis - nowMs) / 1000).toInt())
                     _state.update { it.copy(secondsRemaining = remaining) }
                     if (nowMs >= currentState.targetEndTimeMillis) {
                         onPhaseComplete()
@@ -133,7 +151,9 @@ class PomodoroManager(
         scope.launch {
             val activeData = settingsDatastore.getActivePomodoroSessionData().first()
             if (activeData != null) {
-                settingsDatastore.setActivePomodoroSessionData(activeData.copy(linkedHabitId = linkedHabitId))
+                settingsDatastore.setActivePomodoroSessionData(
+                    activeData.copy(linkedHabitId = linkedHabitId)
+                )
             }
         }
     }
@@ -147,13 +167,14 @@ class PomodoroManager(
             val durationSec = (currentSettings.focusMinutes * 60).toInt()
             val targetEndMs = nowMs + durationSec * 1000L
 
-            val newSessionId = repo.insertSession(
-                PomodoroSession(
-                    goalDurationMinutes = currentSettings.focusMinutes,
-                    timeStarted = nw,
-                    linkedHabitId = linkedHabitId,
+            val newSessionId =
+                repo.insertSession(
+                    PomodoroSession(
+                        goalDurationMinutes = currentSettings.focusMinutes,
+                        timeStarted = nw,
+                        linkedHabitId = linkedHabitId,
+                    )
                 )
-            )
 
             settingsDatastore.setActivePomodoroSessionData(
                 ActivePomodoroSessionData(
@@ -187,12 +208,7 @@ class PomodoroManager(
         scope.launch {
             savePartialSessionIfActive(closeSession = false)
             settingsDatastore.clearActivePomodoroSessionData()
-            _state.update {
-                it.copy(
-                    isRunning = false,
-                    targetEndTimeMillis = null,
-                )
-            }
+            _state.update { it.copy(isRunning = false, targetEndTimeMillis = null) }
         }
     }
 
@@ -206,13 +222,14 @@ class PomodoroManager(
             val nw = LocalDateTime.now()
 
             if (sessionId == null && currentState.phase == PomodoroPhase.FOCUS) {
-                sessionId = repo.insertSession(
-                    PomodoroSession(
-                        goalDurationMinutes = currentState.settings.focusMinutes,
-                        timeStarted = nw,
-                        linkedHabitId = linkedHabitId ?: currentState.linkedHabitId,
+                sessionId =
+                    repo.insertSession(
+                        PomodoroSession(
+                            goalDurationMinutes = currentState.settings.focusMinutes,
+                            timeStarted = nw,
+                            linkedHabitId = linkedHabitId ?: currentState.linkedHabitId,
+                        )
                     )
-                )
             }
 
             if (currentState.phase == PomodoroPhase.FOCUS && sessionId != null) {
@@ -274,7 +291,10 @@ class PomodoroManager(
             val nextPhase: PomodoroPhase
             val nextDurationSec: Int
 
-            if (currentState.settings.longBreakInterval > 0 && currentState.currentSessionInBatch >= currentState.settings.longBreakInterval) {
+            if (
+                currentState.settings.longBreakInterval > 0 &&
+                    currentState.currentSessionInBatch >= currentState.settings.longBreakInterval
+            ) {
                 nextBatchCount = 1
                 nextPhase = PomodoroPhase.LONG_BREAK
                 nextDurationSec = (currentState.settings.longBreakMinutes * 60).toInt()
@@ -299,7 +319,9 @@ class PomodoroManager(
             }
         } else {
             val focusSec = (currentState.settings.focusMinutes * 60).toInt()
-            val resetCycles = if (currentState.phase == PomodoroPhase.LONG_BREAK) 0 else currentState.cyclesCompleted
+            val resetCycles =
+                if (currentState.phase == PomodoroPhase.LONG_BREAK) 0
+                else currentState.cyclesCompleted
             _state.update {
                 it.copy(
                     phase = PomodoroPhase.FOCUS,
@@ -330,7 +352,11 @@ class PomodoroManager(
             if (linkedHabitId != null) {
                 val habit = habitRepo.getHabitById(linkedHabitId)
                 if (habit != null) {
-                    habitRepo.incrementHabitProgress(linkedHabitId, LocalDate.now(), habit.incrementBy)
+                    habitRepo.incrementHabitProgress(
+                        linkedHabitId,
+                        LocalDate.now(),
+                        habit.incrementBy,
+                    )
                 }
             }
         }
@@ -342,11 +368,12 @@ class PomodoroManager(
             savePartialSessionIfActive(closeSession = true)
             settingsDatastore.clearActivePomodoroSessionData()
             val currentSettings = _state.value.settings
-            val durationSec = when (_state.value.phase) {
-                PomodoroPhase.FOCUS -> (currentSettings.focusMinutes * 60).toInt()
-                PomodoroPhase.SHORT_BREAK -> (currentSettings.shortBreakMinutes * 60).toInt()
-                PomodoroPhase.LONG_BREAK -> (currentSettings.longBreakMinutes * 60).toInt()
-            }
+            val durationSec =
+                when (_state.value.phase) {
+                    PomodoroPhase.FOCUS -> (currentSettings.focusMinutes * 60).toInt()
+                    PomodoroPhase.SHORT_BREAK -> (currentSettings.shortBreakMinutes * 60).toInt()
+                    PomodoroPhase.LONG_BREAK -> (currentSettings.longBreakMinutes * 60).toInt()
+                }
             _state.update {
                 it.copy(
                     isRunning = false,
@@ -381,7 +408,12 @@ class PomodoroManager(
             val nowMs = Clock.System.now().toEpochMilliseconds()
             val elapsedMinutes = max(0f, (nowMs - startMs) / 60000f)
             if (elapsedMinutes > 0.1f) {
-                repo.finishSession(id, LocalDateTime.now(), completed = false, timeCompletedMinutes = elapsedMinutes)
+                repo.finishSession(
+                    id,
+                    LocalDateTime.now(),
+                    completed = false,
+                    timeCompletedMinutes = elapsedMinutes,
+                )
             }
         }
         if (closeSession) {

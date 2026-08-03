@@ -1,11 +1,26 @@
+/*
+ * Copyright (C) 2025-2026 Hexis
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.loc.hexis.shared.ui.note.ui
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -59,35 +74,41 @@ fun CountingTableCard(
     val customColor = getNoteColor(note.getColorHex(), isDark)
     val hasCustomColor = customColor != Color.Unspecified
 
-    val onSurfaceColor = if (hasCustomColor) {
-        if (customColor.luminance() < 0.5f) Color.White else Color.Black
-    } else {
-        MaterialTheme.colorScheme.onSurface
-    }
+    val onSurfaceColor =
+        if (hasCustomColor) {
+            if (customColor.luminance() < 0.5f) Color.White else Color.Black
+        } else {
+            MaterialTheme.colorScheme.onSurface
+        }
 
-    val onSurfaceVariantColor = if (hasCustomColor) {
-        if (customColor.luminance() < 0.5f) Color.White.copy(alpha = 0.7f) else Color.Black.copy(alpha = 0.7f)
-    } else {
-        MaterialTheme.colorScheme.onSurfaceVariant
-    }
+    val onSurfaceVariantColor =
+        if (hasCustomColor) {
+            if (customColor.luminance() < 0.5f) Color.White.copy(alpha = 0.7f)
+            else Color.Black.copy(alpha = 0.7f)
+        } else {
+            MaterialTheme.colorScheme.onSurfaceVariant
+        }
 
-    val primaryColor = if (hasCustomColor) {
-        onSurfaceColor
-    } else {
-        MaterialTheme.colorScheme.primary
-    }
+    val primaryColor =
+        if (hasCustomColor) {
+            onSurfaceColor
+        } else {
+            MaterialTheme.colorScheme.primary
+        }
 
-    val dividerColor = if (hasCustomColor) {
-        onSurfaceColor.copy(alpha = 0.15f)
-    } else {
-        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
-    }
+    val dividerColor =
+        if (hasCustomColor) {
+            onSurfaceColor.copy(alpha = 0.15f)
+        } else {
+            MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
+        }
 
-    val pillColor = if (hasCustomColor) {
-        onSurfaceColor.copy(alpha = 0.15f)
-    } else {
-        MaterialTheme.colorScheme.surfaceContainerHighest
-    }
+    val pillColor =
+        if (hasCustomColor) {
+            onSurfaceColor.copy(alpha = 0.15f)
+        } else {
+            MaterialTheme.colorScheme.surfaceContainerHighest
+        }
 
     BaseNoteCard(
         note = note,
@@ -215,7 +236,9 @@ fun ScrollAndTypeCounter(
                 val formattedVal =
                     if (row.isInteger) row.value.toLong().toString() else row.value.toString()
                 Text(
-                    text = if (!row.unit.isNullOrBlank()) "$formattedVal ${row.unit}" else formattedVal,
+                    text =
+                        if (!row.unit.isNullOrBlank()) "$formattedVal ${row.unit}"
+                        else formattedVal,
                     style =
                         MaterialTheme.typography.labelSmall.copy(
                             fontFamily = flexFontRounded(),

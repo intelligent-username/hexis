@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 2025-2026 Hexis
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.loc.hexis.shared.ui.viewmodel
 
 import androidx.compose.ui.graphics.toArgb
@@ -143,7 +160,8 @@ class SettingsViewModel(
 
                 is SetVaultPasswordHash -> settingsDatastore.setVaultPasswordHash(action.hash)
 
-                is ChangeShowPomodoroPieChart -> settingsDatastore.setShowPomodoroPieChartPref(action.pref)
+                is ChangeShowPomodoroPieChart ->
+                    settingsDatastore.setShowPomodoroPieChartPref(action.pref)
             }
         }
 
@@ -263,16 +281,12 @@ class SettingsViewModel(
 
                 settingsDatastore
                     .getVaultPasswordHash()
-                    .onEach { hash ->
-                        _state.update { it.copy(vaultPasswordHash = hash) }
-                    }
+                    .onEach { hash -> _state.update { it.copy(vaultPasswordHash = hash) } }
                     .launchIn(this)
 
                 settingsDatastore
                     .getShowPomodoroPieChartPref()
-                    .onEach { show ->
-                        _state.update { it.copy(showPomodoroPieChart = show) }
-                    }
+                    .onEach { show -> _state.update { it.copy(showPomodoroPieChart = show) } }
                     .launchIn(this)
             }
     }

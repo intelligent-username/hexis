@@ -1,8 +1,35 @@
+/*
+ * Copyright (C) 2025-2026 Hexis
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.loc.hexis.shared.ui.note.ui
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,15 +46,12 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.ButtonShapes
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -47,14 +71,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.input.key.Key
-import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.key.key
-import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
-import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.PointerEventTimeoutCancellationException
 import androidx.compose.ui.input.pointer.pointerInput
@@ -67,7 +87,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.withTimeout
 import com.loc.hexis.core.note.CounterRow
 import com.loc.hexis.core.note.CountingTableData
 import com.loc.hexis.core.note.JournalEntry
@@ -76,26 +95,17 @@ import com.loc.hexis.core.note.Note
 import com.loc.hexis.core.note.NoteType
 import com.loc.hexis.core.note.VaultNote
 import com.loc.hexis.core.now
-import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.luminance
-import com.loc.hexis.shared.ui.components.ColorPickerDialog
 import com.loc.hexis.shared.ui.app.SystemBackHandler
+import com.loc.hexis.shared.ui.components.ColorPickerDialog
 import com.loc.hexis.shared.ui.components.FloatingLabelTextField
 import com.loc.hexis.shared.ui.note.getNextListPrefix
-import com.loc.hexis.shared.ui.note.removePrefix
 import com.loc.hexis.shared.ui.note.getNoteColor
 import com.loc.hexis.shared.ui.note.noteColorPresets
 import com.loc.hexis.shared.ui.note.parseColor
+import com.loc.hexis.shared.ui.note.removePrefix
 import com.loc.hexis.shared.ui.note.toHex
 import com.loc.hexis.shared.ui.theme.flexFontEmphasis
 import com.loc.hexis.shared.ui.theme.flexFontRounded
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
-import androidx.compose.foundation.BorderStroke
 import hexis.shared.ui.generated.resources.Res
 import hexis.shared.ui.generated.resources.add
 import hexis.shared.ui.generated.resources.archive
@@ -109,6 +119,7 @@ import hexis.shared.ui.generated.resources.title
 import hexis.shared.ui.generated.resources.unarchive
 import kotlin.random.Random
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withTimeout
 import kotlinx.datetime.LocalDateTime
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.resources.vectorResource
@@ -125,21 +136,25 @@ fun NoteEditorSheet(
     var title by remember(initialNoteId) { mutableStateOf(note?.title ?: "") }
     var selectedType by remember(initialNoteId) { mutableStateOf(note?.type ?: NoteType.MARKDOWN) }
 
-    var contentValue by remember(initialNoteId) {
-        mutableStateOf(
-            TextFieldValue((note?.content ?: "").replace("\r\n", "\n").replace('\r', '\n'))
-        )
-    }
+    var contentValue by
+        remember(initialNoteId) {
+            mutableStateOf(
+                TextFieldValue((note?.content ?: "").replace("\r\n", "\n").replace('\r', '\n'))
+            )
+        }
 
-    val initialTableData = remember(initialNoteId) { note?.parseCountingTable() ?: CountingTableData() }
-    val counterRows = remember(initialNoteId) {
-        mutableStateListOf<CounterRow>().apply { addAll(initialTableData.rows) }
-    }
+    val initialTableData =
+        remember(initialNoteId) { note?.parseCountingTable() ?: CountingTableData() }
+    val counterRows =
+        remember(initialNoteId) {
+            mutableStateListOf<CounterRow>().apply { addAll(initialTableData.rows) }
+        }
 
     val initialJournalData = remember(initialNoteId) { note?.parseJournal() ?: JournalNoteData() }
-    val journalEntries = remember(initialNoteId) {
-        mutableStateListOf<JournalEntry>().apply { addAll(initialJournalData.entries) }
-    }
+    val journalEntries =
+        remember(initialNoteId) {
+            mutableStateListOf<JournalEntry>().apply { addAll(initialJournalData.entries) }
+        }
 
     val initialVaultData = remember(initialNoteId) { note?.parseVault() ?: VaultNote() }
     val vaultNote = remember(initialNoteId) { mutableStateOf(initialVaultData) }
@@ -167,8 +182,12 @@ fun NoteEditorSheet(
                 .withColorHex(selectedColorHex)
 
         return when (selectedType) {
-            NoteType.COUNTING_TABLE -> baseNote.withCountingTable(CountingTableData(rows = counterRows.toList()))
-            NoteType.JOURNAL -> baseNote.copy(content = contentValue.text).withJournal(JournalNoteData(entries = journalEntries.toList()))
+            NoteType.COUNTING_TABLE ->
+                baseNote.withCountingTable(CountingTableData(rows = counterRows.toList()))
+            NoteType.JOURNAL ->
+                baseNote
+                    .copy(content = contentValue.text)
+                    .withJournal(JournalNoteData(entries = journalEntries.toList()))
             NoteType.VAULT -> baseNote.withVault(vaultNote.value)
             else -> baseNote.copy(content = contentValue.text)
         }
@@ -180,16 +199,25 @@ fun NoteEditorSheet(
     }
 
     // Auto-save debounce (1500ms)
-    LaunchedEffect(title, selectedType, contentValue.text, counterRows.toList(), journalEntries.toList(), vaultNote.value, selectedColorHex) {
+    LaunchedEffect(
+        title,
+        selectedType,
+        contentValue.text,
+        counterRows.toList(),
+        journalEntries.toList(),
+        vaultNote.value,
+        selectedColorHex,
+    ) {
         delay(1500)
         val noteToSave = buildCurrentNote()
         onSave(noteToSave)
     }
 
-    val wordCount = remember(contentValue.text) {
-        if (contentValue.text.isBlank()) 0
-        else contentValue.text.trim().split(Regex("""\s+""")).size
-    }
+    val wordCount =
+        remember(contentValue.text) {
+            if (contentValue.text.isBlank()) 0
+            else contentValue.text.trim().split(Regex("""\s+""")).size
+        }
     val charCount = remember(contentValue.text) { contentValue.text.length }
     var collapsedHeaderLines by remember { mutableStateOf(setOf<Int>()) }
     val viewConfiguration = LocalViewConfiguration.current
@@ -242,7 +270,8 @@ fun NoteEditorSheet(
             val resultText = oldText.substring(0, lineStart) + oldText.substring(lineEnd)
             TextFieldValue(resultText, TextRange(lineStart))
         } else {
-            val resultText = oldText.substring(0, oldCursor) + "\n" + prefix + oldText.substring(oldCursor)
+            val resultText =
+                oldText.substring(0, oldCursor) + "\n" + prefix + oldText.substring(oldCursor)
             val newCursor = oldCursor + 1 + prefix.length
             TextFieldValue(resultText, TextRange(newCursor))
         }
@@ -253,38 +282,40 @@ fun NoteEditorSheet(
     val editorCustomColor = getNoteColor(selectedColorHex, isDark)
     val hasEditorCustomColor = editorCustomColor != Color.Unspecified
 
-    val surfaceColor = if (hasEditorCustomColor) {
-        editorCustomColor
-    } else {
-        MaterialTheme.colorScheme.surface
-    }
+    val surfaceColor =
+        if (hasEditorCustomColor) {
+            editorCustomColor
+        } else {
+            MaterialTheme.colorScheme.surface
+        }
 
-    val onSurfaceColor = if (hasEditorCustomColor) {
-        if (editorCustomColor.luminance() < 0.5f) Color.White else Color.Black
-    } else {
-        MaterialTheme.colorScheme.onSurface
-    }
+    val onSurfaceColor =
+        if (hasEditorCustomColor) {
+            if (editorCustomColor.luminance() < 0.5f) Color.White else Color.Black
+        } else {
+            MaterialTheme.colorScheme.onSurface
+        }
 
-    val onSurfaceVariantColor = if (hasEditorCustomColor) {
-        if (editorCustomColor.luminance() < 0.5f) Color.White.copy(alpha = 0.7f) else Color.Black.copy(alpha = 0.7f)
-    } else {
-        MaterialTheme.colorScheme.onSurfaceVariant
-    }
+    val onSurfaceVariantColor =
+        if (hasEditorCustomColor) {
+            if (editorCustomColor.luminance() < 0.5f) Color.White.copy(alpha = 0.7f)
+            else Color.Black.copy(alpha = 0.7f)
+        } else {
+            MaterialTheme.colorScheme.onSurfaceVariant
+        }
 
     if (colorPickerDialog) {
-        val initialColor = selectedColorHex?.let { getNoteColor(it, isDark) } ?: MaterialTheme.colorScheme.primary
+        val initialColor =
+            selectedColorHex?.let { getNoteColor(it, isDark) } ?: MaterialTheme.colorScheme.primary
         ColorPickerDialog(
             initialColor = initialColor,
             onSelect = { color -> selectedColorHex = color.toHex() },
-            onDismiss = { colorPickerDialog = false }
+            onDismiss = { colorPickerDialog = false },
         )
     }
 
     Surface(
-        modifier =
-            Modifier.fillMaxSize()
-                .statusBarsPadding()
-                .imePadding(),
+        modifier = Modifier.fillMaxSize().statusBarsPadding().imePadding(),
         color = surfaceColor,
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
@@ -298,34 +329,42 @@ fun NoteEditorSheet(
                         text =
                             if (note == null) stringResource(Res.string.new_note)
                             else stringResource(Res.string.edit_note),
-                        style = MaterialTheme.typography.titleLarge.copy(fontFamily = flexFontEmphasis()),
+                        style =
+                            MaterialTheme.typography.titleLarge.copy(
+                                fontFamily = flexFontEmphasis()
+                            ),
                         color = onSurfaceColor,
                     )
                     when (selectedType) {
-                        NoteType.MARKDOWN -> Text(
-                            text = "$wordCount words • $charCount chars",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = onSurfaceVariantColor,
-                        )
-                        NoteType.JOURNAL -> Text(
-                            text = "${journalEntries.size} journal entries",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = onSurfaceVariantColor,
-                        )
-                        NoteType.VAULT -> Text(
-                            text = when (vaultNote.value.entries.size) {
-                                0 -> "No secrets"
-                                1 -> "1 secret"
-                                else -> "${vaultNote.value.entries.size} secrets"
-                            },
-                            style = MaterialTheme.typography.labelSmall,
-                            color = onSurfaceVariantColor,
-                        )
-                        else -> Text(
-                            text = "${counterRows.size} counter items",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = onSurfaceVariantColor,
-                        )
+                        NoteType.MARKDOWN ->
+                            Text(
+                                text = "$wordCount words • $charCount chars",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = onSurfaceVariantColor,
+                            )
+                        NoteType.JOURNAL ->
+                            Text(
+                                text = "${journalEntries.size} journal entries",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = onSurfaceVariantColor,
+                            )
+                        NoteType.VAULT ->
+                            Text(
+                                text =
+                                    when (vaultNote.value.entries.size) {
+                                        0 -> "No secrets"
+                                        1 -> "1 secret"
+                                        else -> "${vaultNote.value.entries.size} secrets"
+                                    },
+                                style = MaterialTheme.typography.labelSmall,
+                                color = onSurfaceVariantColor,
+                            )
+                        else ->
+                            Text(
+                                text = "${counterRows.size} counter items",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = onSurfaceVariantColor,
+                            )
                     }
                 }
 
@@ -336,7 +375,10 @@ fun NoteEditorSheet(
                     Icon(
                         imageVector = vectorResource(Res.drawable.palette),
                         contentDescription = "Color Theme",
-                        tint = if (showColorMenu) MaterialTheme.colorScheme.primary else if (hasEditorCustomColor) onSurfaceColor else MaterialTheme.colorScheme.onSurfaceVariant,
+                        tint =
+                            if (showColorMenu) MaterialTheme.colorScheme.primary
+                            else if (hasEditorCustomColor) onSurfaceColor
+                            else MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
 
@@ -354,8 +396,11 @@ fun NoteEditorSheet(
                                 vectorResource(
                                     if (isArchived) Res.drawable.unarchive else Res.drawable.archive
                                 ),
-                            contentDescription = if (isArchived) "Unarchive Note" else "Archive Note",
-                            tint = if (hasEditorCustomColor) onSurfaceColor else MaterialTheme.colorScheme.error,
+                            contentDescription =
+                                if (isArchived) "Unarchive Note" else "Archive Note",
+                            tint =
+                                if (hasEditorCustomColor) onSurfaceColor
+                                else MaterialTheme.colorScheme.error,
                         )
                     }
                 }
@@ -366,11 +411,12 @@ fun NoteEditorSheet(
                             val current = buildCurrentNote()
                             onSave(current)
                             val nowTime = LocalDateTime.now()
-                            val duplicate = current.copy(
-                                id = Random.nextLong(100_000_000L, 999_999_999L),
-                                createdAt = nowTime,
-                                updatedAt = nowTime,
-                            )
+                            val duplicate =
+                                current.copy(
+                                    id = Random.nextLong(100_000_000L, 999_999_999L),
+                                    createdAt = nowTime,
+                                    updatedAt = nowTime,
+                                )
                             onDuplicate(duplicate)
                         },
                         modifier = Modifier.padding(end = 4.dp),
@@ -378,7 +424,9 @@ fun NoteEditorSheet(
                         Icon(
                             imageVector = vectorResource(Res.drawable.content_copy),
                             contentDescription = "Duplicate Note",
-                            tint = if (hasEditorCustomColor) onSurfaceColor else MaterialTheme.colorScheme.onSurfaceVariant,
+                            tint =
+                                if (hasEditorCustomColor) onSurfaceColor
+                                else MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
@@ -403,11 +451,11 @@ fun NoteEditorSheet(
                 exit = fadeOut() + shrinkVertically(),
             ) {
                 Surface(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 6.dp),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),
                     shape = RoundedCornerShape(16.dp),
-                    color = if (hasEditorCustomColor) onSurfaceColor.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surfaceContainerHigh,
+                    color =
+                        if (hasEditorCustomColor) onSurfaceColor.copy(alpha = 0.1f)
+                        else MaterialTheme.colorScheme.surfaceContainerHigh,
                 ) {
                     Column(
                         modifier = Modifier.padding(12.dp),
@@ -416,7 +464,10 @@ fun NoteEditorSheet(
                     ) {
                         Text(
                             text = "Note Theme Color",
-                            style = MaterialTheme.typography.labelMedium.copy(fontFamily = flexFontEmphasis()),
+                            style =
+                                MaterialTheme.typography.labelMedium.copy(
+                                    fontFamily = flexFontEmphasis()
+                                ),
                             color = onSurfaceColor,
                             modifier = Modifier.padding(bottom = 2.dp),
                         )
@@ -428,21 +479,26 @@ fun NoteEditorSheet(
                             // Default option
                             val isDefaultSelected = selectedColorHex == null
                             Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable { selectedColorHex = null }
-                                    .padding(vertical = 4.dp, horizontal = 4.dp),
+                                modifier =
+                                    Modifier.fillMaxWidth()
+                                        .clickable { selectedColorHex = null }
+                                        .padding(vertical = 4.dp, horizontal = 4.dp),
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
                             ) {
                                 Surface(
                                     shape = CircleShape,
                                     modifier = Modifier.size(24.dp),
-                                    color = if (isDark) MaterialTheme.colorScheme.surfaceContainerHigh else MaterialTheme.colorScheme.surfaceVariant,
-                                    border = BorderStroke(
-                                        width = if (isDefaultSelected) 2.dp else 1.dp,
-                                        color = if (isDefaultSelected) onSurfaceColor else onSurfaceVariantColor.copy(alpha = 0.4f)
-                                    )
+                                    color =
+                                        if (isDark) MaterialTheme.colorScheme.surfaceContainerHigh
+                                        else MaterialTheme.colorScheme.surfaceVariant,
+                                    border =
+                                        BorderStroke(
+                                            width = if (isDefaultSelected) 2.dp else 1.dp,
+                                            color =
+                                                if (isDefaultSelected) onSurfaceColor
+                                                else onSurfaceVariantColor.copy(alpha = 0.4f),
+                                        ),
                                 ) {
                                     Box(contentAlignment = Alignment.Center) {
                                         if (isDefaultSelected) {
@@ -450,14 +506,17 @@ fun NoteEditorSheet(
                                                 imageVector = vectorResource(Res.drawable.check),
                                                 contentDescription = "Selected",
                                                 tint = onSurfaceColor,
-                                                modifier = Modifier.size(14.dp)
+                                                modifier = Modifier.size(14.dp),
                                             )
                                         }
                                     }
                                 }
                                 Text(
                                     text = "Default",
-                                    style = MaterialTheme.typography.bodyMedium.copy(fontFamily = flexFontRounded()),
+                                    style =
+                                        MaterialTheme.typography.bodyMedium.copy(
+                                            fontFamily = flexFontRounded()
+                                        ),
                                     color = onSurfaceColor,
                                 )
                             }
@@ -466,76 +525,95 @@ fun NoteEditorSheet(
                             noteColorPresets.forEach { preset ->
                                 val presetId = "preset:${preset.id}"
                                 val isPresetSelected = selectedColorHex == presetId
-                                val presetColor = parseColor(if (isDark) preset.darkHex else preset.lightHex)
+                                val presetColor =
+                                    parseColor(if (isDark) preset.darkHex else preset.lightHex)
 
                                 Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable { selectedColorHex = presetId }
-                                        .padding(vertical = 4.dp, horizontal = 4.dp),
+                                    modifier =
+                                        Modifier.fillMaxWidth()
+                                            .clickable { selectedColorHex = presetId }
+                                            .padding(vertical = 4.dp, horizontal = 4.dp),
                                     verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
                                 ) {
                                     Surface(
                                         shape = CircleShape,
                                         modifier = Modifier.size(24.dp),
                                         color = presetColor,
-                                        border = BorderStroke(
-                                            width = if (isPresetSelected) 2.dp else 1.dp,
-                                            color = if (isPresetSelected) onSurfaceColor else onSurfaceVariantColor.copy(alpha = 0.4f)
-                                        )
+                                        border =
+                                            BorderStroke(
+                                                width = if (isPresetSelected) 2.dp else 1.dp,
+                                                color =
+                                                    if (isPresetSelected) onSurfaceColor
+                                                    else onSurfaceVariantColor.copy(alpha = 0.4f),
+                                            ),
                                     ) {
                                         Box(contentAlignment = Alignment.Center) {
                                             if (isPresetSelected) {
                                                 Icon(
-                                                    imageVector = vectorResource(Res.drawable.check),
+                                                    imageVector =
+                                                        vectorResource(Res.drawable.check),
                                                     contentDescription = "Selected",
                                                     tint = onSurfaceColor,
-                                                    modifier = Modifier.size(14.dp)
+                                                    modifier = Modifier.size(14.dp),
                                                 )
                                             }
                                         }
                                     }
                                     Text(
                                         text = preset.name,
-                                        style = MaterialTheme.typography.bodyMedium.copy(fontFamily = flexFontRounded()),
+                                        style =
+                                            MaterialTheme.typography.bodyMedium.copy(
+                                                fontFamily = flexFontRounded()
+                                            ),
                                         color = onSurfaceColor,
                                     )
                                 }
                             }
 
                             // Custom color picker
-                            val isCustom = selectedColorHex != null && !selectedColorHex!!.startsWith("preset:")
-                            val customColorVal = if (isCustom) parseColor(selectedColorHex!!) else Color.Transparent
+                            val isCustom =
+                                selectedColorHex != null &&
+                                    !selectedColorHex!!.startsWith("preset:")
+                            val customColorVal =
+                                if (isCustom) parseColor(selectedColorHex!!) else Color.Transparent
                             Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable { colorPickerDialog = true }
-                                    .padding(vertical = 4.dp, horizontal = 4.dp),
+                                modifier =
+                                    Modifier.fillMaxWidth()
+                                        .clickable { colorPickerDialog = true }
+                                        .padding(vertical = 4.dp, horizontal = 4.dp),
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
                             ) {
                                 Surface(
                                     shape = CircleShape,
                                     modifier = Modifier.size(24.dp),
                                     color = if (isCustom) customColorVal else Color.Transparent,
-                                    border = BorderStroke(
-                                        width = if (isCustom) 2.dp else 1.dp,
-                                        color = if (isCustom) onSurfaceColor else onSurfaceVariantColor.copy(alpha = 0.4f)
-                                    )
+                                    border =
+                                        BorderStroke(
+                                            width = if (isCustom) 2.dp else 1.dp,
+                                            color =
+                                                if (isCustom) onSurfaceColor
+                                                else onSurfaceVariantColor.copy(alpha = 0.4f),
+                                        ),
                                 ) {
                                     Box(contentAlignment = Alignment.Center) {
                                         Icon(
                                             imageVector = vectorResource(Res.drawable.add),
                                             contentDescription = "Custom Color",
-                                            tint = if (isCustom) onSurfaceColor else onSurfaceVariantColor,
-                                            modifier = Modifier.size(14.dp)
+                                            tint =
+                                                if (isCustom) onSurfaceColor
+                                                else onSurfaceVariantColor,
+                                            modifier = Modifier.size(14.dp),
                                         )
                                     }
                                 }
                                 Text(
                                     text = "Custom color...",
-                                    style = MaterialTheme.typography.bodyMedium.copy(fontFamily = flexFontRounded()),
+                                    style =
+                                        MaterialTheme.typography.bodyMedium.copy(
+                                            fontFamily = flexFontRounded()
+                                        ),
                                     color = onSurfaceColor,
                                 )
                             }
@@ -543,8 +621,6 @@ fun NoteEditorSheet(
                     }
                 }
             }
-
-
 
             // Title Input (omitted for JOURNAL as JournalEditor renders its own centered header)
             if (selectedType != NoteType.JOURNAL) {
@@ -554,13 +630,18 @@ fun NoteEditorSheet(
                     placeholder = {
                         Text(
                             stringResource(Res.string.title),
-                            style = MaterialTheme.typography.titleMedium.copy(fontFamily = flexFontEmphasis()),
+                            style =
+                                MaterialTheme.typography.titleMedium.copy(
+                                    fontFamily = flexFontEmphasis()
+                                ),
                         )
                     },
                     singleLine = true,
-                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words),
+                    keyboardOptions =
+                        KeyboardOptions(capitalization = KeyboardCapitalization.Words),
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                    textStyle = MaterialTheme.typography.titleMedium.copy(fontFamily = flexFontEmphasis()),
+                    textStyle =
+                        MaterialTheme.typography.titleMedium.copy(fontFamily = flexFontEmphasis()),
                     shape = RoundedCornerShape(16.dp),
                     colors =
                         OutlinedTextFieldDefaults.colors(
@@ -568,8 +649,12 @@ fun NoteEditorSheet(
                             unfocusedTextColor = onSurfaceColor,
                             focusedPlaceholderColor = onSurfaceVariantColor,
                             unfocusedPlaceholderColor = onSurfaceVariantColor,
-                            focusedBorderColor = if (hasEditorCustomColor) onSurfaceColor else MaterialTheme.colorScheme.primary,
-                            unfocusedBorderColor = if (hasEditorCustomColor) onSurfaceVariantColor.copy(alpha = 0.3f) else MaterialTheme.colorScheme.outlineVariant,
+                            focusedBorderColor =
+                                if (hasEditorCustomColor) onSurfaceColor
+                                else MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor =
+                                if (hasEditorCustomColor) onSurfaceVariantColor.copy(alpha = 0.3f)
+                                else MaterialTheme.colorScheme.outlineVariant,
                         ),
                 )
 
@@ -577,7 +662,9 @@ fun NoteEditorSheet(
             }
 
             if (selectedType == NoteType.MARKDOWN) {
-                val ruleLineColor = if (hasEditorCustomColor) onSurfaceColor.copy(alpha = 0.3f) else MaterialTheme.colorScheme.primaryContainer
+                val ruleLineColor =
+                    if (hasEditorCustomColor) onSurfaceColor.copy(alpha = 0.3f)
+                    else MaterialTheme.colorScheme.primaryContainer
 
                 // Main Markdown Field with Scroll Room & Tap-to-Focus Container
                 Column(
@@ -595,30 +682,44 @@ fun NoteEditorSheet(
                                         contentValue = TextFieldValue("", TextRange(0))
                                     }
                                 },
-                            ),
+                            )
                 ) {
                     OutlinedTextField(
                         value = contentValue,
                         onValueChange = { newValue ->
-                            val cleanValue = if (newValue.text.contains('\r')) {
-                                val cleanText = newValue.text.replace("\r\n", "\n").replace('\r', '\n')
-                                val cursorOffset =
-                                    newValue.text
-                                        .substring(0, newValue.selection.start.coerceAtMost(newValue.text.length))
-                                        .count { it == '\r' }
-                                val newCursor = (newValue.selection.start - cursorOffset).coerceIn(0, cleanText.length)
-                                TextFieldValue(cleanText, TextRange(newCursor))
-                            } else {
-                                newValue
-                            }
+                            val cleanValue =
+                                if (newValue.text.contains('\r')) {
+                                    val cleanText =
+                                        newValue.text.replace("\r\n", "\n").replace('\r', '\n')
+                                    val cursorOffset =
+                                        newValue.text
+                                            .substring(
+                                                0,
+                                                newValue.selection.start.coerceAtMost(
+                                                    newValue.text.length
+                                                ),
+                                            )
+                                            .count { it == '\r' }
+                                    val newCursor =
+                                        (newValue.selection.start - cursorOffset).coerceIn(
+                                            0,
+                                            cleanText.length,
+                                        )
+                                    TextFieldValue(cleanText, TextRange(newCursor))
+                                } else {
+                                    newValue
+                                }
 
                             val processed = handleListEnter(contentValue, cleanValue)
                             contentValue = processed ?: cleanValue
                         },
-                        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
+                        keyboardOptions =
+                            KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                         visualTransformation =
                             NoteVisualTransformation(
-                                primaryColor = if (hasEditorCustomColor) onSurfaceColor else MaterialTheme.colorScheme.primary,
+                                primaryColor =
+                                    if (hasEditorCustomColor) onSurfaceColor
+                                    else MaterialTheme.colorScheme.primary,
                                 mutedColor = onSurfaceVariantColor,
                                 ruleColor = ruleLineColor,
                                 collapsedLineIndices = collapsedHeaderLines,
@@ -626,7 +727,11 @@ fun NoteEditorSheet(
                         placeholder = {
                             Text("Start writing\u2026", style = MaterialTheme.typography.bodyLarge)
                         },
-                        textStyle = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp, lineHeight = 24.sp),
+                        textStyle =
+                            MaterialTheme.typography.bodyLarge.copy(
+                                fontSize = 16.sp,
+                                lineHeight = 24.sp,
+                            ),
                         modifier =
                             Modifier.fillMaxWidth()
                                 .focusRequester(contentFocusRequester)
@@ -636,7 +741,9 @@ fun NoteEditorSheet(
                                         var isLongPress = false
                                         try {
                                             withTimeout(viewConfiguration.longPressTimeoutMillis) {
-                                                waitForUpOrCancellation(pass = PointerEventPass.Initial)
+                                                waitForUpOrCancellation(
+                                                    pass = PointerEventPass.Initial
+                                                )
                                             }
                                         } catch (_: PointerEventTimeoutCancellationException) {
                                             isLongPress = true
@@ -644,11 +751,20 @@ fun NoteEditorSheet(
                                         if (isLongPress) {
                                             val linePx = with(density) { 24.sp.toPx() }
                                             val lines = contentValue.text.lines()
-                                            val lineIndex = (down.position.y / linePx).toInt().coerceIn(0, (lines.size - 1).coerceAtLeast(0))
-                                            val lineText = lines.getOrNull(lineIndex)?.trimStart() ?: ""
-                                            if (lineText.startsWith("# ") || lineText.startsWith("## ") || lineText.startsWith("### ")) {
+                                            val lineIndex =
+                                                (down.position.y / linePx)
+                                                    .toInt()
+                                                    .coerceIn(0, (lines.size - 1).coerceAtLeast(0))
+                                            val lineText =
+                                                lines.getOrNull(lineIndex)?.trimStart() ?: ""
+                                            if (
+                                                lineText.startsWith("# ") ||
+                                                    lineText.startsWith("## ") ||
+                                                    lineText.startsWith("### ")
+                                            ) {
                                                 collapsedHeaderLines =
-                                                    if (lineIndex in collapsedHeaderLines) collapsedHeaderLines - lineIndex
+                                                    if (lineIndex in collapsedHeaderLines)
+                                                        collapsedHeaderLines - lineIndex
                                                     else collapsedHeaderLines + lineIndex
                                             }
                                         }
@@ -661,8 +777,13 @@ fun NoteEditorSheet(
                                 unfocusedTextColor = onSurfaceColor,
                                 focusedPlaceholderColor = onSurfaceVariantColor,
                                 unfocusedPlaceholderColor = onSurfaceVariantColor,
-                                focusedBorderColor = if (hasEditorCustomColor) onSurfaceColor else MaterialTheme.colorScheme.primary,
-                                unfocusedBorderColor = if (hasEditorCustomColor) onSurfaceVariantColor.copy(alpha = 0.3f) else MaterialTheme.colorScheme.outlineVariant,
+                                focusedBorderColor =
+                                    if (hasEditorCustomColor) onSurfaceColor
+                                    else MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor =
+                                    if (hasEditorCustomColor)
+                                        onSurfaceVariantColor.copy(alpha = 0.3f)
+                                    else MaterialTheme.colorScheme.outlineVariant,
                             ),
                     )
 
@@ -680,7 +801,9 @@ fun NoteEditorSheet(
                     shadowElevation = 2.dp,
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp).horizontalScroll(rememberScrollState()),
+                        modifier =
+                            Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                                .horizontalScroll(rememberScrollState()),
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
@@ -688,11 +811,8 @@ fun NoteEditorSheet(
                         val currentCursor = contentValue.selection.start
                         val currentLine = getCurrentLine(currentText, currentCursor)
 
-                        listOf(
-                            "H1" to "# ",
-                            "H2" to "## ",
-                            "H3" to "### ",
-                        ).forEach { (label, prefix) ->
+                        listOf("H1" to "# ", "H2" to "## ", "H3" to "### ").forEach {
+                            (label, prefix) ->
                             val isActive = currentLine.startsWith(prefix)
                             FilledTonalButton(
                                 onClick = { toggleFormat(prefix) },
@@ -706,42 +826,58 @@ fun NoteEditorSheet(
                                         )
                                     else
                                         ButtonDefaults.filledTonalButtonColors(
-                                            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                                            containerColor =
+                                                MaterialTheme.colorScheme.surfaceContainerHighest,
                                             contentColor = MaterialTheme.colorScheme.onSurface,
                                         ),
                                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
                             ) {
                                 Text(
                                     text = label,
-                                    style = MaterialTheme.typography.labelMedium.copy(fontFamily = flexFontRounded()),
+                                    style =
+                                        MaterialTheme.typography.labelMedium.copy(
+                                            fontFamily = flexFontRounded()
+                                        ),
                                 )
                             }
                         }
 
-                        val allHeaderIndices = remember(currentText) {
-                            currentText.lines().mapIndexedNotNull { idx, line ->
-                                val trimmed = line.trimStart()
-                                if (trimmed.startsWith("# ") || trimmed.startsWith("## ") || trimmed.startsWith("### ")) idx else null
+                        val allHeaderIndices =
+                            remember(currentText) {
+                                currentText.lines().mapIndexedNotNull { idx, line ->
+                                    val trimmed = line.trimStart()
+                                    if (
+                                        trimmed.startsWith("# ") ||
+                                            trimmed.startsWith("## ") ||
+                                            trimmed.startsWith("### ")
+                                    )
+                                        idx
+                                    else null
+                                }
                             }
-                        }
                         if (allHeaderIndices.isNotEmpty()) {
                             val isAnyCollapsed = collapsedHeaderLines.isNotEmpty()
                             FilledTonalButton(
                                 onClick = {
-                                    collapsedHeaderLines = if (isAnyCollapsed) emptySet() else allHeaderIndices.toSet()
+                                    collapsedHeaderLines =
+                                        if (isAnyCollapsed) emptySet() else allHeaderIndices.toSet()
                                 },
                                 modifier = Modifier.height(34.dp),
                                 shape = CircleShape,
                                 colors =
                                     ButtonDefaults.filledTonalButtonColors(
-                                        containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                                        containerColor =
+                                            MaterialTheme.colorScheme.surfaceContainerHighest,
                                         contentColor = MaterialTheme.colorScheme.onSurface,
                                     ),
                                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
                             ) {
                                 Text(
                                     text = if (isAnyCollapsed) "Expand All" else "Collapse All",
-                                    style = MaterialTheme.typography.labelMedium.copy(fontFamily = flexFontRounded()),
+                                    style =
+                                        MaterialTheme.typography.labelMedium.copy(
+                                            fontFamily = flexFontRounded()
+                                        ),
                                 )
                             }
                         }
@@ -750,35 +886,43 @@ fun NoteEditorSheet(
                             onClick = {
                                 val text = contentValue.text
                                 val cursor = contentValue.selection.start
-                                val newText = text.substring(0, cursor) + "---\n" + text.substring(cursor)
+                                val newText =
+                                    text.substring(0, cursor) + "---\n" + text.substring(cursor)
                                 contentValue = TextFieldValue(newText, TextRange(cursor + 4))
                             },
                             modifier = Modifier.height(34.dp),
                             shape = CircleShape,
                             colors =
                                 ButtonDefaults.filledTonalButtonColors(
-                                    containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                                    containerColor =
+                                        MaterialTheme.colorScheme.surfaceContainerHighest,
                                     contentColor = MaterialTheme.colorScheme.onSurface,
                                 ),
                             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
                         ) {
                             Text(
                                 text = "\u2501\u2501\u2501\u2501\u2501\u2501",
-                                style = MaterialTheme.typography.labelMedium.copy(fontFamily = flexFontRounded()),
+                                style =
+                                    MaterialTheme.typography.labelMedium.copy(
+                                        fontFamily = flexFontRounded()
+                                    ),
                             )
                         }
                     }
                 }
             } else if (selectedType == NoteType.JOURNAL) {
-                val tempNote = remember(journalEntries.toList(), title, selectedColorHex) {
-                    Note(
-                        id = currentNoteId,
-                        title = title,
-                        createdAt = LocalDateTime.now(),
-                        updatedAt = LocalDateTime.now(),
-                        type = NoteType.JOURNAL
-                    ).withJournal(JournalNoteData(entries = journalEntries.toList())).withColorHex(selectedColorHex)
-                }
+                val tempNote =
+                    remember(journalEntries.toList(), title, selectedColorHex) {
+                        Note(
+                                id = currentNoteId,
+                                title = title,
+                                createdAt = LocalDateTime.now(),
+                                updatedAt = LocalDateTime.now(),
+                                type = NoteType.JOURNAL,
+                            )
+                            .withJournal(JournalNoteData(entries = journalEntries.toList()))
+                            .withColorHex(selectedColorHex)
+                    }
                 Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
                     JournalEditor(
                         note = tempNote,
@@ -797,21 +941,22 @@ fun NoteEditorSheet(
                     )
                 }
             } else if (selectedType == NoteType.VAULT) {
-                val tempVaultNote = remember(vaultNote.value, title, selectedColorHex) {
-                    Note(
-                        id = currentNoteId,
-                        title = title,
-                        createdAt = LocalDateTime.now(),
-                        updatedAt = LocalDateTime.now(),
-                        type = NoteType.VAULT
-                    ).withVault(vaultNote.value).withColorHex(selectedColorHex)
-                }
+                val tempVaultNote =
+                    remember(vaultNote.value, title, selectedColorHex) {
+                        Note(
+                                id = currentNoteId,
+                                title = title,
+                                createdAt = LocalDateTime.now(),
+                                updatedAt = LocalDateTime.now(),
+                                type = NoteType.VAULT,
+                            )
+                            .withVault(vaultNote.value)
+                            .withColorHex(selectedColorHex)
+                    }
                 Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
                     VaultEditor(
                         note = tempVaultNote,
-                        onSave = { updatedNote ->
-                            vaultNote.value = updatedNote.parseVault()
-                        },
+                        onSave = { updatedNote -> vaultNote.value = updatedNote.parseVault() },
                         onSurfaceColor = onSurfaceColor,
                         onSurfaceVariantColor = onSurfaceVariantColor,
                         hasEditorCustomColor = hasEditorCustomColor,
@@ -827,22 +972,27 @@ fun NoteEditorSheet(
                     ) {
                         Text(
                             text = "Counters",
-                            style = MaterialTheme.typography.titleMedium.copy(fontFamily = flexFontEmphasis()),
+                            style =
+                                MaterialTheme.typography.titleMedium.copy(
+                                    fontFamily = flexFontEmphasis()
+                                ),
                             color = onSurfaceColor,
                         )
                         FilledTonalButton(
                             onClick = {
-                                val newId = "row_${Random.nextLong(100_000, 999_999)}_${counterRows.size}"
+                                val newId =
+                                    "row_${Random.nextLong(100_000, 999_999)}_${counterRows.size}"
                                 counterRows.add(CounterRow(id = newId, label = ""))
                             },
-                            colors = if (hasEditorCustomColor) {
-                                ButtonDefaults.filledTonalButtonColors(
-                                    containerColor = onSurfaceColor.copy(alpha = 0.15f),
-                                    contentColor = onSurfaceColor,
-                                )
-                            } else {
-                                ButtonDefaults.filledTonalButtonColors()
-                            },
+                            colors =
+                                if (hasEditorCustomColor) {
+                                    ButtonDefaults.filledTonalButtonColors(
+                                        containerColor = onSurfaceColor.copy(alpha = 0.15f),
+                                        contentColor = onSurfaceColor,
+                                    )
+                                } else {
+                                    ButtonDefaults.filledTonalButtonColors()
+                                },
                             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
                         ) {
                             Icon(
@@ -850,7 +1000,11 @@ fun NoteEditorSheet(
                                 contentDescription = "Add Row",
                                 modifier = Modifier.size(16.dp),
                             )
-                            Text("Add Item", modifier = Modifier.padding(start = 4.dp), fontFamily = flexFontRounded())
+                            Text(
+                                "Add Item",
+                                modifier = Modifier.padding(start = 4.dp),
+                                fontFamily = flexFontRounded(),
+                            )
                         }
                     }
 
@@ -862,11 +1016,12 @@ fun NoteEditorSheet(
                         items(counterRows, key = { it.id }) { row ->
                             Surface(
                                 shape = RoundedCornerShape(14.dp),
-                                color = if (hasEditorCustomColor) {
-                                    onSurfaceColor.copy(alpha = 0.08f)
-                                } else {
-                                    MaterialTheme.colorScheme.surfaceContainerHigh
-                                },
+                                color =
+                                    if (hasEditorCustomColor) {
+                                        onSurfaceColor.copy(alpha = 0.08f)
+                                    } else {
+                                        MaterialTheme.colorScheme.surfaceContainerHigh
+                                    },
                                 modifier = Modifier.fillMaxWidth(),
                             ) {
                                 Column(modifier = Modifier.padding(12.dp)) {
@@ -877,23 +1032,39 @@ fun NoteEditorSheet(
                                         FloatingLabelTextField(
                                             value = row.label,
                                             onValueChange = { newLabel ->
-                                                val targetIdx = counterRows.indexOfFirst { it.id == row.id }
+                                                val targetIdx =
+                                                    counterRows.indexOfFirst { it.id == row.id }
                                                 if (targetIdx != -1) {
-                                                    counterRows[targetIdx] = counterRows[targetIdx].copy(label = newLabel)
+                                                    counterRows[targetIdx] =
+                                                        counterRows[targetIdx].copy(
+                                                            label = newLabel
+                                                        )
                                                 }
                                             },
                                             labelText = "Label",
                                             placeholderText = "e.g. Water Glass",
                                             singleLine = true,
-                                            keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words),
-                                            colors = OutlinedTextFieldDefaults.colors(
-                                                focusedTextColor = onSurfaceColor,
-                                                unfocusedTextColor = onSurfaceColor,
-                                                focusedLabelColor = if (hasEditorCustomColor) onSurfaceColor else MaterialTheme.colorScheme.primary,
-                                                unfocusedLabelColor = onSurfaceVariantColor,
-                                                focusedBorderColor = if (hasEditorCustomColor) onSurfaceColor else MaterialTheme.colorScheme.primary,
-                                                unfocusedBorderColor = if (hasEditorCustomColor) onSurfaceVariantColor.copy(alpha = 0.3f) else MaterialTheme.colorScheme.outlineVariant,
-                                            ),
+                                            keyboardOptions =
+                                                KeyboardOptions(
+                                                    capitalization = KeyboardCapitalization.Words
+                                                ),
+                                            colors =
+                                                OutlinedTextFieldDefaults.colors(
+                                                    focusedTextColor = onSurfaceColor,
+                                                    unfocusedTextColor = onSurfaceColor,
+                                                    focusedLabelColor =
+                                                        if (hasEditorCustomColor) onSurfaceColor
+                                                        else MaterialTheme.colorScheme.primary,
+                                                    unfocusedLabelColor = onSurfaceVariantColor,
+                                                    focusedBorderColor =
+                                                        if (hasEditorCustomColor) onSurfaceColor
+                                                        else MaterialTheme.colorScheme.primary,
+                                                    unfocusedBorderColor =
+                                                        if (hasEditorCustomColor)
+                                                            onSurfaceVariantColor.copy(alpha = 0.3f)
+                                                        else
+                                                            MaterialTheme.colorScheme.outlineVariant,
+                                                ),
                                             modifier = Modifier.weight(1f),
                                         )
 
@@ -904,7 +1075,9 @@ fun NoteEditorSheet(
                                             Icon(
                                                 imageVector = vectorResource(Res.drawable.close),
                                                 contentDescription = "Delete Row",
-                                                tint = if (hasEditorCustomColor) onSurfaceColor else MaterialTheme.colorScheme.error,
+                                                tint =
+                                                    if (hasEditorCustomColor) onSurfaceColor
+                                                    else MaterialTheme.colorScheme.error,
                                             )
                                         }
                                     }
@@ -921,77 +1094,151 @@ fun NoteEditorSheet(
                                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                                         ) {
                                             FloatingLabelTextField(
-                                                value = if (row.value == 0.0) "" else if (row.isInteger) row.value.toLong().toString() else row.value.toString(),
+                                                value =
+                                                    if (row.value == 0.0) ""
+                                                    else if (row.isInteger)
+                                                        row.value.toLong().toString()
+                                                    else row.value.toString(),
                                                 onValueChange = { valStr ->
                                                     val parsed = valStr.toDoubleOrNull() ?: 0.0
-                                                    val targetIdx = counterRows.indexOfFirst { it.id == row.id }
+                                                    val targetIdx =
+                                                        counterRows.indexOfFirst { it.id == row.id }
                                                     if (targetIdx != -1) {
-                                                        counterRows[targetIdx] = counterRows[targetIdx].copy(value = parsed)
+                                                        counterRows[targetIdx] =
+                                                            counterRows[targetIdx].copy(
+                                                                value = parsed
+                                                            )
                                                     }
                                                 },
                                                 labelText = "Value",
                                                 singleLine = true,
-                                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                                colors = OutlinedTextFieldDefaults.colors(
-                                                    focusedTextColor = onSurfaceColor,
-                                                    unfocusedTextColor = onSurfaceColor,
-                                                    focusedLabelColor = if (hasEditorCustomColor) onSurfaceColor else MaterialTheme.colorScheme.primary,
-                                                    unfocusedLabelColor = onSurfaceVariantColor,
-                                                    focusedBorderColor = if (hasEditorCustomColor) onSurfaceColor else MaterialTheme.colorScheme.primary,
-                                                    unfocusedBorderColor = if (hasEditorCustomColor) onSurfaceVariantColor.copy(alpha = 0.3f) else MaterialTheme.colorScheme.outlineVariant,
-                                                ),
+                                                keyboardOptions =
+                                                    KeyboardOptions(
+                                                        keyboardType = KeyboardType.Number
+                                                    ),
+                                                colors =
+                                                    OutlinedTextFieldDefaults.colors(
+                                                        focusedTextColor = onSurfaceColor,
+                                                        unfocusedTextColor = onSurfaceColor,
+                                                        focusedLabelColor =
+                                                            if (hasEditorCustomColor) onSurfaceColor
+                                                            else MaterialTheme.colorScheme.primary,
+                                                        unfocusedLabelColor = onSurfaceVariantColor,
+                                                        focusedBorderColor =
+                                                            if (hasEditorCustomColor) onSurfaceColor
+                                                            else MaterialTheme.colorScheme.primary,
+                                                        unfocusedBorderColor =
+                                                            if (hasEditorCustomColor)
+                                                                onSurfaceVariantColor.copy(
+                                                                    alpha = 0.3f
+                                                                )
+                                                            else
+                                                                MaterialTheme.colorScheme
+                                                                    .outlineVariant,
+                                                    ),
                                                 modifier = Modifier.weight(1f),
                                             )
 
                                             FloatingLabelTextField(
                                                 value = row.unit ?: "",
                                                 onValueChange = { u ->
-                                                    val targetIdx = counterRows.indexOfFirst { it.id == row.id }
+                                                    val targetIdx =
+                                                        counterRows.indexOfFirst { it.id == row.id }
                                                     if (targetIdx != -1) {
-                                                        counterRows[targetIdx] = counterRows[targetIdx].copy(unit = u.ifBlank { null })
+                                                        counterRows[targetIdx] =
+                                                            counterRows[targetIdx].copy(
+                                                                unit = u.ifBlank { null }
+                                                            )
                                                     }
                                                 },
                                                 labelText = "Unit",
                                                 singleLine = true,
-                                                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words),
-                                                colors = OutlinedTextFieldDefaults.colors(
-                                                    focusedTextColor = onSurfaceColor,
-                                                    unfocusedTextColor = onSurfaceColor,
-                                                    focusedLabelColor = if (hasEditorCustomColor) onSurfaceColor else MaterialTheme.colorScheme.primary,
-                                                    unfocusedLabelColor = onSurfaceVariantColor,
-                                                    focusedBorderColor = if (hasEditorCustomColor) onSurfaceColor else MaterialTheme.colorScheme.primary,
-                                                    unfocusedBorderColor = if (hasEditorCustomColor) onSurfaceVariantColor.copy(alpha = 0.3f) else MaterialTheme.colorScheme.outlineVariant,
-                                                ),
+                                                keyboardOptions =
+                                                    KeyboardOptions(
+                                                        capitalization =
+                                                            KeyboardCapitalization.Words
+                                                    ),
+                                                colors =
+                                                    OutlinedTextFieldDefaults.colors(
+                                                        focusedTextColor = onSurfaceColor,
+                                                        unfocusedTextColor = onSurfaceColor,
+                                                        focusedLabelColor =
+                                                            if (hasEditorCustomColor) onSurfaceColor
+                                                            else MaterialTheme.colorScheme.primary,
+                                                        unfocusedLabelColor = onSurfaceVariantColor,
+                                                        focusedBorderColor =
+                                                            if (hasEditorCustomColor) onSurfaceColor
+                                                            else MaterialTheme.colorScheme.primary,
+                                                        unfocusedBorderColor =
+                                                            if (hasEditorCustomColor)
+                                                                onSurfaceVariantColor.copy(
+                                                                    alpha = 0.3f
+                                                                )
+                                                            else
+                                                                MaterialTheme.colorScheme
+                                                                    .outlineVariant,
+                                                    ),
                                                 modifier = Modifier.weight(1f),
                                             )
                                         }
 
-                                        // Step field: fixed width, raw text state so mid-type chars don't get erased
-                                        val stepText = remember(row.id) {
-                                            mutableStateOf(if (row.step == 1.0) "" else if (row.step % 1.0 == 0.0) row.step.toLong().toString() else row.step.toString())
-                                        }
+                                        // Step field: fixed width, raw text state so mid-type chars
+                                        // don't get erased
+                                        val stepText =
+                                            remember(row.id) {
+                                                mutableStateOf(
+                                                    if (row.step == 1.0) ""
+                                                    else if (row.step % 1.0 == 0.0)
+                                                        row.step.toLong().toString()
+                                                    else row.step.toString()
+                                                )
+                                            }
                                         OutlinedTextField(
                                             value = stepText.value,
                                             onValueChange = { raw ->
                                                 stepText.value = raw
                                                 val parsed = raw.toDoubleOrNull()
-                                                val targetIdx = counterRows.indexOfFirst { it.id == row.id }
-                                                if (targetIdx != -1 && parsed != null && parsed > 0) {
-                                                    counterRows[targetIdx] = counterRows[targetIdx].copy(step = parsed)
+                                                val targetIdx =
+                                                    counterRows.indexOfFirst { it.id == row.id }
+                                                if (
+                                                    targetIdx != -1 && parsed != null && parsed > 0
+                                                ) {
+                                                    counterRows[targetIdx] =
+                                                        counterRows[targetIdx].copy(step = parsed)
                                                 }
                                             },
-                                            label = { Text("Step", style = MaterialTheme.typography.labelSmall) },
-                                            placeholder = { Text("1", style = MaterialTheme.typography.labelSmall) },
+                                            label = {
+                                                Text(
+                                                    "Step",
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                )
+                                            },
+                                            placeholder = {
+                                                Text(
+                                                    "1",
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                )
+                                            },
                                             singleLine = true,
-                                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                            colors = OutlinedTextFieldDefaults.colors(
-                                                focusedTextColor = onSurfaceColor,
-                                                unfocusedTextColor = onSurfaceColor,
-                                                focusedLabelColor = if (hasEditorCustomColor) onSurfaceColor else MaterialTheme.colorScheme.primary,
-                                                unfocusedLabelColor = onSurfaceVariantColor,
-                                                focusedBorderColor = if (hasEditorCustomColor) onSurfaceColor else MaterialTheme.colorScheme.primary,
-                                                unfocusedBorderColor = if (hasEditorCustomColor) onSurfaceVariantColor.copy(alpha = 0.3f) else MaterialTheme.colorScheme.outlineVariant,
-                                            ),
+                                            keyboardOptions =
+                                                KeyboardOptions(keyboardType = KeyboardType.Number),
+                                            colors =
+                                                OutlinedTextFieldDefaults.colors(
+                                                    focusedTextColor = onSurfaceColor,
+                                                    unfocusedTextColor = onSurfaceColor,
+                                                    focusedLabelColor =
+                                                        if (hasEditorCustomColor) onSurfaceColor
+                                                        else MaterialTheme.colorScheme.primary,
+                                                    unfocusedLabelColor = onSurfaceVariantColor,
+                                                    focusedBorderColor =
+                                                        if (hasEditorCustomColor) onSurfaceColor
+                                                        else MaterialTheme.colorScheme.primary,
+                                                    unfocusedBorderColor =
+                                                        if (hasEditorCustomColor)
+                                                            onSurfaceVariantColor.copy(alpha = 0.3f)
+                                                        else
+                                                            MaterialTheme.colorScheme.outlineVariant,
+                                                ),
                                             shape = RoundedCornerShape(10.dp),
                                             textStyle = MaterialTheme.typography.bodySmall,
                                             modifier = Modifier.width(72.dp),

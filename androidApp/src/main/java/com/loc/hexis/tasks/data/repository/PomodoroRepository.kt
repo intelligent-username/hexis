@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 2025-2026 Hexis
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.loc.hexis.tasks.data.repository
 
 import com.loc.hexis.core.now
@@ -39,7 +56,8 @@ class PomodoroRepository(private val pomodoroDao: PomodoroDao) : PomodoroRepo {
             val sessions = pomodoroDao.getAll().filter { it.timeStarted.date == today }
             PomodoroStats(
                 sessionCount = sessions.count { it.completed },
-                totalMinutes = sessions.sumOf { (it.timeCompletedMinutes ?: 0f).toDouble() }.toFloat(),
+                totalMinutes =
+                    sessions.sumOf { (it.timeCompletedMinutes ?: 0f).toDouble() }.toFloat(),
             )
         }
     }
@@ -52,7 +70,8 @@ class PomodoroRepository(private val pomodoroDao: PomodoroDao) : PomodoroRepo {
                 val sessions = entities.filter { it.timeStarted.date == today }
                 PomodoroStats(
                     sessionCount = sessions.count { it.completed },
-                    totalMinutes = sessions.sumOf { (it.timeCompletedMinutes ?: 0f).toDouble() }.toFloat(),
+                    totalMinutes =
+                        sessions.sumOf { (it.timeCompletedMinutes ?: 0f).toDouble() }.toFloat(),
                 )
             }
             .flowOn(Dispatchers.IO)
@@ -77,12 +96,7 @@ class PomodoroRepository(private val pomodoroDao: PomodoroDao) : PomodoroRepo {
             .map { entities ->
                 entities
                     .groupBy { it.timeStarted.date }
-                    .map { (date, group) ->
-                        PomodoroDayCount(
-                            date = date,
-                            count = group.size,
-                        )
-                    }
+                    .map { (date, group) -> PomodoroDayCount(date = date, count = group.size) }
                     .sortedBy { it.date }
             }
             .flowOn(Dispatchers.IO)
@@ -98,7 +112,8 @@ class PomodoroRepository(private val pomodoroDao: PomodoroDao) : PomodoroRepo {
                         PomodoroDayCount(
                             date = date,
                             count = group.size,
-                            totalMinutes = group.sumOf { (it.timeCompletedMinutes ?: 0f).toDouble() }.toFloat(),
+                            totalMinutes =
+                                group.sumOf { (it.timeCompletedMinutes ?: 0f).toDouble() }.toFloat(),
                         )
                     }
                     .sortedBy { it.date }

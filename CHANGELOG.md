@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.7.0
+
+- Notes reordering bug fix
+- Pomodoro Stats cleanup
+- Got rid of 4M, 8M and introduced "7D" and "6M"
+
 ## 1.6.5: Misc. Stuff
 
 - Markdown notes' list are auto-incremented on newline

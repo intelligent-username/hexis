@@ -1,11 +1,20 @@
 /*
- * Copyright (C) 2024-2026 Hexis
+ * Copyright (C) 2025-2026 Hexis
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+
 package com.loc.hexis.shared.ui.note.ui
 
 import androidx.compose.animation.AnimatedVisibility
@@ -35,7 +44,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -79,9 +87,9 @@ import hexis.shared.ui.generated.resources.close
 import hexis.shared.ui.generated.resources.content_copy
 import hexis.shared.ui.generated.resources.delete
 import hexis.shared.ui.generated.resources.lock
+import kotlin.random.Random
 import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.vectorResource
-import kotlin.random.Random
 
 @Composable
 fun VaultEditor(
@@ -92,9 +100,8 @@ fun VaultEditor(
     hasEditorCustomColor: Boolean,
 ) {
     val vaultData = remember(note.payloadJson) { note.parseVault() }
-    val entries = remember(vaultData) {
-        mutableStateListOf<VaultEntry>().apply { addAll(vaultData.entries) }
-    }
+    val entries =
+        remember(vaultData) { mutableStateListOf<VaultEntry>().apply { addAll(vaultData.entries) } }
 
     var newLabel by remember { mutableStateOf("") }
     var newValue by remember { mutableStateOf("") }
@@ -134,14 +141,18 @@ fun VaultEditor(
         showAddForm = false
     }
 
-    val textFieldColors = OutlinedTextFieldDefaults.colors(
-        focusedTextColor = onSurfaceColor,
-        unfocusedTextColor = onSurfaceColor,
-        focusedBorderColor = if (hasEditorCustomColor) onSurfaceColor else MaterialTheme.colorScheme.primary,
-        unfocusedBorderColor = if (hasEditorCustomColor) onSurfaceVariantColor.copy(alpha = 0.3f) else MaterialTheme.colorScheme.outlineVariant,
-        focusedPlaceholderColor = onSurfaceVariantColor,
-        unfocusedPlaceholderColor = onSurfaceVariantColor,
-    )
+    val textFieldColors =
+        OutlinedTextFieldDefaults.colors(
+            focusedTextColor = onSurfaceColor,
+            unfocusedTextColor = onSurfaceColor,
+            focusedBorderColor =
+                if (hasEditorCustomColor) onSurfaceColor else MaterialTheme.colorScheme.primary,
+            unfocusedBorderColor =
+                if (hasEditorCustomColor) onSurfaceVariantColor.copy(alpha = 0.3f)
+                else MaterialTheme.colorScheme.outlineVariant,
+            focusedPlaceholderColor = onSurfaceVariantColor,
+            unfocusedPlaceholderColor = onSurfaceVariantColor,
+        )
 
     Column(modifier = Modifier.fillMaxSize()) {
         // Secrets entry list
@@ -154,26 +165,32 @@ fun VaultEditor(
                 item {
                     Box(
                         modifier = Modifier.fillMaxWidth().padding(vertical = 56.dp),
-                        contentAlignment = Alignment.Center
+                        contentAlignment = Alignment.Center,
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Icon(
                                 imageVector = vectorResource(Res.drawable.lock),
                                 contentDescription = null,
                                 tint = onSurfaceVariantColor.copy(alpha = 0.4f),
-                                modifier = Modifier.size(48.dp)
+                                modifier = Modifier.size(48.dp),
                             )
                             Spacer(modifier = Modifier.height(16.dp))
                             Text(
                                 text = "No secrets stored yet",
-                                style = MaterialTheme.typography.titleMedium.copy(fontFamily = flexFontEmphasis()),
-                                color = onSurfaceColor
+                                style =
+                                    MaterialTheme.typography.titleMedium.copy(
+                                        fontFamily = flexFontEmphasis()
+                                    ),
+                                color = onSurfaceColor,
                             )
                             Text(
                                 text = "Tap + to add your first secure credential or key",
-                                style = MaterialTheme.typography.bodySmall.copy(fontFamily = flexFontRounded()),
+                                style =
+                                    MaterialTheme.typography.bodySmall.copy(
+                                        fontFamily = flexFontRounded()
+                                    ),
                                 color = onSurfaceVariantColor.copy(alpha = 0.6f),
-                                modifier = Modifier.padding(top = 4.dp)
+                                modifier = Modifier.padding(top = 4.dp),
                             )
                         }
                     }
@@ -205,31 +222,38 @@ fun VaultEditor(
             exit = fadeOut() + slideOutVertically { it / 2 },
         ) {
             Surface(
-                color = if (hasEditorCustomColor) onSurfaceColor.copy(alpha = 0.12f)
-                else MaterialTheme.colorScheme.surfaceContainerLow,
+                color =
+                    if (hasEditorCustomColor) onSurfaceColor.copy(alpha = 0.12f)
+                    else MaterialTheme.colorScheme.surfaceContainerLow,
                 shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
                             text = "Add New Secret",
-                            style = MaterialTheme.typography.titleMedium.copy(fontFamily = flexFontEmphasis()),
+                            style =
+                                MaterialTheme.typography.titleMedium.copy(
+                                    fontFamily = flexFontEmphasis()
+                                ),
                             color = onSurfaceColor,
                         )
-                        IconButton(onClick = { showAddForm = false }, modifier = Modifier.size(32.dp)) {
+                        IconButton(
+                            onClick = { showAddForm = false },
+                            modifier = Modifier.size(32.dp),
+                        ) {
                             Icon(
                                 imageVector = vectorResource(Res.drawable.close),
                                 contentDescription = "Close",
                                 tint = onSurfaceVariantColor,
-                                modifier = Modifier.size(18.dp)
+                                modifier = Modifier.size(18.dp),
                             )
                         }
                     }
@@ -239,7 +263,11 @@ fun VaultEditor(
                         onValueChange = { newLabel = it },
                         placeholder = { Text("Label (e.g. WiFi Password, API Key)") },
                         singleLine = true,
-                        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words, imeAction = ImeAction.Next),
+                        keyboardOptions =
+                            KeyboardOptions(
+                                capitalization = KeyboardCapitalization.Words,
+                                imeAction = ImeAction.Next,
+                            ),
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(14.dp),
                         colors = textFieldColors,
@@ -250,7 +278,9 @@ fun VaultEditor(
                         onValueChange = { newValue = it },
                         placeholder = { Text("Secret value") },
                         singleLine = true,
-                        visualTransformation = if (showValueInForm) VisualTransformation.None else PasswordVisualTransformation(),
+                        visualTransformation =
+                            if (showValueInForm) VisualTransformation.None
+                            else PasswordVisualTransformation(),
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                         trailingIcon = {
                             IconButton(onClick = { showValueInForm = !showValueInForm }) {
@@ -267,7 +297,11 @@ fun VaultEditor(
                         onValueChange = { newNotes = it },
                         placeholder = { Text("Notes (optional)") },
                         singleLine = true,
-                        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Done),
+                        keyboardOptions =
+                            KeyboardOptions(
+                                capitalization = KeyboardCapitalization.Sentences,
+                                imeAction = ImeAction.Done,
+                            ),
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(14.dp),
                         colors = textFieldColors,
@@ -282,14 +316,11 @@ fun VaultEditor(
                             Text("Cancel", fontFamily = flexFontRounded())
                         }
                         Spacer(modifier = Modifier.width(8.dp))
-                        Button(
-                            onClick = ::addEntry,
-                            shape = RoundedCornerShape(14.dp),
-                        ) {
+                        Button(onClick = ::addEntry, shape = RoundedCornerShape(14.dp)) {
                             Icon(
                                 imageVector = vectorResource(Res.drawable.check),
                                 contentDescription = "Save Secret",
-                                modifier = Modifier.size(18.dp)
+                                modifier = Modifier.size(18.dp),
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text("Save Secret", fontFamily = flexFontRounded())
@@ -302,8 +333,9 @@ fun VaultEditor(
         // Bottom status bar + Add Secret FAB button
         if (!showAddForm) {
             Surface(
-                color = if (hasEditorCustomColor) Color.Transparent
-                else MaterialTheme.colorScheme.surfaceContainerLow,
+                color =
+                    if (hasEditorCustomColor) Color.Transparent
+                    else MaterialTheme.colorScheme.surfaceContainerLow,
                 modifier = Modifier.fillMaxWidth().padding(8.dp),
                 shape = RoundedCornerShape(20.dp),
             ) {
@@ -316,35 +348,41 @@ fun VaultEditor(
                         Icon(
                             imageVector = vectorResource(Res.drawable.lock),
                             contentDescription = null,
-                            tint = if (hasEditorCustomColor) onSurfaceVariantColor else MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(16.dp)
+                            tint =
+                                if (hasEditorCustomColor) onSurfaceVariantColor
+                                else MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(16.dp),
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = when (entries.size) {
-                                0 -> "No secrets stored"
-                                1 -> "1 secret stored"
-                                else -> "${entries.size} secrets stored"
-                            },
-                            style = MaterialTheme.typography.bodySmall.copy(fontFamily = flexFontRounded()),
+                            text =
+                                when (entries.size) {
+                                    0 -> "No secrets stored"
+                                    1 -> "1 secret stored"
+                                    else -> "${entries.size} secrets stored"
+                                },
+                            style =
+                                MaterialTheme.typography.bodySmall.copy(
+                                    fontFamily = flexFontRounded()
+                                ),
                             color = onSurfaceVariantColor,
                         )
                     }
                     FilledTonalIconButton(
                         onClick = { showAddForm = true },
                         shape = CircleShape,
-                        colors = if (hasEditorCustomColor)
-                            IconButtonDefaults.filledTonalIconButtonColors(
-                                containerColor = onSurfaceColor.copy(alpha = 0.15f),
-                                contentColor = onSurfaceColor,
-                            )
-                        else
-                            IconButtonDefaults.filledTonalIconButtonColors(),
+                        colors =
+                            if (hasEditorCustomColor)
+                                IconButtonDefaults.filledTonalIconButtonColors(
+                                    containerColor = onSurfaceColor.copy(alpha = 0.15f),
+                                    contentColor = onSurfaceColor,
+                                )
+                            else IconButtonDefaults.filledTonalIconButtonColors(),
                     ) {
                         Icon(
                             imageVector = vectorResource(Res.drawable.add),
                             contentDescription = "Add secret",
-                            modifier = Modifier.size(18.dp)
+                            modifier = Modifier.size(18.dp),
                         )
                     }
                 }
@@ -373,17 +411,17 @@ private fun VaultEntryRow(
         }
     }
 
-    val cardAlpha by animateFloatAsState(
-        targetValue = 1f,
-        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
-    )
+    val cardAlpha by
+        animateFloatAsState(
+            targetValue = 1f,
+            animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        )
 
     Surface(
         shape = RoundedCornerShape(16.dp),
-        color = if (hasEditorCustomColor)
-            onSurfaceColor.copy(alpha = 0.08f)
-        else
-            MaterialTheme.colorScheme.surfaceContainerHigh,
+        color =
+            if (hasEditorCustomColor) onSurfaceColor.copy(alpha = 0.08f)
+            else MaterialTheme.colorScheme.surfaceContainerHigh,
         modifier = Modifier.fillMaxWidth().alpha(cardAlpha),
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
@@ -394,7 +432,8 @@ private fun VaultEntryRow(
             ) {
                 Text(
                     text = entry.label.ifBlank { "Untitled Secret" },
-                    style = MaterialTheme.typography.titleMedium.copy(fontFamily = flexFontEmphasis()),
+                    style =
+                        MaterialTheme.typography.titleMedium.copy(fontFamily = flexFontEmphasis()),
                     color = onSurfaceColor,
                     modifier = Modifier.weight(1f),
                 )
@@ -408,13 +447,17 @@ private fun VaultEntryRow(
                                 isCopied = true
                             }
                         },
-                        modifier = Modifier.size(32.dp)
+                        modifier = Modifier.size(32.dp),
                     ) {
                         Icon(
-                            imageVector = if (isCopied) vectorResource(Res.drawable.check) else vectorResource(Res.drawable.content_copy),
+                            imageVector =
+                                if (isCopied) vectorResource(Res.drawable.check)
+                                else vectorResource(Res.drawable.content_copy),
                             contentDescription = "Copy Secret",
-                            tint = if (isCopied) MaterialTheme.colorScheme.primary else onSurfaceVariantColor,
-                            modifier = Modifier.size(16.dp)
+                            tint =
+                                if (isCopied) MaterialTheme.colorScheme.primary
+                                else onSurfaceVariantColor,
+                            modifier = Modifier.size(16.dp),
                         )
                     }
 
@@ -428,7 +471,9 @@ private fun VaultEntryRow(
                         Icon(
                             imageVector = vectorResource(Res.drawable.delete),
                             contentDescription = "Delete Secret",
-                            tint = if (hasEditorCustomColor) onSurfaceVariantColor else MaterialTheme.colorScheme.error,
+                            tint =
+                                if (hasEditorCustomColor) onSurfaceVariantColor
+                                else MaterialTheme.colorScheme.error,
                             modifier = Modifier.size(16.dp),
                         )
                     }
@@ -438,22 +483,28 @@ private fun VaultEntryRow(
             Spacer(modifier = Modifier.height(6.dp))
 
             // Masked or revealed secret value
-            val displayValue = if (isRevealed) entry.value else "•".repeat(minOf(entry.value.length.coerceAtLeast(8), 16))
-            val valueColor by animateColorAsState(
-                targetValue = if (isRevealed) onSurfaceColor else onSurfaceVariantColor.copy(alpha = 0.6f)
-            )
+            val displayValue =
+                if (isRevealed) entry.value
+                else "•".repeat(minOf(entry.value.length.coerceAtLeast(8), 16))
+            val valueColor by
+                animateColorAsState(
+                    targetValue =
+                        if (isRevealed) onSurfaceColor else onSurfaceVariantColor.copy(alpha = 0.6f)
+                )
 
             Text(
                 text = displayValue,
-                style = MaterialTheme.typography.bodyMedium.copy(
-                    fontFamily = if (isRevealed) null else FontFamily.Monospace,
-                    letterSpacing = if (isRevealed) 0.sp else 2.sp,
-                ),
+                style =
+                    MaterialTheme.typography.bodyMedium.copy(
+                        fontFamily = if (isRevealed) null else FontFamily.Monospace,
+                        letterSpacing = if (isRevealed) 0.sp else 2.sp,
+                    ),
                 color = valueColor,
-                modifier = Modifier.graphicsLayer {
-                    scaleX = if (isRevealed) 1f else 0.96f
-                    scaleY = if (isRevealed) 1f else 0.96f
-                },
+                modifier =
+                    Modifier.graphicsLayer {
+                        scaleX = if (isRevealed) 1f else 0.96f
+                        scaleY = if (isRevealed) 1f else 0.96f
+                    },
             )
 
             // Optional notes/description
@@ -462,13 +513,14 @@ private fun VaultEntryRow(
                 Surface(
                     shape = RoundedCornerShape(8.dp),
                     color = onSurfaceVariantColor.copy(alpha = 0.08f),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 ) {
                     Text(
                         text = entry.notes,
-                        style = MaterialTheme.typography.bodySmall.copy(fontFamily = flexFontRounded()),
+                        style =
+                            MaterialTheme.typography.bodySmall.copy(fontFamily = flexFontRounded()),
                         color = onSurfaceVariantColor,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                     )
                 }
             }

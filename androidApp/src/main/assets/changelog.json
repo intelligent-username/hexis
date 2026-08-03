@@ -1,5 +1,22 @@
 [
   {
+    "version": "1.7.0",
+    "changes": [
+      ""
+    ]
+  },
+  {
+    "version": "1.6.5",
+    "changes": [
+      "Markdown notes' list are auto-incremented on newline",
+      "Notes in general are archived on delete",
+      "Note polymorphism got rid of 'archive' button, only pin is kept. Can still archive, of course, but must long press only.",
+      "Notes \"Save\" button was redundant, got rid.",
+      "Pomodoro pie chart redirection",
+      "Pomodoro hide pie chart setting"
+    ]
+  },
+  {
     "version": "1.6.4",
     "changes": [
       "Instant real-time updates for notes, tasks, and habit widgets",
@@ -70,21 +87,6 @@
       "Improved database migrations and thoroughness",
       "Improved pomodoro calculations",
       "Improved imports and exports"
-    ]
-  },
-  {
-    "version": "1.0.0",
-    "changes": [
-      "Binary and quantity-based habit tracking",
-      "Categorizable tasks",
-      "Pomodoro timer",
-      "Pomodoro-based habits",
-      "Habit reminders",
-      "Categorization and filtering",
-      "Analytics and progress tracking",
-      "Widgets",
-      "Data export and import",
-      "Beautiful UI :)"
     ]
   }
 ]

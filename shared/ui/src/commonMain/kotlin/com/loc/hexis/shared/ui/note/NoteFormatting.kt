@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 2025-2026 Hexis
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.loc.hexis.shared.ui.note
 
 enum class LineType {
@@ -139,19 +156,22 @@ fun removePrefix(text: String): String {
 
 fun getContentPreview(content: String, maxChars: Int = 120): String {
     val lines = parseContentLines(content)
-    val previewParts = lines.mapNotNull { line ->
-        when (line.type) {
-            LineType.HEADER, LineType.SUB_HEADER, LineType.SUB_SUB_HEADER -> line.text.ifEmpty { null }
-            LineType.BULLET_LIST -> if (line.text.isNotEmpty()) "• ${line.text}" else null
-            LineType.NUMBERED_LIST -> if (line.text.isNotEmpty()) "${line.number ?: 1}. ${line.text}" else null
-            LineType.CHECKLIST -> if (line.text.isNotEmpty()) "${if (line.isChecked) "☑" else "☐"} ${line.text}" else null
-            LineType.QUOTE -> if (line.text.isNotEmpty()) "│ ${line.text}" else null
-            LineType.HORIZONTAL_RULE -> null
-            LineType.REGULAR -> line.text.ifEmpty { null }
+    val previewParts =
+        lines.mapNotNull { line ->
+            when (line.type) {
+                LineType.HEADER,
+                LineType.SUB_HEADER,
+                LineType.SUB_SUB_HEADER -> line.text.ifEmpty { null }
+                LineType.BULLET_LIST -> if (line.text.isNotEmpty()) "• ${line.text}" else null
+                LineType.NUMBERED_LIST ->
+                    if (line.text.isNotEmpty()) "${line.number ?: 1}. ${line.text}" else null
+                LineType.CHECKLIST ->
+                    if (line.text.isNotEmpty()) "${if (line.isChecked) "☑" else "☐"} ${line.text}"
+                    else null
+                LineType.QUOTE -> if (line.text.isNotEmpty()) "│ ${line.text}" else null
+                LineType.HORIZONTAL_RULE -> null
+                LineType.REGULAR -> line.text.ifEmpty { null }
+            }
         }
-    }
-    return previewParts
-        .joinToString("\n")
-        .trim()
-        .take(maxChars)
+    return previewParts.joinToString("\n").trim().take(maxChars)
 }

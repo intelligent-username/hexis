@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 2025-2026 Hexis
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.loc.hexis.core.note
 
 import kotlinx.datetime.LocalDateTime
@@ -27,10 +44,7 @@ data class Note(
     }
 
     fun withCountingTable(data: CountingTableData): Note {
-        return copy(
-            type = NoteType.COUNTING_TABLE,
-            payloadJson = Json.encodeToString(data),
-        )
+        return copy(type = NoteType.COUNTING_TABLE, payloadJson = Json.encodeToString(data))
     }
 
     fun parseJournal(): JournalNoteData {
@@ -41,59 +55,57 @@ data class Note(
     }
 
     fun withJournal(data: JournalNoteData): Note {
-        return copy(
-            type = NoteType.JOURNAL,
-            payloadJson = Json.encodeToString(data),
-        )
+        return copy(type = NoteType.JOURNAL, payloadJson = Json.encodeToString(data))
     }
 
     fun parseVault(): VaultNote {
         val json = payloadJson
         if (type != NoteType.VAULT || json.isNullOrBlank()) return VaultNote()
-        return runCatching { Json.decodeFromString<VaultNote>(json) }
-            .getOrDefault(VaultNote())
+        return runCatching { Json.decodeFromString<VaultNote>(json) }.getOrDefault(VaultNote())
     }
 
     fun withVault(data: VaultNote): Note {
-        return copy(
-            type = NoteType.VAULT,
-            payloadJson = Json.encodeToString(data),
-        )
+        return copy(type = NoteType.VAULT, payloadJson = Json.encodeToString(data))
     }
 
     fun getColorHex(): String? {
         val meta = metadata
         if (meta.isNullOrBlank()) return null
         return runCatching {
-            val jsonObj = kotlinx.serialization.json.Json.parseToJsonElement(meta).let {
-                if (it is kotlinx.serialization.json.JsonObject) it else null
+                val jsonObj =
+                    kotlinx.serialization.json.Json.parseToJsonElement(meta).let {
+                        if (it is kotlinx.serialization.json.JsonObject) it else null
+                    }
+                jsonObj?.get("colorHex")?.let {
+                    if (it is kotlinx.serialization.json.JsonPrimitive) it.content else null
+                }
             }
-            jsonObj?.get("colorHex")?.let {
-                if (it is kotlinx.serialization.json.JsonPrimitive) it.content else null
-            }
-        }.getOrNull() ?: if (meta.startsWith("#") || meta.startsWith("preset:")) meta else null
+            .getOrNull() ?: if (meta.startsWith("#") || meta.startsWith("preset:")) meta else null
     }
 
     fun withColorHex(colorHex: String?): Note {
         val meta = metadata
-        val currentObj = runCatching {
-            if (!meta.isNullOrBlank()) {
-                kotlinx.serialization.json.Json.parseToJsonElement(meta).let {
-                    if (it is kotlinx.serialization.json.JsonObject) it else null
+        val currentObj =
+            runCatching {
+                    if (!meta.isNullOrBlank()) {
+                        kotlinx.serialization.json.Json.parseToJsonElement(meta).let {
+                            if (it is kotlinx.serialization.json.JsonObject) it else null
+                        }
+                    } else null
                 }
-            } else null
-        }.getOrNull()
+                .getOrNull()
 
-        val newObj = kotlinx.serialization.json.buildJsonObject {
-            currentObj?.forEach { (key, value) ->
-                if (key != "colorHex") {
-                    put(key, value)
+        val newObj =
+            kotlinx.serialization.json.buildJsonObject {
+                currentObj?.forEach { (key, value) ->
+                    if (key != "colorHex") {
+                        put(key, value)
+                    }
+                }
+                if (colorHex != null) {
+                    put("colorHex", kotlinx.serialization.json.JsonPrimitive(colorHex))
                 }
             }
-            if (colorHex != null) {
-                put("colorHex", kotlinx.serialization.json.JsonPrimitive(colorHex))
-            }
-        }
         return copy(metadata = newObj.toString())
     }
 }

@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 2025-2026 Hexis
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.loc.hexis.shared.ui.note.ui
 
 import androidx.compose.animation.AnimatedVisibility
@@ -70,10 +87,10 @@ import hexis.shared.ui.generated.resources.close
 import hexis.shared.ui.generated.resources.delete
 import hexis.shared.ui.generated.resources.edit
 import hexis.shared.ui.generated.resources.search
+import kotlin.random.Random
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import org.jetbrains.compose.resources.vectorResource
-import kotlin.random.Random
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -89,9 +106,10 @@ fun JournalEditor(
     hasEditorCustomColor: Boolean,
 ) {
     val journalData = remember(note.payloadJson) { note.parseJournal() }
-    val entries = remember(journalData) {
-        mutableStateListOf<JournalEntry>().apply { addAll(journalData.entries) }
-    }
+    val entries =
+        remember(journalData) {
+            mutableStateListOf<JournalEntry>().apply { addAll(journalData.entries) }
+        }
 
     var searchQuery by remember { mutableStateOf("") }
     var isSearching by remember { mutableStateOf(false) }
@@ -105,15 +123,14 @@ fun JournalEditor(
     val moods = listOf("😊", "😐", "😢", "😴", "🧠", "😡", "🥳", "🏃")
 
     // Sort in REVERSE chronological order (latest entries first)
-    val filteredEntries = remember(entries.toList(), searchQuery) {
-        val sorted = entries.sortedByDescending { it.timestamp }
-        if (searchQuery.isBlank()) sorted
-        else sorted.filter { it.text.contains(searchQuery, ignoreCase = true) }
-    }
+    val filteredEntries =
+        remember(entries.toList(), searchQuery) {
+            val sorted = entries.sortedByDescending { it.timestamp }
+            if (searchQuery.isBlank()) sorted
+            else sorted.filter { it.text.contains(searchQuery, ignoreCase = true) }
+        }
 
-    val groupedEntries = remember(filteredEntries) {
-        filteredEntries.groupBy { it.timestamp.date }
-    }
+    val groupedEntries = remember(filteredEntries) { filteredEntries.groupBy { it.timestamp.date } }
 
     fun save() {
         onSave(note.copy(content = description).withJournal(JournalNoteData(entries.toList())))
@@ -122,33 +139,41 @@ fun JournalEditor(
     fun addLog() {
         val trimmedText = newEntryText.trim()
         if (trimmedText.isBlank()) return
-        val newEntry = JournalEntry(
-            id = "entry_${Random.nextLong(100_000_000L, 999_999_999L)}_${entries.size}",
-            timestamp = LocalDateTime.now(),
-            text = trimmedText,
-            mood = selectedMood,
-        )
+        val newEntry =
+            JournalEntry(
+                id = "entry_${Random.nextLong(100_000_000L, 999_999_999L)}_${entries.size}",
+                timestamp = LocalDateTime.now(),
+                text = trimmedText,
+                mood = selectedMood,
+            )
         entries.add(newEntry)
         save()
         newEntryText = ""
         selectedMood = null
     }
 
-    val textFieldColors = OutlinedTextFieldDefaults.colors(
-        focusedTextColor = onSurfaceColor,
-        unfocusedTextColor = onSurfaceColor,
-        focusedBorderColor = if (hasEditorCustomColor) onSurfaceColor else MaterialTheme.colorScheme.primary,
-        unfocusedBorderColor = if (hasEditorCustomColor) onSurfaceVariantColor.copy(alpha = 0.3f) else MaterialTheme.colorScheme.outlineVariant,
-        focusedPlaceholderColor = onSurfaceVariantColor,
-        unfocusedPlaceholderColor = onSurfaceVariantColor,
-    )
+    val textFieldColors =
+        OutlinedTextFieldDefaults.colors(
+            focusedTextColor = onSurfaceColor,
+            unfocusedTextColor = onSurfaceColor,
+            focusedBorderColor =
+                if (hasEditorCustomColor) onSurfaceColor else MaterialTheme.colorScheme.primary,
+            unfocusedBorderColor =
+                if (hasEditorCustomColor) onSurfaceVariantColor.copy(alpha = 0.3f)
+                else MaterialTheme.colorScheme.outlineVariant,
+            focusedPlaceholderColor = onSurfaceVariantColor,
+            unfocusedPlaceholderColor = onSurfaceVariantColor,
+        )
 
-    val primaryAccent = if (hasEditorCustomColor) onSurfaceColor else MaterialTheme.colorScheme.primary
+    val primaryAccent =
+        if (hasEditorCustomColor) onSurfaceColor else MaterialTheme.colorScheme.primary
 
     Column(modifier = Modifier.fillMaxSize()) {
         // Centered Header Bar with Title, Description toggle, and Search Overlay
         if (!isSearching) {
-            Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)
+            ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
@@ -159,10 +184,7 @@ fun JournalEditor(
                         onClick = { showDescriptionField = !showDescriptionField },
                         modifier = Modifier.size(36.dp),
                     ) {
-                        Text(
-                            text = if (showDescriptionField) "📝" else "📄",
-                            fontSize = 18.sp
-                        )
+                        Text(text = if (showDescriptionField) "📝" else "📄", fontSize = 18.sp)
                     }
 
                     // Centered Journal Title Input Field
@@ -172,30 +194,27 @@ fun JournalEditor(
                         placeholder = {
                             Text(
                                 text = "Journal Title",
-                                style = MaterialTheme.typography.titleMedium.copy(
-                                    fontFamily = flexFontEmphasis(),
-                                    textAlign = TextAlign.Center
-                                ),
-                                modifier = Modifier.fillMaxWidth()
+                                style =
+                                    MaterialTheme.typography.titleMedium.copy(
+                                        fontFamily = flexFontEmphasis(),
+                                        textAlign = TextAlign.Center,
+                                    ),
+                                modifier = Modifier.fillMaxWidth(),
                             )
                         },
                         singleLine = true,
-                        textStyle = MaterialTheme.typography.titleMedium.copy(
-                            fontFamily = flexFontEmphasis(),
-                            textAlign = TextAlign.Center
-                        ),
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(horizontal = 8.dp),
+                        textStyle =
+                            MaterialTheme.typography.titleMedium.copy(
+                                fontFamily = flexFontEmphasis(),
+                                textAlign = TextAlign.Center,
+                            ),
+                        modifier = Modifier.weight(1f).padding(horizontal = 8.dp),
                         shape = RoundedCornerShape(16.dp),
                         colors = textFieldColors,
                     )
 
                     // Search Icon Button on the right of title
-                    IconButton(
-                        onClick = { isSearching = true },
-                        modifier = Modifier.size(36.dp),
-                    ) {
+                    IconButton(onClick = { isSearching = true }, modifier = Modifier.size(36.dp)) {
                         Icon(
                             imageVector = vectorResource(Res.drawable.search),
                             contentDescription = "Search logs",
@@ -214,11 +233,10 @@ fun JournalEditor(
                             save()
                         },
                         placeholder = { Text("Journal description or summary notes…") },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 6.dp),
+                        modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
                         shape = RoundedCornerShape(14.dp),
-                        textStyle = MaterialTheme.typography.bodySmall.copy(fontFamily = flexFontRounded()),
+                        textStyle =
+                            MaterialTheme.typography.bodySmall.copy(fontFamily = flexFontRounded()),
                         colors = textFieldColors,
                         maxLines = 3,
                     )
@@ -232,15 +250,15 @@ fun JournalEditor(
                 exit = fadeOut() + slideOutVertically { -it / 2 },
             ) {
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 4.dp),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     OutlinedTextField(
                         value = searchQuery,
                         onValueChange = { searchQuery = it },
-                        placeholder = { Text("Search journal logs…", color = onSurfaceVariantColor) },
+                        placeholder = {
+                            Text("Search journal logs…", color = onSurfaceVariantColor)
+                        },
                         singleLine = true,
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(16.dp),
@@ -264,7 +282,7 @@ fun JournalEditor(
                                     )
                                 }
                             }
-                        }
+                        },
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     IconButton(
@@ -294,19 +312,25 @@ fun JournalEditor(
                 item {
                     Box(
                         modifier = Modifier.fillMaxWidth().padding(vertical = 44.dp),
-                        contentAlignment = Alignment.Center
+                        contentAlignment = Alignment.Center,
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
                                 text = "📖 No journal entries yet",
-                                style = MaterialTheme.typography.titleSmall.copy(fontFamily = flexFontEmphasis()),
-                                color = onSurfaceColor
+                                style =
+                                    MaterialTheme.typography.titleSmall.copy(
+                                        fontFamily = flexFontEmphasis()
+                                    ),
+                                color = onSurfaceColor,
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
                                 text = "Log your first thought below!",
-                                style = MaterialTheme.typography.bodySmall.copy(fontFamily = flexFontRounded()),
-                                color = onSurfaceVariantColor
+                                style =
+                                    MaterialTheme.typography.bodySmall.copy(
+                                        fontFamily = flexFontRounded()
+                                    ),
+                                color = onSurfaceVariantColor,
                             )
                         }
                     }
@@ -315,78 +339,85 @@ fun JournalEditor(
                 item {
                     Box(
                         modifier = Modifier.fillMaxWidth().padding(vertical = 40.dp),
-                        contentAlignment = Alignment.Center
+                        contentAlignment = Alignment.Center,
                     ) {
                         Text(
                             text = "No matching logs found.",
-                            style = MaterialTheme.typography.bodyMedium.copy(fontFamily = flexFontRounded()),
-                            color = onSurfaceVariantColor
+                            style =
+                                MaterialTheme.typography.bodyMedium.copy(
+                                    fontFamily = flexFontRounded()
+                                ),
+                            color = onSurfaceVariantColor,
                         )
                     }
                 }
             } else {
                 groupedEntries.forEach { (date, entriesForDate) ->
                     stickyHeader {
-                        val headerText = when (date.toEpochDays() - today.toEpochDays()) {
-                            0L -> "Today"
-                            -1L -> "Yesterday"
-                            1L -> "Tomorrow"
-                            else -> date.toFormattedString()
-                        }
+                        val headerText =
+                            when (date.toEpochDays() - today.toEpochDays()) {
+                                0L -> "Today"
+                                -1L -> "Yesterday"
+                                1L -> "Tomorrow"
+                                else -> date.toFormattedString()
+                            }
                         Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(IntrinsicSize.Min),
-                            verticalAlignment = Alignment.CenterVertically
+                            modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min),
+                            verticalAlignment = Alignment.CenterVertically,
                         ) {
                             // Unbroken Vertical Timeline Line through Date Headers
                             Box(
-                                modifier = Modifier
-                                    .width(36.dp)
-                                    .fillMaxHeight(),
-                                contentAlignment = Alignment.Center
+                                modifier = Modifier.width(36.dp).fillMaxHeight(),
+                                contentAlignment = Alignment.Center,
                             ) {
                                 Box(
-                                    modifier = Modifier
-                                        .width(2.dp)
-                                        .fillMaxHeight()
-                                        .background(
-                                            color = if (hasEditorCustomColor) onSurfaceColor.copy(alpha = 0.25f)
-                                            else primaryAccent.copy(alpha = 0.3f)
-                                        )
+                                    modifier =
+                                        Modifier.width(2.dp)
+                                            .fillMaxHeight()
+                                            .background(
+                                                color =
+                                                    if (hasEditorCustomColor)
+                                                        onSurfaceColor.copy(alpha = 0.25f)
+                                                    else primaryAccent.copy(alpha = 0.3f)
+                                            )
                                 )
                             }
 
                             // Centered Date Header Pill
                             Box(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .padding(vertical = 8.dp),
-                                contentAlignment = Alignment.Center
+                                modifier = Modifier.weight(1f).padding(vertical = 8.dp),
+                                contentAlignment = Alignment.Center,
                             ) {
                                 Surface(
                                     shape = RoundedCornerShape(12.dp),
-                                    color = if (hasEditorCustomColor) onSurfaceColor.copy(alpha = 0.15f)
-                                    else MaterialTheme.colorScheme.surfaceContainerHigh,
-                                    border = BorderStroke(
-                                        width = 1.dp,
-                                        color = if (hasEditorCustomColor) onSurfaceColor.copy(alpha = 0.2f)
-                                        else primaryAccent.copy(alpha = 0.25f)
-                                    ),
+                                    color =
+                                        if (hasEditorCustomColor) onSurfaceColor.copy(alpha = 0.15f)
+                                        else MaterialTheme.colorScheme.surfaceContainerHigh,
+                                    border =
+                                        BorderStroke(
+                                            width = 1.dp,
+                                            color =
+                                                if (hasEditorCustomColor)
+                                                    onSurfaceColor.copy(alpha = 0.2f)
+                                                else primaryAccent.copy(alpha = 0.25f),
+                                        ),
                                 ) {
                                     Text(
                                         text = headerText,
-                                        style = MaterialTheme.typography.labelMedium.copy(
-                                            fontFamily = flexFontEmphasis(),
-                                            fontWeight = FontWeight.Bold
-                                        ),
+                                        style =
+                                            MaterialTheme.typography.labelMedium.copy(
+                                                fontFamily = flexFontEmphasis(),
+                                                fontWeight = FontWeight.Bold,
+                                            ),
                                         color = primaryAccent,
-                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                                        modifier =
+                                            Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                                     )
                                 }
                             }
 
-                            // 36.dp spacer matching left timeline column for perfect horizontal centering
+                            // 36.dp spacer matching left timeline column for perfect horizontal
+                            // centering
                             Spacer(modifier = Modifier.width(36.dp))
                         }
                     }
@@ -395,29 +426,28 @@ fun JournalEditor(
                         val isFirst = index == 0
                         val isLast = index == entriesForDate.size - 1
 
-                        // Continuous Intrinsic Container Row for seamless connected vertical line graph
+                        // Continuous Intrinsic Container Row for seamless connected vertical line
+                        // graph
                         Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(IntrinsicSize.Min),
-                            verticalAlignment = Alignment.Top
+                            modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min),
+                            verticalAlignment = Alignment.Top,
                         ) {
                             // Continuous Connected Timeline Axis Column
                             Box(
-                                modifier = Modifier
-                                    .width(36.dp)
-                                    .fillMaxHeight(),
-                                contentAlignment = Alignment.TopCenter
+                                modifier = Modifier.width(36.dp).fillMaxHeight(),
+                                contentAlignment = Alignment.TopCenter,
                             ) {
                                 // Seamless vertical line spanning 100% height of this item
                                 Box(
-                                    modifier = Modifier
-                                        .width(2.dp)
-                                        .fillMaxHeight()
-                                        .background(
-                                            color = if (hasEditorCustomColor) onSurfaceColor.copy(alpha = 0.25f)
-                                            else primaryAccent.copy(alpha = 0.3f)
-                                        )
+                                    modifier =
+                                        Modifier.width(2.dp)
+                                            .fillMaxHeight()
+                                            .background(
+                                                color =
+                                                    if (hasEditorCustomColor)
+                                                        onSurfaceColor.copy(alpha = 0.25f)
+                                                    else primaryAccent.copy(alpha = 0.3f)
+                                            )
                                 )
 
                                 // Timeline Node: Mood Emoji if present, else Default Circle
@@ -425,36 +455,42 @@ fun JournalEditor(
                                 if (!mood.isNullOrBlank()) {
                                     Surface(
                                         shape = CircleShape,
-                                        color = if (hasEditorCustomColor) onSurfaceColor.copy(alpha = 0.2f)
-                                        else MaterialTheme.colorScheme.surfaceContainerHighest,
-                                        border = BorderStroke(
-                                            width = 1.5.dp,
-                                            color = if (hasEditorCustomColor) onSurfaceColor.copy(alpha = 0.4f) else primaryAccent.copy(alpha = 0.5f)
-                                        ),
-                                        modifier = Modifier
-                                            .padding(top = 10.dp)
-                                            .size(24.dp)
+                                        color =
+                                            if (hasEditorCustomColor)
+                                                onSurfaceColor.copy(alpha = 0.2f)
+                                            else MaterialTheme.colorScheme.surfaceContainerHighest,
+                                        border =
+                                            BorderStroke(
+                                                width = 1.5.dp,
+                                                color =
+                                                    if (hasEditorCustomColor)
+                                                        onSurfaceColor.copy(alpha = 0.4f)
+                                                    else primaryAccent.copy(alpha = 0.5f),
+                                            ),
+                                        modifier = Modifier.padding(top = 10.dp).size(24.dp),
                                     ) {
                                         Box(contentAlignment = Alignment.Center) {
                                             Text(
                                                 text = mood,
                                                 fontSize = 13.sp,
-                                                textAlign = TextAlign.Center
+                                                textAlign = TextAlign.Center,
                                             )
                                         }
                                     }
                                 } else {
                                     Surface(
                                         shape = CircleShape,
-                                        color = if (hasEditorCustomColor) onSurfaceColor else primaryAccent,
-                                        border = BorderStroke(
-                                            width = 3.dp,
-                                            color = if (hasEditorCustomColor) Color.Transparent
-                                            else MaterialTheme.colorScheme.surface
-                                        ),
-                                        modifier = Modifier
-                                            .padding(top = 14.dp)
-                                            .size(14.dp)
+                                        color =
+                                            if (hasEditorCustomColor) onSurfaceColor
+                                            else primaryAccent,
+                                        border =
+                                            BorderStroke(
+                                                width = 3.dp,
+                                                color =
+                                                    if (hasEditorCustomColor) Color.Transparent
+                                                    else MaterialTheme.colorScheme.surface,
+                                            ),
+                                        modifier = Modifier.padding(top = 14.dp).size(14.dp),
                                     ) {}
                                 }
                             }
@@ -462,23 +498,28 @@ fun JournalEditor(
                             // Entry Content Card
                             Surface(
                                 shape = RoundedCornerShape(16.dp),
-                                color = if (hasEditorCustomColor) onSurfaceColor.copy(alpha = 0.08f)
-                                else MaterialTheme.colorScheme.surfaceContainerHigh,
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .padding(start = 6.dp, bottom = 10.dp)
+                                color =
+                                    if (hasEditorCustomColor) onSurfaceColor.copy(alpha = 0.08f)
+                                    else MaterialTheme.colorScheme.surfaceContainerHigh,
+                                modifier = Modifier.weight(1f).padding(start = 6.dp, bottom = 10.dp),
                             ) {
                                 Column(modifier = Modifier.padding(12.dp)) {
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
                                         horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
+                                        verticalAlignment = Alignment.CenterVertically,
                                     ) {
                                         Row(verticalAlignment = Alignment.CenterVertically) {
                                             Text(
-                                                text = entry.timestamp.time.toFormattedString(is24Hr = false),
-                                                style = MaterialTheme.typography.labelMedium.copy(fontFamily = flexFontRounded()),
-                                                color = onSurfaceVariantColor
+                                                text =
+                                                    entry.timestamp.time.toFormattedString(
+                                                        is24Hr = false
+                                                    ),
+                                                style =
+                                                    MaterialTheme.typography.labelMedium.copy(
+                                                        fontFamily = flexFontRounded()
+                                                    ),
+                                                color = onSurfaceVariantColor,
                                             )
                                         }
 
@@ -486,9 +527,15 @@ fun JournalEditor(
                                             IconButton(
                                                 onClick = {
                                                     if (editingEntryId == entry.id) {
-                                                        val idx = entries.indexOfFirst { it.id == entry.id }
+                                                        val idx =
+                                                            entries.indexOfFirst {
+                                                                it.id == entry.id
+                                                            }
                                                         if (idx != -1) {
-                                                            entries[idx] = entries[idx].copy(text = editingEntryText)
+                                                            entries[idx] =
+                                                                entries[idx].copy(
+                                                                    text = editingEntryText
+                                                                )
                                                             save()
                                                         }
                                                         editingEntryId = null
@@ -497,10 +544,15 @@ fun JournalEditor(
                                                         editingEntryText = entry.text
                                                     }
                                                 },
-                                                modifier = Modifier.size(28.dp)
+                                                modifier = Modifier.size(28.dp),
                                             ) {
                                                 Icon(
-                                                    imageVector = vectorResource(if (editingEntryId == entry.id) Res.drawable.check else Res.drawable.edit),
+                                                    imageVector =
+                                                        vectorResource(
+                                                            if (editingEntryId == entry.id)
+                                                                Res.drawable.check
+                                                            else Res.drawable.edit
+                                                        ),
                                                     contentDescription = "Edit entry",
                                                     tint = onSurfaceColor,
                                                     modifier = Modifier.size(16.dp),
@@ -511,13 +563,14 @@ fun JournalEditor(
                                                     entries.removeAll { it.id == entry.id }
                                                     save()
                                                 },
-                                                modifier = Modifier.size(28.dp)
+                                                modifier = Modifier.size(28.dp),
                                             ) {
                                                 Icon(
-                                                    imageVector = vectorResource(Res.drawable.delete),
+                                                    imageVector =
+                                                        vectorResource(Res.drawable.delete),
                                                     contentDescription = "Delete entry",
                                                     tint = MaterialTheme.colorScheme.error,
-                                                    modifier = Modifier.size(15.dp)
+                                                    modifier = Modifier.size(15.dp),
                                                 )
                                             }
                                         }
@@ -536,8 +589,11 @@ fun JournalEditor(
                                     } else {
                                         Text(
                                             text = entry.text,
-                                            style = MaterialTheme.typography.bodyMedium.copy(fontFamily = flexFontRounded()),
-                                            color = onSurfaceColor
+                                            style =
+                                                MaterialTheme.typography.bodyMedium.copy(
+                                                    fontFamily = flexFontRounded()
+                                                ),
+                                            color = onSurfaceColor,
                                         )
                                     }
                                 }
@@ -552,42 +608,47 @@ fun JournalEditor(
 
         // Ultra-Modern Floating Bottom Entry Input Panel
         Surface(
-            color = if (hasEditorCustomColor) onSurfaceColor.copy(alpha = 0.12f)
-            else MaterialTheme.colorScheme.surfaceContainerLow,
+            color =
+                if (hasEditorCustomColor) onSurfaceColor.copy(alpha = 0.12f)
+                else MaterialTheme.colorScheme.surfaceContainerLow,
             modifier = Modifier.fillMaxWidth().padding(8.dp),
-            shape = RoundedCornerShape(22.dp)
+            shape = RoundedCornerShape(22.dp),
         ) {
             Column(modifier = Modifier.padding(10.dp)) {
                 // Interactive Emoji Mood Pills (Horizontal Scroll Bar)
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState())
-                        .padding(bottom = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    modifier =
+                        Modifier.fillMaxWidth()
+                            .horizontalScroll(rememberScrollState())
+                            .padding(bottom = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
                         text = "Mood:",
-                        style = MaterialTheme.typography.labelSmall.copy(fontFamily = flexFontRounded()),
+                        style =
+                            MaterialTheme.typography.labelSmall.copy(
+                                fontFamily = flexFontRounded()
+                            ),
                         color = onSurfaceVariantColor,
-                        modifier = Modifier.padding(end = 4.dp)
+                        modifier = Modifier.padding(end = 4.dp),
                     )
                     moods.forEach { mood ->
                         val isSelected = selectedMood == mood
                         Surface(
                             shape = CircleShape,
-                            color = if (isSelected) primaryAccent else onSurfaceVariantColor.copy(alpha = 0.12f),
-                            modifier = Modifier
-                                .clip(CircleShape)
-                                .clickable {
+                            color =
+                                if (isSelected) primaryAccent
+                                else onSurfaceVariantColor.copy(alpha = 0.12f),
+                            modifier =
+                                Modifier.clip(CircleShape).clickable {
                                     selectedMood = if (isSelected) null else mood
-                                }
+                                },
                         ) {
                             Text(
                                 text = mood,
                                 fontSize = 18.sp,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                             )
                         }
                     }
@@ -596,20 +657,21 @@ fun JournalEditor(
                 // Thought Input & Send Button Row
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     OutlinedTextField(
                         value = newEntryText,
                         onValueChange = { newEntryText = it },
-                        placeholder = { Text("Log your thought or reflection…", color = onSurfaceVariantColor) },
-                        keyboardOptions = KeyboardOptions(
-                            capitalization = KeyboardCapitalization.Sentences,
-                            imeAction = ImeAction.Send
-                        ),
-                        keyboardActions = KeyboardActions(
-                            onSend = { addLog() },
-                            onDone = { addLog() }
-                        ),
+                        placeholder = {
+                            Text("Log your thought or reflection…", color = onSurfaceVariantColor)
+                        },
+                        keyboardOptions =
+                            KeyboardOptions(
+                                capitalization = KeyboardCapitalization.Sentences,
+                                imeAction = ImeAction.Send,
+                            ),
+                        keyboardActions =
+                            KeyboardActions(onSend = { addLog() }, onDone = { addLog() }),
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(16.dp),
                         colors = textFieldColors,
@@ -622,23 +684,24 @@ fun JournalEditor(
                     FilledTonalIconButton(
                         onClick = ::addLog,
                         enabled = newEntryText.isNotBlank(),
-                        colors = if (hasEditorCustomColor) {
-                            IconButtonDefaults.filledTonalIconButtonColors(
-                                containerColor = onSurfaceColor.copy(alpha = 0.2f),
-                                contentColor = onSurfaceColor
-                            )
-                        } else {
-                            IconButtonDefaults.filledTonalIconButtonColors(
-                                containerColor = MaterialTheme.colorScheme.primary,
-                                contentColor = MaterialTheme.colorScheme.onPrimary
-                            )
-                        },
-                        modifier = Modifier.size(44.dp)
+                        colors =
+                            if (hasEditorCustomColor) {
+                                IconButtonDefaults.filledTonalIconButtonColors(
+                                    containerColor = onSurfaceColor.copy(alpha = 0.2f),
+                                    contentColor = onSurfaceColor,
+                                )
+                            } else {
+                                IconButtonDefaults.filledTonalIconButtonColors(
+                                    containerColor = MaterialTheme.colorScheme.primary,
+                                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                                )
+                            },
+                        modifier = Modifier.size(44.dp),
                     ) {
                         Icon(
                             imageVector = vectorResource(Res.drawable.add),
                             contentDescription = "Log thought",
-                            modifier = Modifier.size(22.dp)
+                            modifier = Modifier.size(22.dp),
                         )
                     }
                 }

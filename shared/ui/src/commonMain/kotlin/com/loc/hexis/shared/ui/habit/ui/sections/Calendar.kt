@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 2025-2026 Hexis
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.loc.hexis.shared.ui.habit.ui.sections
 
 import androidx.compose.animation.AnimatedContent
@@ -49,8 +66,6 @@ import com.loc.hexis.shared.ui.util.rememberToday
 import hexis.shared.ui.generated.resources.*
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
-import kotlinx.datetime.Month
-import kotlinx.datetime.YearMonth
 import kotlinx.datetime.yearMonth
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.resources.vectorResource
@@ -225,7 +240,8 @@ private fun MonthlyCalendar(
     modifier: Modifier = Modifier,
 ) {
     val habitYearMonth = currentHabit.habit.time.date.yearMonth
-    val startYearMonthVal = if (habitYearMonth <= today.yearMonth) habitYearMonth else today.yearMonth
+    val startYearMonthVal =
+        if (habitYearMonth <= today.yearMonth) habitYearMonth else today.yearMonth
 
     val calendarState =
         rememberCalendarState(

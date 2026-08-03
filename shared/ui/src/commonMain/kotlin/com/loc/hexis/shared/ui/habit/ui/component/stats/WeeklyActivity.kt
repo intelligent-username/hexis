@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 2025-2026 Hexis
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.loc.hexis.shared.ui.habit.ui.component.stats
 
 import androidx.compose.animation.AnimatedVisibility
@@ -55,7 +72,7 @@ import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun WeeklyActivity(lineChartData: List<Double>, modifier: Modifier = Modifier) {
-    var selectedTimePeriod by rememberSaveable { mutableStateOf(WeeklyTimePeriod.MONTHS_2) }
+    var selectedTimePeriod by rememberSaveable { mutableStateOf(WeeklyTimePeriod.DAYS_7) }
     val max =
         remember(selectedTimePeriod, lineChartData) {
             lineChartData
@@ -83,7 +100,8 @@ fun WeeklyActivity(lineChartData: List<Double>, modifier: Modifier = Modifier) {
                         onCheckedChange = { selectedTimePeriod = period },
                         shapes =
                             when (period) {
-                                MONTHS_2 -> ButtonGroupDefaults.connectedLeadingButtonShapes()
+                                WeeklyTimePeriod.DAYS_7 ->
+                                    ButtonGroupDefaults.connectedLeadingButtonShapes()
 
                                 YEARS_1 -> ButtonGroupDefaults.connectedTrailingButtonShapes()
 
@@ -181,7 +199,7 @@ fun WeeklyActivity(lineChartData: List<Double>, modifier: Modifier = Modifier) {
                                 AnimatedVisibility(
                                     visible =
                                         data == max &&
-                                            selectedTimePeriod == WeeklyTimePeriod.MONTHS_2,
+                                            selectedTimePeriod == WeeklyTimePeriod.DAYS_7,
                                     enter = fadeIn(),
                                     exit = fadeOut(),
                                 ) {

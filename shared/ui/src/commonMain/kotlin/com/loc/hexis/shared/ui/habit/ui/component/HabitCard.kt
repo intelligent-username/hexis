@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 2025-2026 Hexis
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.loc.hexis.shared.ui.habit.ui.component
 
 import androidx.compose.animation.AnimatedContent
@@ -118,8 +135,7 @@ fun HabitCard(
     val daysFromWeekStart =
         (habitStartDate.dayOfWeek.isoDayNumber - startingDay.isoDayNumber + 7) % 7
     val weekAlignedStart = habitStartDate.minus(daysFromWeekStart, DateTimeUnit.DAY)
-    val effectiveStartDate =
-        if (weekAlignedStart <= today) weekAlignedStart else habitStartDate
+    val effectiveStartDate = if (weekAlignedStart <= today) weekAlignedStart else habitStartDate
 
     val weekState =
         rememberWeekCalendarState(
@@ -324,146 +340,150 @@ fun HabitCard(
                                 source: NestedScrollSource,
                             ): Offset = Offset(available.x, 0f)
                         }
-                    ),
+                    )
             ) {
                 WeekCalendar(
                     contentPadding = PaddingValues(8.dp),
                     state = weekState,
-                dayContent = { weekDay ->
-                    val startDate = habitWithAnalytics.habit.time.date
-                    val target = habitWithAnalytics.habit.targetValue ?: 1.0
-                    val done =
-                        habitWithAnalytics.statuses.any {
-                            it.date == weekDay.date && it.value >= target
-                        }
-                    val validDay =
-                        weekDay.date <= today &&
-                            weekDay.date >= startDate &&
-                            weekDay.date.dayOfWeek in habitWithAnalytics.habit.days
+                    dayContent = { weekDay ->
+                        val startDate = habitWithAnalytics.habit.time.date
+                        val target = habitWithAnalytics.habit.targetValue ?: 1.0
+                        val done =
+                            habitWithAnalytics.statuses.any {
+                                it.date == weekDay.date && it.value >= target
+                            }
+                        val validDay =
+                            weekDay.date <= today &&
+                                weekDay.date >= startDate &&
+                                weekDay.date.dayOfWeek in habitWithAnalytics.habit.days
 
-                    Box(
-                        modifier =
-                            Modifier.fillMaxWidth()
-                                .then(
-                                    if (done) {
-                                        val completedDates =
-                                            remember(habitWithAnalytics.statuses, target) {
-                                                habitWithAnalytics.statuses
-                                                    .filter { it.value >= target }
-                                                    .map { it.date }
-                                                    .toSet()
-                                            }
-                                        val eligibleDays = habitWithAnalytics.habit.days
+                        Box(
+                            modifier =
+                                Modifier.fillMaxWidth()
+                                    .then(
+                                        if (done) {
+                                            val completedDates =
+                                                remember(habitWithAnalytics.statuses, target) {
+                                                    habitWithAnalytics.statuses
+                                                        .filter { it.value >= target }
+                                                        .map { it.date }
+                                                        .toSet()
+                                                }
+                                            val eligibleDays = habitWithAnalytics.habit.days
 
-                                        val hasPreviousEligibleCompleted =
-                                            completedDates.any { completedDate ->
-                                                completedDate < weekDay.date &&
-                                                    completedDate.dayOfWeek in eligibleDays &&
-                                                    areConsecutiveEligibleDays(
-                                                        completedDate,
-                                                        weekDay.date,
-                                                        eligibleDays,
-                                                    )
-                                            }
+                                            val hasPreviousEligibleCompleted =
+                                                completedDates.any { completedDate ->
+                                                    completedDate < weekDay.date &&
+                                                        completedDate.dayOfWeek in eligibleDays &&
+                                                        areConsecutiveEligibleDays(
+                                                            completedDate,
+                                                            weekDay.date,
+                                                            eligibleDays,
+                                                        )
+                                                }
 
-                                        val hasNextEligibleCompleted =
-                                            completedDates.any { completedDate ->
-                                                completedDate > weekDay.date &&
-                                                    completedDate.dayOfWeek in eligibleDays &&
-                                                    areConsecutiveEligibleDays(
-                                                        weekDay.date,
-                                                        completedDate,
-                                                        eligibleDays,
-                                                    )
-                                            }
+                                            val hasNextEligibleCompleted =
+                                                completedDates.any { completedDate ->
+                                                    completedDate > weekDay.date &&
+                                                        completedDate.dayOfWeek in eligibleDays &&
+                                                        areConsecutiveEligibleDays(
+                                                            weekDay.date,
+                                                            completedDate,
+                                                            eligibleDays,
+                                                        )
+                                                }
 
-                                        val streakPosition: StreakPosition =
-                                            when {
-                                                hasPreviousEligibleCompleted &&
-                                                    hasNextEligibleCompleted ->
-                                                    StreakPosition.MIDDLE
-                                                hasPreviousEligibleCompleted -> StreakPosition.END
-                                                hasNextEligibleCompleted -> StreakPosition.START
-                                                else -> StreakPosition.ISOLATED
-                                            }
+                                            val streakPosition: StreakPosition =
+                                                when {
+                                                    hasPreviousEligibleCompleted &&
+                                                        hasNextEligibleCompleted ->
+                                                        StreakPosition.MIDDLE
+                                                    hasPreviousEligibleCompleted ->
+                                                        StreakPosition.END
+                                                    hasNextEligibleCompleted -> StreakPosition.START
+                                                    else -> StreakPosition.ISOLATED
+                                                }
 
-                                        val shape =
-                                            when (streakPosition) {
-                                                StreakPosition.ISOLATED -> RoundedCornerShape(20.dp)
-                                                StreakPosition.START ->
-                                                    RoundedCornerShape(
-                                                        topStart = 20.dp,
-                                                        bottomStart = 20.dp,
-                                                    )
-                                                StreakPosition.END ->
-                                                    RoundedCornerShape(
-                                                        topEnd = 20.dp,
-                                                        bottomEnd = 20.dp,
-                                                    )
-                                                StreakPosition.MIDDLE -> RoundedCornerShape(0.dp)
-                                            }
+                                            val shape =
+                                                when (streakPosition) {
+                                                    StreakPosition.ISOLATED ->
+                                                        RoundedCornerShape(20.dp)
+                                                    StreakPosition.START ->
+                                                        RoundedCornerShape(
+                                                            topStart = 20.dp,
+                                                            bottomStart = 20.dp,
+                                                        )
+                                                    StreakPosition.END ->
+                                                        RoundedCornerShape(
+                                                            topEnd = 20.dp,
+                                                            bottomEnd = 20.dp,
+                                                        )
+                                                    StreakPosition.MIDDLE ->
+                                                        RoundedCornerShape(0.dp)
+                                                }
 
-                                        Modifier.background(
-                                            color = MaterialTheme.colorScheme.primary,
-                                            shape = shape,
-                                        )
-                                    } else Modifier
-                                )
-                                .then(
-                                    if (weekDay.date == startDate) {
-                                        Modifier.border(
-                                            width = 1.dp,
-                                            color = Color(0xFFFFD700),
-                                            shape = RoundedCornerShape(20.dp),
-                                        )
-                                    } else Modifier
-                                )
-                                .clip(shape = RoundedCornerShape(20.dp))
-                                .clickable(
-                                    role = Role.Button,
-                                    enabled = validDay,
-                                    onClick = {
-                                        if (!habitWithAnalytics.habit.pomodoroLinked) {
-                                            action(
-                                                HabitsAction.ToggleHabitProgress(
-                                                    habit = habitWithAnalytics.habit,
-                                                    date = weekDay.date,
-                                                )
+                                            Modifier.background(
+                                                color = MaterialTheme.colorScheme.primary,
+                                                shape = shape,
                                             )
-                                        }
-                                    },
-                                ),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(6.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
+                                        } else Modifier
+                                    )
+                                    .then(
+                                        if (weekDay.date == startDate) {
+                                            Modifier.border(
+                                                width = 1.dp,
+                                                color = Color(0xFFFFD700),
+                                                shape = RoundedCornerShape(20.dp),
+                                            )
+                                        } else Modifier
+                                    )
+                                    .clip(shape = RoundedCornerShape(20.dp))
+                                    .clickable(
+                                        role = Role.Button,
+                                        enabled = validDay,
+                                        onClick = {
+                                            if (!habitWithAnalytics.habit.pomodoroLinked) {
+                                                action(
+                                                    HabitsAction.ToggleHabitProgress(
+                                                        habit = habitWithAnalytics.habit,
+                                                        date = weekDay.date,
+                                                    )
+                                                )
+                                            }
+                                        },
+                                    ),
+                            contentAlignment = Alignment.Center,
                         ) {
-                            Text(
-                                text = weekDay.date.day.toString(),
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.Bold,
-                                maxLines = 1,
-                                modifier = Modifier.basicMarquee(),
-                                color =
-                                    if (done) MaterialTheme.colorScheme.onPrimary
-                                    else if (!validDay) cardContent.copy(alpha = 0.5f)
-                                    else cardContent,
-                            )
+                            Column(
+                                modifier = Modifier.padding(6.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                            ) {
+                                Text(
+                                    text = weekDay.date.day.toString(),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    maxLines = 1,
+                                    modifier = Modifier.basicMarquee(),
+                                    color =
+                                        if (done) MaterialTheme.colorScheme.onPrimary
+                                        else if (!validDay) cardContent.copy(alpha = 0.5f)
+                                        else cardContent,
+                                )
 
-                            Text(
-                                text = weekDay.date.dayOfWeek.toString().take(3),
-                                style = MaterialTheme.typography.bodySmall,
-                                maxLines = 1,
-                                modifier = Modifier.basicMarquee(),
-                                color =
-                                    if (done) MaterialTheme.colorScheme.onPrimary
-                                    else if (!validDay) cardContent.copy(alpha = 0.5f)
-                                    else cardContent,
-                            )
+                                Text(
+                                    text = weekDay.date.dayOfWeek.toString().take(3),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    maxLines = 1,
+                                    modifier = Modifier.basicMarquee(),
+                                    color =
+                                        if (done) MaterialTheme.colorScheme.onPrimary
+                                        else if (!validDay) cardContent.copy(alpha = 0.5f)
+                                        else cardContent,
+                                )
+                            }
                         }
-                    }
-                })
+                    },
+                )
             }
         }
     }

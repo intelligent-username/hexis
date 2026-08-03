@@ -1,11 +1,20 @@
 /*
- * Copyright (C) 2024 Hexis
+ * Copyright (C) 2025-2026 Hexis
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+
 package com.loc.hexis.shared.ui.note.ui
 
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -47,17 +56,20 @@ fun VaultCard(
     val customColor = getNoteColor(note.getColorHex(), isDark)
     val hasCustomColor = customColor != Color.Unspecified
 
-    val onSurfaceColor = if (hasCustomColor) {
-        if (customColor.luminance() < 0.5f) Color.White else Color.Black
-    } else {
-        MaterialTheme.colorScheme.onSurface
-    }
+    val onSurfaceColor =
+        if (hasCustomColor) {
+            if (customColor.luminance() < 0.5f) Color.White else Color.Black
+        } else {
+            MaterialTheme.colorScheme.onSurface
+        }
 
-    val onSurfaceVariantColor = if (hasCustomColor) {
-        if (customColor.luminance() < 0.5f) Color.White.copy(alpha = 0.7f) else Color.Black.copy(alpha = 0.7f)
-    } else {
-        MaterialTheme.colorScheme.onSurfaceVariant
-    }
+    val onSurfaceVariantColor =
+        if (hasCustomColor) {
+            if (customColor.luminance() < 0.5f) Color.White.copy(alpha = 0.7f)
+            else Color.Black.copy(alpha = 0.7f)
+        } else {
+            MaterialTheme.colorScheme.onSurfaceVariant
+        }
 
     BaseNoteCard(
         note = note,
@@ -70,25 +82,23 @@ fun VaultCard(
         modifier = modifier,
     ) {
         // Lock icon + entry count row
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth()
-        ) {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
             Icon(
                 imageVector = vectorResource(Res.drawable.lock),
                 contentDescription = null,
                 tint = if (hasCustomColor) onSurfaceColor else MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(16.dp)
+                modifier = Modifier.size(16.dp),
             )
             Spacer(modifier = Modifier.width(6.dp))
             Text(
-                text = when (vaultData.entries.size) {
-                    0 -> "No secrets"
-                    1 -> "1 secret"
-                    else -> "${vaultData.entries.size} secrets"
-                },
+                text =
+                    when (vaultData.entries.size) {
+                        0 -> "No secrets"
+                        1 -> "1 secret"
+                        else -> "${vaultData.entries.size} secrets"
+                    },
                 style = MaterialTheme.typography.bodySmall.copy(fontFamily = flexFontRounded()),
-                color = onSurfaceVariantColor
+                color = onSurfaceVariantColor,
             )
         }
     }

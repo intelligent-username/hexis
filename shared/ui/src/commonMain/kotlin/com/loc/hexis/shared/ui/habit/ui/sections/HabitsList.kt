@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 2025-2026 Hexis
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.loc.hexis.shared.ui.habit.ui.sections
 
 import androidx.compose.foundation.layout.Arrangement
@@ -12,8 +29,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.loc.hexis.core.habits.Habit
@@ -30,17 +49,11 @@ import com.loc.hexis.shared.ui.habit.ui.component.HabitCard
 import com.loc.hexis.shared.ui.habit.ui.component.HabitUpsertSheet
 import com.loc.hexis.shared.ui.habit.ui.component.TimeDivisionEditDialog
 import hexis.shared.ui.generated.resources.*
-import kotlin.time.Clock
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDateTime
 import org.jetbrains.compose.resources.vectorResource
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
-
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 
 @Composable
 fun HabitsList(
@@ -51,15 +64,12 @@ fun HabitsList(
     modifier: Modifier = Modifier,
 ) {
     val windowSizeClass = LocalWindowSizeClass.current
-    var localHabits by remember(state.habitsWithAnalytics) {
-        mutableStateOf(state.habitsWithAnalytics)
-    }
+    var localHabits by
+        remember(state.habitsWithAnalytics) { mutableStateOf(state.habitsWithAnalytics) }
 
     val reorderableListState =
         rememberReorderableLazyListState(lazyListState) { from, to ->
-            localHabits = localHabits.toMutableList().apply {
-                add(to.index, removeAt(from.index))
-            }
+            localHabits = localHabits.toMutableList().apply { add(to.index, removeAt(from.index)) }
         }
 
     Column(modifier = modifier) {
@@ -72,9 +82,7 @@ fun HabitsList(
             // habits
             val displayedHabits =
                 if (state.reorderHabits && !state.editState)
-                    localHabits.sortedBy {
-                        it.habit.id in state.completedHabitIds
-                    }
+                    localHabits.sortedBy { it.habit.id in state.completedHabitIds }
                 else localHabits
 
             itemsIndexed(displayedHabits, key = { _, it -> it.habit.id }) {
