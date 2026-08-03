@@ -208,6 +208,7 @@ class PomodoroManager(
         scope.launch {
             savePartialSessionIfActive(closeSession = false)
             settingsDatastore.clearActivePomodoroSessionData()
+            refreshTodayStats()
             _state.update { it.copy(isRunning = false, targetEndTimeMillis = null) }
         }
     }
@@ -367,6 +368,7 @@ class PomodoroManager(
         scope.launch {
             savePartialSessionIfActive(closeSession = true)
             settingsDatastore.clearActivePomodoroSessionData()
+            refreshTodayStats()
             val currentSettings = _state.value.settings
             val durationSec =
                 when (_state.value.phase) {
@@ -414,6 +416,7 @@ class PomodoroManager(
                     completed = false,
                     timeCompletedMinutes = elapsedMinutes,
                 )
+                refreshTodayStats()
             }
         }
         if (closeSession) {

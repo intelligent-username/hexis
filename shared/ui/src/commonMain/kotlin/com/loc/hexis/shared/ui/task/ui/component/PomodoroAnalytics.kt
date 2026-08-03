@@ -141,8 +141,17 @@ fun PomodoroAnalytics(onDismiss: () -> Unit, onSelectHabit: (Long?, String) -> U
         topBar = {
             TopAppBar(
                 colors =
-                    if (isAmoled) TopAppBarDefaults.topAppBarColors(containerColor = Color.Black)
-                    else TopAppBarDefaults.topAppBarColors(),
+                    if (isAmoled) {
+                        TopAppBarDefaults.topAppBarColors(
+                            containerColor = Color.Black,
+                            scrolledContainerColor = Color.Black,
+                        )
+                    } else {
+                        TopAppBarDefaults.topAppBarColors(
+                            containerColor = Color.Transparent,
+                            scrolledContainerColor = Color.Transparent,
+                        )
+                    },
                 title = { Text(text = "Session History", fontFamily = flexFontEmphasis()) },
                 navigationIcon = {
                     FilledTonalIconButton(onClick = onDismiss) {
@@ -152,11 +161,6 @@ fun PomodoroAnalytics(onDismiss: () -> Unit, onSelectHabit: (Long?, String) -> U
                         )
                     }
                 },
-                colors =
-                    TopAppBarDefaults.topAppBarColors(
-                        scrolledContainerColor = Color.Transparent,
-                        containerColor = Color.Transparent,
-                    ),
             )
         }
     ) { padding ->

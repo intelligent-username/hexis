@@ -2,9 +2,10 @@
 
 ## 1.7.0
 
-- Notes reordering bug fix
-- Pomodoro Stats cleanup
-- Got rid of 4M, 8M and introduced "7D" and "6M"
+- Tasks accidental re-ordering bug fix
+- Pomodoro Stats screen cleanup, faster updates.
+- Pomodoro timer UI timer (minimalist) fullscreen mode & aways-on.
+- Got rid of 4M, 8M statistics and introduced "7D" and "6M" instead
 
 ## 1.6.5: Misc. Stuff
 

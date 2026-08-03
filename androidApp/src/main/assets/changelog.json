@@ -2,7 +2,10 @@
   {
     "version": "1.7.0",
     "changes": [
-      ""
+      "Tasks accidental re-ordering bug fix",
+      "Pomodoro Stats screen cleanup, faster updates.",
+      "Pomodoro timer UI timer (minimalist) fullscreen mode & aways-on.",
+      "Got rid of 4M, 8M statistics and introduced \"7D\" and \"6M\" instead"
     ]
   },
   {

@@ -431,27 +431,7 @@ fun NotesPage(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
-                        // Grid / List Mode Toggle Button
-                        FilledTonalIconButton(
-                            onClick = { isGridMode = !isGridMode },
-                            modifier = Modifier.size(40.dp),
-                            colors =
-                                IconButtonDefaults.filledTonalIconButtonColors(
-                                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                ),
-                            shapes =
-                                IconButtonShapes(
-                                    shape = RoundedCornerShape(12.dp),
-                                    pressedShape = MaterialTheme.shapes.small,
-                                ),
-                        ) {
-                            Text(
-                                text = if (isGridMode) "☰" else "⊞",
-                                style = MaterialTheme.typography.titleMedium,
-                            )
-                        }
-
+                        // Search Button
                         FilledTonalIconButton(
                             onClick = {
                                 showSearch = !showSearch
@@ -476,6 +456,7 @@ fun NotesPage(
                             )
                         }
 
+                        // Archive Button
                         FilledTonalIconToggleButton(
                             checked = showArchived,
                             modifier = Modifier.size(40.dp),
@@ -496,6 +477,27 @@ fun NotesPage(
                                 contentDescription =
                                     if (showArchived) "Show active" else "Show archived",
                                 modifier = Modifier.size(18.dp),
+                            )
+                        }
+
+                        // Grid / List Mode Toggle Button
+                        FilledTonalIconButton(
+                            onClick = { isGridMode = !isGridMode },
+                            modifier = Modifier.size(40.dp),
+                            colors =
+                                IconButtonDefaults.filledTonalIconButtonColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                ),
+                            shapes =
+                                IconButtonShapes(
+                                    shape = RoundedCornerShape(12.dp),
+                                    pressedShape = MaterialTheme.shapes.small,
+                                ),
+                        ) {
+                            Text(
+                                text = if (isGridMode) "☰" else "⊞",
+                                style = MaterialTheme.typography.titleMedium,
                             )
                         }
                     }
