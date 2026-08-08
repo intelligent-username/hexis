@@ -267,7 +267,9 @@ fun TaskList(
                 Task(
                     categoryId = state.currentCategory.id,
                     title = "",
-                    index = state.tasks[state.currentCategory]?.size ?: 0,
+                    index =
+                        if (state.putNewTasksAtTop) 0
+                        else (state.tasks[state.currentCategory]?.size ?: 0),
                     status = false,
                     reminder = null,
                 ),

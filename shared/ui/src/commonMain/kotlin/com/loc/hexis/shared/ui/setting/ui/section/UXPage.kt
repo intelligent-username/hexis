@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilledTonalIconButton
@@ -44,7 +45,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -53,7 +53,6 @@ import com.loc.hexis.core.settings.Sections
 import com.loc.hexis.shared.ui.components.ExpressiveSwitch
 import com.loc.hexis.shared.ui.components.HexisDialog
 import com.loc.hexis.shared.ui.components.HexisTimePicker
-import com.loc.hexis.shared.ui.components.detachedItemShape
 import com.loc.hexis.shared.ui.components.endItemShape
 import com.loc.hexis.shared.ui.components.leadingItemShape
 import com.loc.hexis.shared.ui.components.listItemColors
@@ -104,13 +103,18 @@ fun UXPage(state: SettingsState, onAction: (SettingsAction) -> Unit, onNavigateB
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(
                         text = "General",
-                        style = MaterialTheme.typography.titleMedium.copy(fontFamily = flexFontEmphasis()),
+                        style =
+                            MaterialTheme.typography.titleMedium.copy(
+                                fontFamily = flexFontEmphasis()
+                            ),
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.padding(start = 4.dp, bottom = 4.dp),
                     )
                     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         ListItem(
-                            headlineContent = { Text(text = stringResource(Res.string.show_habits)) },
+                            headlineContent = {
+                                Text(text = stringResource(Res.string.show_habits))
+                            },
                             supportingContent = {
                                 Text(text = stringResource(Res.string.show_habits_desc))
                             },
@@ -131,7 +135,9 @@ fun UXPage(state: SettingsState, onAction: (SettingsAction) -> Unit, onNavigateB
                         )
 
                         ListItem(
-                            headlineContent = { Text(text = stringResource(Res.string.starting_day)) },
+                            headlineContent = {
+                                Text(text = stringResource(Res.string.starting_day))
+                            },
                             supportingContent = {
                                 Text(text = stringResource(Res.string.starting_day_desc))
                             },
@@ -218,7 +224,10 @@ fun UXPage(state: SettingsState, onAction: (SettingsAction) -> Unit, onNavigateB
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(
                         text = "Habits",
-                        style = MaterialTheme.typography.titleMedium.copy(fontFamily = flexFontEmphasis()),
+                        style =
+                            MaterialTheme.typography.titleMedium.copy(
+                                fontFamily = flexFontEmphasis()
+                            ),
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.padding(start = 4.dp, bottom = 4.dp),
                     )
@@ -286,13 +295,18 @@ fun UXPage(state: SettingsState, onAction: (SettingsAction) -> Unit, onNavigateB
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(
                         text = "Tasks",
-                        style = MaterialTheme.typography.titleMedium.copy(fontFamily = flexFontEmphasis()),
+                        style =
+                            MaterialTheme.typography.titleMedium.copy(
+                                fontFamily = flexFontEmphasis()
+                            ),
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.padding(start = 4.dp, bottom = 4.dp),
                     )
                     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         ListItem(
-                            headlineContent = { Text(text = stringResource(Res.string.reorder_tasks)) },
+                            headlineContent = {
+                                Text(text = stringResource(Res.string.reorder_tasks))
+                            },
                             supportingContent = {
                                 Text(text = stringResource(Res.string.reorder_tasks_desc))
                             },
@@ -309,9 +323,31 @@ fun UXPage(state: SettingsState, onAction: (SettingsAction) -> Unit, onNavigateB
                         )
 
                         ListItem(
-                            headlineContent = { Text(text = "Show pie chart in Pomodoro History tab") },
+                            headlineContent = { Text(text = "Put New Tasks at the top") },
                             supportingContent = {
-                                Text(text = "Display category breakdown pie chart in Pomodoro history")
+                                Text(text = "Place newly created tasks at the top of the list")
+                            },
+                            trailingContent = {
+                                ExpressiveSwitch(
+                                    checked = state.putNewTasksAtTop,
+                                    onCheckedChange = {
+                                        onAction(SettingsAction.ChangePutNewTasksAtTop(it))
+                                    },
+                                )
+                            },
+                            colors = listItemColors(),
+                            modifier = Modifier.clip(middleItemShape()),
+                        )
+
+                        ListItem(
+                            headlineContent = {
+                                Text(text = "Show pie chart in Pomodoro History tab")
+                            },
+                            supportingContent = {
+                                Text(
+                                    text =
+                                        "Display category breakdown pie chart in Pomodoro history"
+                                )
                             },
                             trailingContent = {
                                 ExpressiveSwitch(
@@ -331,7 +367,9 @@ fun UXPage(state: SettingsState, onAction: (SettingsAction) -> Unit, onNavigateB
                         ListItem(
                             headlineContent = { Text(text = "Lock Vault Notes") },
                             supportingContent = {
-                                Text(text = "Require password to view and edit encrypted vault notes")
+                                Text(
+                                    text = "Require password to view and edit encrypted vault notes"
+                                )
                             },
                             trailingContent = {
                                 ExpressiveSwitch(
@@ -369,7 +407,9 @@ fun UXPage(state: SettingsState, onAction: (SettingsAction) -> Unit, onNavigateB
                                     )
                                 },
                                 trailingContent = {
-                                    TextButton(onClick = { showVerifyDialog = true }) { Text("Change") }
+                                    TextButton(onClick = { showVerifyDialog = true }) {
+                                        Text("Change")
+                                    }
                                 },
                                 colors = listItemColors(),
                                 modifier = Modifier.clip(endItemShape()),

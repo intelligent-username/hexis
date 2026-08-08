@@ -94,11 +94,13 @@ fun HabitCard(
     startingDay: DayOfWeek,
     reorderHandle: @Composable () -> Unit,
     is24Hr: Boolean,
+    isDayCutoffEnabled: Boolean = false,
+    dayCutoffHour: Int = 4,
     shape: Shape,
     onPomodoroClick: (Long?) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
-    val today by rememberToday()
+    val today by rememberToday(isDayCutoffEnabled, dayCutoffHour)
     val canCompleteToday = today.dayOfWeek in habitWithAnalytics.habit.days
 
     // animated colors

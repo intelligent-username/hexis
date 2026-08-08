@@ -30,5 +30,6 @@ data class TaskState(
     val completedTasks: List<Task> = emptyList(),
     val is24Hour: Boolean = false,
     val reorderTasks: Boolean = true,
+    val putNewTasksAtTop: Boolean = false,
     val showAddTaskSheet: Boolean = false,
 )

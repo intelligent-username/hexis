@@ -30,8 +30,6 @@ actual fun KeepScreenOn(enabled: Boolean) {
         } else {
             view.keepScreenOn = false
         }
-        onDispose {
-            view.keepScreenOn = false
-        }
+        onDispose { view.keepScreenOn = false }
     }
 }

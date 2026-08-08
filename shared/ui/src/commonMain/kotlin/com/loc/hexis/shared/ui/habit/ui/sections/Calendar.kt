@@ -82,7 +82,7 @@ fun Calendar(
     val currentHabit =
         state.habitsWithAnalytics.find { it.habit.id == state.analyticsHabitId } ?: return
     val windowSizeClass = LocalWindowSizeClass.current
-    val today by rememberToday()
+    val today by rememberToday(state.isDayCutoffEnabled, state.dayCutoffHour)
     val targetValue = currentHabit.habit.targetValue ?: 1.0
     val displayMode = currentHabit.habit.displayMode
     val edgeWeeks = listOf(state.startingDay, daysStartingFrom(state.startingDay).last())

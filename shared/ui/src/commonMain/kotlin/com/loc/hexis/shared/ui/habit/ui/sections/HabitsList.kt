@@ -114,6 +114,8 @@ fun HabitsList(
                         editState = state.editState,
                         onNavigateToAnalytics = onNavigateToAnalytics,
                         is24Hr = state.is24Hr,
+                        isDayCutoffEnabled = state.isDayCutoffEnabled,
+                        dayCutoffHour = state.dayCutoffHour,
                         onPomodoroClick = onPomodoroClick,
                         reorderHandle = {
                             Icon(

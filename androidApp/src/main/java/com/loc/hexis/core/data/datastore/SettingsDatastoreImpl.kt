@@ -59,6 +59,7 @@ class SettingsDatastoreImpl(private val datastore: DataStore<Preferences>) : Set
         private val activePomodoroDataKey = stringPreferencesKey("active_pomodoro_data")
         private val dayCutoffEnabledKey = booleanPreferencesKey("day_cutoff_enabled")
         private val dayCutoffHourKey = intPreferencesKey("day_cutoff_hour")
+        private val putNewTasksAtTopKey = booleanPreferencesKey("put_new_tasks_at_top")
     }
 
     override fun getStartOfTheWeekPref(): Flow<DayOfWeek> =
@@ -253,5 +254,12 @@ class SettingsDatastoreImpl(private val datastore: DataStore<Preferences>) : Set
 
     override suspend fun setDayCutoffHour(hour: Int) {
         datastore.edit { prefs -> prefs[dayCutoffHourKey] = hour }
+    }
+
+    override fun getPutNewTasksAtTopPref(): Flow<Boolean> =
+        datastore.data.map { prefs -> prefs[putNewTasksAtTopKey] ?: false }
+
+    override suspend fun setPutNewTasksAtTopPref(pref: Boolean) {
+        datastore.edit { prefs -> prefs[putNewTasksAtTopKey] = pref }
     }
 }

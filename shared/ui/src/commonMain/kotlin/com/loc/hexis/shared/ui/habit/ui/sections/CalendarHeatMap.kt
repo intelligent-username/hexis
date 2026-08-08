@@ -94,7 +94,7 @@ fun CalendarHeatMap(
 ) {
     var calendarType by rememberSaveable { mutableStateOf(CalendarType.MONTH) }
     val windowSizeClass = LocalWindowSizeClass.current
-    val today by rememberToday()
+    val today by rememberToday(state.isDayCutoffEnabled, state.dayCutoffHour)
     val totalHabits = state.habitsWithAnalytics.size
     var selectedDay: LocalDate? by remember { mutableStateOf(null) }
 

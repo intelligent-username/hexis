@@ -342,6 +342,16 @@ class HabitViewModel(
                     .launchIn(this)
 
                 datastore
+                    .getDayCutoffEnabledPref()
+                    .onEach { pref -> _state.update { it.copy(isDayCutoffEnabled = pref) } }
+                    .launchIn(this)
+
+                datastore
+                    .getDayCutoffHourPref()
+                    .onEach { hour -> _state.update { it.copy(dayCutoffHour = hour) } }
+                    .launchIn(this)
+
+                datastore
                     .getArchivedHabitIds()
                     .onEach { pref -> _state.update { it.copy(archivedHabitIds = pref) } }
                     .launchIn(this)

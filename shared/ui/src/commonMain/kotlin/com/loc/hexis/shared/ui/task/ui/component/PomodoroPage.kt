@@ -118,9 +118,10 @@ fun PomodoroPage(linkedHabitId: Long? = null, onDismiss: () -> Unit) {
     var longBreakText by remember { mutableStateOf("") }
     var intervalText by remember { mutableStateOf("") }
 
-    var currentHabitId by remember(linkedHabitId, pomodoroState.linkedHabitId) {
-        mutableStateOf(linkedHabitId ?: pomodoroState.linkedHabitId)
-    }
+    var currentHabitId by
+        remember(linkedHabitId, pomodoroState.linkedHabitId) {
+            mutableStateOf(linkedHabitId ?: pomodoroState.linkedHabitId)
+        }
     var habitTitle by remember { mutableStateOf("") }
 
     val habitRepo: HabitRepo = koinInject()
@@ -207,13 +208,11 @@ fun PomodoroPage(linkedHabitId: Long? = null, onDismiss: () -> Unit) {
 
     Box(
         modifier =
-            Modifier.fillMaxSize()
-                .background(backgroundColor)
-                .pointerInput(isRunning) {
-                    if (isRunning) {
-                        detectTapGestures { pomodoroManager.pauseSession() }
-                    }
+            Modifier.fillMaxSize().background(backgroundColor).pointerInput(isRunning) {
+                if (isRunning) {
+                    detectTapGestures { pomodoroManager.pauseSession() }
                 }
+            }
     ) {
         Column(
             modifier = Modifier.fillMaxSize(),
@@ -226,7 +225,8 @@ fun PomodoroPage(linkedHabitId: Long? = null, onDismiss: () -> Unit) {
                 exit = fadeOut(tween(250)),
             ) {
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(start = 4.dp, end = 8.dp, top = 32.dp),
+                    modifier =
+                        Modifier.fillMaxWidth().padding(start = 4.dp, end = 8.dp, top = 32.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
@@ -316,7 +316,9 @@ fun PomodoroPage(linkedHabitId: Long? = null, onDismiss: () -> Unit) {
                     )
 
                     drawArc(
-                        color = if (isRunning) Color.DarkGray.copy(alpha = 0.3f) else surfaceContainerHi,
+                        color =
+                            if (isRunning) Color.DarkGray.copy(alpha = 0.3f)
+                            else surfaceContainerHi,
                         startAngle = -90f,
                         sweepAngle = 360f,
                         useCenter = false,
@@ -407,10 +409,7 @@ fun PomodoroPage(linkedHabitId: Long? = null, onDismiss: () -> Unit) {
                             ) {
                                 if (isRunning) {
                                     pomodoroManager.pauseSession()
-                                } else if (
-                                    pomodoroState.currentSessionId == null &&
-                                        phase == PomodoroPhase.FOCUS
-                                ) {
+                                } else if (pomodoroState.currentSessionId == null) {
                                     pomodoroManager.startSession(currentHabitId)
                                 } else {
                                     pomodoroManager.resumeSession(currentHabitId)

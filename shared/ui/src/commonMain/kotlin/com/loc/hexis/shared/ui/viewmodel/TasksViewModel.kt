@@ -71,12 +71,28 @@ class TasksViewModel(
         viewModelScope.launch {
             when (action) {
                 is UpsertTask -> {
-                    if (action.task.status) {
-                        repo.upsertTask(action.task.copy(reminder = null))
+                    val taskToSave = action.task
+                    val isNewTask = taskToSave.id == 0L
+                    if (isNewTask && _state.value.putNewTasksAtTop) {
+                        val currentCategoryTasks =
+                            _state.value.tasks.entries
+                                .find { it.key.id == taskToSave.categoryId }
+                                ?.value ?: emptyList()
+                        currentCategoryTasks.forEach { existing ->
+                            repo.updateTaskIndexById(existing.id, existing.index + 1)
+                        }
+                    }
+                    val finalTask =
+                        if (isNewTask && _state.value.putNewTasksAtTop) {
+                            taskToSave.copy(index = 0)
+                        } else {
+                            taskToSave
+                        }
+                    if (finalTask.status) {
+                        repo.upsertTask(finalTask.copy(reminder = null))
                     } else {
-                        repo.upsertTask(action.task)
-
-                        scheduler.schedule(action.task)
+                        repo.upsertTask(finalTask)
+                        scheduler.schedule(finalTask)
                     }
                 }
 
@@ -129,10 +145,18 @@ class TasksViewModel(
         observerJob?.cancel()
         observerJob =
             viewModelScope.launch {
-                combine(datastore.getIs24Hr(), datastore.getTaskReorderPref()) {
-                        is24Hr,
-                        reorderTasks ->
-                        _state.update { it.copy(is24Hour = is24Hr, reorderTasks = reorderTasks) }
+                combine(
+                        datastore.getIs24Hr(),
+                        datastore.getTaskReorderPref(),
+                        datastore.getPutNewTasksAtTopPref(),
+                    ) { is24Hr, reorderTasks, putTop ->
+                        _state.update {
+                            it.copy(
+                                is24Hour = is24Hr,
+                                reorderTasks = reorderTasks,
+                                putNewTasksAtTop = putTop,
+                            )
+                        }
                     }
                     .launchIn(this)
             }

@@ -101,10 +101,8 @@ fun computePointsSummary(
 ): PointsSummary {
     if (allStatuses.isEmpty()) return PointsSummary()
 
-    val eligible = habit.days
     val today = LocalDate.now()
     val totalWeeks = 52
-    val isCounter = habit.displayMode == DisplayMode.PROGRESS
     val targetVal = habit.targetValue ?: 1.0
 
     val weeklyPoints = mutableMapOf<LocalDate, Int>()
@@ -114,21 +112,8 @@ fun computePointsSummary(
     val completedStatusesSoFar = mutableListOf<HabitStatus>()
 
     for (status in allStatuses.sortedBy { it.date }) {
-        val isCompleted = status.value >= targetVal - 0.001
-        val pts: Int =
-            if (isCompleted) {
-                completedStatusesSoFar.add(status)
-                val streak =
-                    countStreakAtDate(completedStatusesSoFar.map { it.date }, eligible, status.date)
-                val basePts = 10 + (streak * 2)
-                if (isCounter) (basePts * 1.10).roundToInt() else basePts
-            } else if (isCounter && status.value > 0.0 && targetVal > 0.0) {
-                val fraction = (status.value / targetVal).coerceIn(0.0, 1.0)
-                val baseDayPts = 10.0 * 1.10
-                (0.5 * fraction * baseDayPts).roundToInt()
-            } else {
-                0
-            }
+        if (status.value >= targetVal - 0.001) completedStatusesSoFar.add(status)
+        val pts = computePointsForStatus(habit, status, completedStatusesSoFar.map { it.date })
 
         if (pts > 0) {
             totalPoints += pts
@@ -161,6 +146,26 @@ fun computePointsSummary(
         weeklyPointsHistory = history,
         dailyPointsHistory = dailyHistory,
     )
+}
+
+fun computePointsForStatus(
+    habit: Habit,
+    status: HabitStatus,
+    completedDatesUpTo: List<LocalDate>,
+): Int {
+    val targetVal = habit.targetValue ?: 1.0
+    val isCounter = habit.displayMode == DisplayMode.PROGRESS
+    return if (status.value >= targetVal - 0.001) {
+        val streak = countStreakAtDate(completedDatesUpTo, habit.days, status.date)
+        val basePts = 10 + (streak * 2)
+        if (isCounter) (basePts * 1.10).roundToInt() else basePts
+    } else if (isCounter && status.value > 0.0 && targetVal > 0.0) {
+        val fraction = (status.value / targetVal).coerceIn(0.0, 1.0)
+        val baseDayPts = 10.0 * 1.10
+        (0.5 * fraction * baseDayPts).roundToInt()
+    } else {
+        0
+    }
 }
 
 fun filterCompletedStatuses(habit: Habit, statuses: List<HabitStatus>): List<HabitStatus> {

@@ -66,4 +66,6 @@ sealed interface SettingsAction {
     data class ChangeDayCutoffEnabled(val pref: Boolean) : SettingsAction
 
     data class ChangeDayCutoffHour(val hour: Int) : SettingsAction
+
+    data class ChangePutNewTasksAtTop(val pref: Boolean) : SettingsAction
 }

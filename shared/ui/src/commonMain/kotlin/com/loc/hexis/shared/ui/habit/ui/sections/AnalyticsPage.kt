@@ -104,7 +104,7 @@ fun AnalyticsPage(
 ) {
     val windowSizeClass = LocalWindowSizeClass.current
 
-    val today by rememberToday()
+    val today by rememberToday(state.isDayCutoffEnabled, state.dayCutoffHour)
     var selectedDate by remember(today) { mutableStateOf(today) }
     val currentMonth = today.yearMonth
     val currentHabit =
@@ -457,7 +457,9 @@ fun AnalyticsPage(
                                                 ),
                                             color = MaterialTheme.colorScheme.primary,
                                         )
-                                    } else if (!currentHabit.habit.pomodoroLinked && incrementBy != 1.0) {
+                                    } else if (
+                                        !currentHabit.habit.pomodoroLinked && incrementBy != 1.0
+                                    ) {
                                         Text(
                                             text =
                                                 "Step: ±${if (incrementBy % 1.0 == 0.0) incrementBy.toLong().toString() else incrementBy.toString()}",

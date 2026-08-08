@@ -23,8 +23,11 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.glance.GlanceId
 import androidx.glance.GlanceTheme
+import androidx.glance.action.ActionParameters
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.SizeMode
+import androidx.glance.appwidget.action.ActionCallback
+import androidx.glance.appwidget.action.actionRunCallback
 import androidx.glance.appwidget.provideContent
 import com.loc.hexis.app.MainActivity
 import com.loc.hexis.core.habits.HabitRepo
@@ -33,9 +36,8 @@ import com.loc.hexis.core.habits.PointsTrend
 import com.loc.hexis.core.interfaces.ThemeDatastore
 import com.loc.hexis.core.interfaces.WidgetActions
 import com.loc.hexis.widgets.rememberWidgetColorProviders
-import androidx.glance.action.ActionParameters
-import androidx.glance.appwidget.action.ActionCallback
-import androidx.glance.appwidget.action.actionRunCallback
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.get
 
 class RefreshProgressWidgetActionCallback : ActionCallback {
     override suspend fun onAction(

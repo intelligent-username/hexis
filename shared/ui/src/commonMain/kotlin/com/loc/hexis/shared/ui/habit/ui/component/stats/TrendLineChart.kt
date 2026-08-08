@@ -30,85 +30,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.ButtonGroupDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.ToggleButton
-import androidx.compose.material3.ToggleButtonDefaults
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.PathEffect
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.StrokeJoin
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.text.drawText
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.rememberTextMeasurer
-import androidx.compose.ui.unit.dp
-import com.loc.hexis.core.habits.WeeklyTimePeriod
-import com.loc.hexis.core.habits.WeeklyTimePeriod.Companion.toDisplayString
-import com.loc.hexis.core.habits.WeeklyTimePeriod.Companion.toWeeks
-import com.loc.hexis.core.now
-import com.loc.hexis.shared.ui.habit.ui.component.AnalyticsCard
-import com.loc.hexis.shared.ui.habit.ui.component.NotEnoughData
-import com.loc.hexis.shared.ui.theme.flexFontRounded
-import hexis.shared.ui.generated.resources.*
-import kotlin.math.abs
-import kotlinx.datetime.DateTimeUnit
-import kotlinx.datetime.LocalDate
-import kotlinx.datetime.isoDayNumber
-import kotlinx.datetime.minus
-import org.jetbrains.compose.resources.stringResource
-
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
-
-/*
- * Copyright (C) 2025-2026 Hexis
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- */
-
-package com.loc.hexis.shared.ui.habit.ui.component.stats
-
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -171,21 +92,28 @@ fun TrendLineChart(
 
     val pageCount =
         remember(selectedTimePeriod, weeklyPointsHistory, dailyPointsHistory) {
-            when (selectedTimePeriod) {
-                WeeklyTimePeriod.DAYS_7 -> (dailyPointsHistory.size.coerceAtLeast(7)) / 7
-                WeeklyTimePeriod.MONTHS_2 -> (weeklyPointsHistory.size.coerceAtLeast(8)) / 8
-                WeeklyTimePeriod.MONTHS_6 -> (weeklyPointsHistory.size.coerceAtLeast(26)) / 26
-                WeeklyTimePeriod.YEARS_1 -> (weeklyPointsHistory.size.coerceAtLeast(52)) / 52
+            if (selectedTimePeriod == WeeklyTimePeriod.DAYS_7) {
+                val firstData = dailyPointsHistory.indexOfFirst { it > 0 }
+                val dataDays = if (firstData >= 0) dailyPointsHistory.size - firstData else 0
+                (dataDays + 6) / 7
+            } else {
+                val weeks = selectedTimePeriod.toWeeks()
+                val firstData = weeklyPointsHistory.indexOfFirst { it > 0 }
+                val dataWeeks = if (firstData >= 0) weeklyPointsHistory.size - firstData else 0
+                (dataWeeks + weeks - 1) / weeks
             }.coerceAtLeast(1)
         }
     val pagerState = rememberPagerState(pageCount = { pageCount })
 
-    LaunchedEffect(selectedTimePeriod) {
-        pagerState.scrollToPage(0)
-    }
+    LaunchedEffect(selectedTimePeriod) { pagerState.scrollToPage(0) }
 
     val pageDataList =
-        remember(pagerState.currentPage, selectedTimePeriod, weeklyPointsHistory, dailyPointsHistory) {
+        remember(
+            pagerState.currentPage,
+            selectedTimePeriod,
+            weeklyPointsHistory,
+            dailyPointsHistory,
+        ) {
             val page = pagerState.currentPage
             if (selectedTimePeriod == WeeklyTimePeriod.DAYS_7) {
                 val fullList =
@@ -196,18 +124,19 @@ fun TrendLineChart(
             } else {
                 val weeks = selectedTimePeriod.toWeeks()
                 val dropCount = page * weeks
-                weeklyPointsHistory.dropLast(dropCount).takeLast(weeks).ifEmpty { List(weeks) { 0 } }
+                weeklyPointsHistory.dropLast(dropCount).takeLast(weeks).ifEmpty {
+                    List(weeks) { 0 }
+                }
             }
         }
 
-    val maxVal =
-        remember(pageDataList) {
-            pageDataList.maxOrNull()?.coerceAtLeast(1)?.takeIf { pageDataList.any { it > 0 } }
-        }
+    val hasAnyData =
+        if (selectedTimePeriod == WeeklyTimePeriod.DAYS_7) dailyPointsHistory.any { it > 0 }
+        else weeklyPointsHistory.any { it > 0 }
 
-    // Draw-in animation: line traces itself left to right
-    val drawProgress = remember(selectedTimePeriod, pagerState.currentPage) { Animatable(0f) }
-    LaunchedEffect(selectedTimePeriod, pagerState.currentPage) {
+    // Draw-in animation: line traces itself left to right (initial view / period change only)
+    val drawProgress = remember(selectedTimePeriod) { Animatable(0f) }
+    LaunchedEffect(selectedTimePeriod) {
         drawProgress.snapTo(0f)
         drawProgress.animateTo(1f, animationSpec = tween(700, easing = FastOutSlowInEasing))
     }
@@ -221,7 +150,7 @@ fun TrendLineChart(
         icon = Res.drawable.chart_data,
         modifier = modifier.heightIn(max = 420.dp),
     ) {
-        if (maxVal != null) {
+        if (hasAnyData) {
             Row(
                 modifier = Modifier.padding(horizontal = 16.dp),
                 horizontalArrangement =
@@ -277,7 +206,8 @@ fun TrendLineChart(
                             val currentWeekStart =
                                 today.minus(today.dayOfWeek.isoDayNumber - 1, DateTimeUnit.DAY)
                             val weekOffset =
-                                page * selectedTimePeriod.toWeeks() + (pageDataList.size - 1 - selectedIndex)
+                                page * selectedTimePeriod.toWeeks() +
+                                    (pageDataList.size - 1 - selectedIndex)
                             val weekDate = currentWeekStart.minus(weekOffset, DateTimeUnit.WEEK)
                             "$tooltipVal pts · week ${weekDate.weekOfYear()}"
                         }
@@ -321,12 +251,17 @@ fun TrendLineChart(
                             if (dailyPointsHistory.isNotEmpty()) dailyPointsHistory
                             else listOf(0, 0, 0, 0, 0, 0, 0)
                         val dropCount = page * 7
-                        fullList.dropLast(dropCount).takeLast(7).ifEmpty { listOf(0, 0, 0, 0, 0, 0, 0) }
+                        fullList.dropLast(dropCount).takeLast(7).ifEmpty {
+                            listOf(0, 0, 0, 0, 0, 0, 0)
+                        }
                     } else {
                         val weeks = selectedTimePeriod.toWeeks()
                         val dropCount = page * weeks
-                        weeklyPointsHistory.dropLast(dropCount).takeLast(weeks).ifEmpty { List(weeks) { 0 } }
+                        weeklyPointsHistory.dropLast(dropCount).takeLast(weeks).ifEmpty {
+                            List(weeks) { 0 }
+                        }
                     }
+                val pageMax = currentData.maxOrNull()?.coerceAtLeast(1) ?: 1
                 Canvas(
                     modifier =
                         Modifier.fillMaxWidth()
@@ -347,7 +282,7 @@ fun TrendLineChart(
                     val n = currentData.size
 
                     fun xOf(i: Int) = padL + (i.toFloat() / (n - 1).coerceAtLeast(1)) * gW
-                    fun yOf(v: Int) = h - padB - (v.toFloat() / maxVal!!) * gH
+                    fun yOf(v: Int) = h - padB - (v.toFloat() / pageMax) * gH
 
                     val pts = currentData.mapIndexed { i, v -> Offset(xOf(i), yOf(v)) }
 
@@ -367,7 +302,7 @@ fun TrendLineChart(
                             strokeWidth = 1f,
                             pathEffect = PathEffect.dashPathEffect(floatArrayOf(5f, 5f)),
                         )
-                        val labelVal = maxVal - (maxVal / gridCount) * i
+                        val labelVal = pageMax - (pageMax / gridCount) * i
                         val labelResult = textMeasurer.measure("$labelVal", style = labelStyle)
                         drawText(
                             textLayoutResult = labelResult,
@@ -386,7 +321,8 @@ fun TrendLineChart(
                                     val p1 = pts[i]
                                     val p2 = pts[(i + 1).coerceAtMost(n - 1)]
                                     val p3 =
-                                        if (i < n - 2) pts[i + 2] else pts[(i + 1).coerceAtMost(n - 1)]
+                                        if (i < n - 2) pts[i + 2]
+                                        else pts[(i + 1).coerceAtMost(n - 1)]
                                     val segFrac =
                                         if (i == cutIndex) ((clamp * (n - 1)) - i).coerceIn(0f, 1f)
                                         else 1f
@@ -411,7 +347,8 @@ fun TrendLineChart(
                         val fillPath =
                             Path().apply {
                                 addPath(sp)
-                                val lastPtX = pts[((n - 1) * progress).toInt().coerceAtMost(n - 1)].x
+                                val lastPtX =
+                                    pts[((n - 1) * progress).toInt().coerceAtMost(n - 1)].x
                                 lineTo(lastPtX, h - padB)
                                 lineTo(pts[0].x, h - padB)
                                 close()
@@ -455,7 +392,11 @@ fun TrendLineChart(
                                     center = pt,
                                     radius = 2.5.dp.toPx(),
                                 )
-                                drawCircle(color = surfaceColor, center = pt, radius = 1.2.dp.toPx())
+                                drawCircle(
+                                    color = surfaceColor,
+                                    center = pt,
+                                    radius = 1.2.dp.toPx(),
+                                )
                             }
                         }
                     } else if (pts.size == 1) {
@@ -487,7 +428,8 @@ fun TrendLineChart(
                     color = outlineVariantColor,
                 )
                 Text(
-                    text = if (page == 0) "Now" else "${page} period${if (page > 1) "s" else ""} ago",
+                    text =
+                        if (page == 0) "Now" else "${page} period${if (page > 1) "s" else ""} ago",
                     style =
                         MaterialTheme.typography.labelSmall.copy(fontFamily = flexFontRounded()),
                     color = outlineVariantColor,

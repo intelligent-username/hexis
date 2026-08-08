@@ -35,6 +35,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.Icon
@@ -45,6 +47,7 @@ import androidx.compose.material3.ToggleButton
 import androidx.compose.material3.ToggleButtonDefaults
 import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -70,10 +73,6 @@ import kotlin.random.Random
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.runtime.LaunchedEffect
-
 @Composable
 fun WeeklyActivity(lineChartData: List<Double>, modifier: Modifier = Modifier) {
     var selectedTimePeriod by rememberSaveable { mutableStateOf(WeeklyTimePeriod.DAYS_7) }
@@ -81,13 +80,13 @@ fun WeeklyActivity(lineChartData: List<Double>, modifier: Modifier = Modifier) {
     val pageCount =
         remember(selectedTimePeriod, lineChartData) {
             val weeks = selectedTimePeriod.toWeeks()
-            (lineChartData.size.coerceAtLeast(weeks) / weeks).coerceAtLeast(1)
+            val firstData = lineChartData.indexOfFirst { it > 0.0 }
+            val dataCount = if (firstData >= 0) lineChartData.size - firstData else 0
+            ((dataCount + weeks - 1) / weeks).coerceAtLeast(1)
         }
     val pagerState = rememberPagerState(pageCount = { pageCount })
 
-    LaunchedEffect(selectedTimePeriod) {
-        pagerState.scrollToPage(0)
-    }
+    LaunchedEffect(selectedTimePeriod) { pagerState.scrollToPage(0) }
 
     val currentPageData =
         remember(pagerState.currentPage, selectedTimePeriod, lineChartData) {
@@ -96,6 +95,7 @@ fun WeeklyActivity(lineChartData: List<Double>, modifier: Modifier = Modifier) {
             lineChartData.dropLast(dropCount).takeLast(weeks)
         }
 
+    val hasAnyData = lineChartData.any { it != 0.0 }
     val max =
         remember(currentPageData) {
             currentPageData.takeIf { it.any { value -> value != 0.0 } }?.maxOrNull()
@@ -108,7 +108,7 @@ fun WeeklyActivity(lineChartData: List<Double>, modifier: Modifier = Modifier) {
         icon = Res.drawable.chart_data,
         modifier = modifier.heightIn(max = 400.dp),
     ) {
-        if (max != null) {
+        if (hasAnyData) {
             Row(
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 0.dp),
                 horizontalArrangement =
@@ -151,8 +151,7 @@ fun WeeklyActivity(lineChartData: List<Double>, modifier: Modifier = Modifier) {
                     }
                 val avg =
                     remember(pageData) {
-                        if (pageData.isEmpty()) 0
-                        else pageData.average().fastRoundToInt()
+                        if (pageData.isEmpty()) 0 else pageData.average().fastRoundToInt()
                     }
 
                 Column {
@@ -185,7 +184,12 @@ fun WeeklyActivity(lineChartData: List<Double>, modifier: Modifier = Modifier) {
 
                     Row(
                         modifier =
-                            Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp, top = 8.dp),
+                            Modifier.padding(
+                                start = 16.dp,
+                                end = 16.dp,
+                                bottom = 16.dp,
+                                top = 8.dp,
+                            ),
                         verticalAlignment = Alignment.Bottom,
                         horizontalArrangement = Arrangement.spacedBy(2.dp),
                     ) {

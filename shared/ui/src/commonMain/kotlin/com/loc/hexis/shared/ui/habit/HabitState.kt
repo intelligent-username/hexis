@@ -60,6 +60,8 @@ data class HabitState(
     val compactHabitView: Boolean = false,
     val reorderHabits: Boolean = false,
     val is24Hr: Boolean = false,
+    val isDayCutoffEnabled: Boolean = false,
+    val dayCutoffHour: Int = 4,
     val startingDay: DayOfWeek = DayOfWeek.MONDAY,
     val archivedHabitIds: Set<Long> = emptySet(),
     val showArchivedHabits: Boolean = false,

@@ -78,7 +78,7 @@ fun OverallAnalytics(
 ) {
     val windowSizeClass = LocalWindowSizeClass.current
 
-    val today by rememberToday()
+    val today by rememberToday(state.isDayCutoffEnabled, state.dayCutoffHour)
     val currentMonth = today.yearMonth
     val heatMapState =
         rememberHeatMapCalendarState(

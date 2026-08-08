@@ -108,6 +108,10 @@ interface SettingsDatastore {
     fun getDayCutoffHourPref(): Flow<Int>
 
     suspend fun setDayCutoffHour(hour: Int)
+
+    fun getPutNewTasksAtTopPref(): Flow<Boolean>
+
+    suspend fun setPutNewTasksAtTopPref(pref: Boolean)
 }
 
 @kotlinx.serialization.Serializable

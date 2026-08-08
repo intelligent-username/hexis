@@ -17,6 +17,8 @@
 
 package com.loc.hexis.habits.data.repository
 
+import android.content.Context
+import androidx.glance.appwidget.updateAll
 import com.loc.hexis.core.data.notification.HexisNotificationManager
 import com.loc.hexis.core.habits.DisplayMode
 import com.loc.hexis.core.habits.Habit
@@ -29,7 +31,6 @@ import com.loc.hexis.core.habits.PointsTrend
 import com.loc.hexis.core.habits.WeeklyPoints
 import com.loc.hexis.core.habits.countBestStreak
 import com.loc.hexis.core.habits.countCurrentStreak
-import com.loc.hexis.core.habits.countStreakAtDate
 import com.loc.hexis.core.interfaces.SettingsDatastore
 import com.loc.hexis.core.now
 import com.loc.hexis.habits.data.database.HabitStatusDao
@@ -38,6 +39,10 @@ import com.loc.hexis.habits.data.toHabit
 import com.loc.hexis.habits.data.toHabitEntity
 import com.loc.hexis.habits.data.toHabitStatus
 import com.loc.hexis.habits.data.toHabitStatusEntity
+import com.loc.hexis.widgets.habit_overview_widget.HabitOverviewWidget
+import com.loc.hexis.widgets.habit_streak_widget.HabitStreakWidget
+import com.loc.hexis.widgets.habit_week_chart_widget.HabitWeekChartWidget
+import com.loc.hexis.widgets.progress_widget.ProgressWidget
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -56,14 +61,6 @@ import kotlinx.datetime.isoDayNumber
 import kotlinx.datetime.minus
 import kotlinx.datetime.plus
 import org.koin.core.annotation.Single
-
-import android.content.Context
-import androidx.glance.appwidget.updateAll
-import com.loc.hexis.widgets.all_tasks_widget.AllTasksWidget
-import com.loc.hexis.widgets.habit_overview_widget.HabitOverviewWidget
-import com.loc.hexis.widgets.habit_streak_widget.HabitStreakWidget
-import com.loc.hexis.widgets.habit_week_chart_widget.HabitWeekChartWidget
-import com.loc.hexis.widgets.progress_widget.ProgressWidget
 
 @Single(binds = [HabitRepo::class])
 class HabitRepository(
@@ -99,11 +96,20 @@ class HabitRepository(
 
     private val firstDayOfWeek = MutableStateFlow(DayOfWeek.MONDAY)
     private val archivedHabitIds = MutableStateFlow<Set<Long>>(emptySet())
+    private val isCutoffEnabled = MutableStateFlow(false)
+    private val cutoffHour = MutableStateFlow(4)
     private val repoScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    private fun getToday(): LocalDate =
+        com.loc.hexis.core.getLogicalToday(isCutoffEnabled.value, cutoffHour.value)
 
     init {
         repoScope.launch { datastore.getStartOfTheWeekPref().collect { firstDayOfWeek.value = it } }
         repoScope.launch { datastore.getArchivedHabitIds().collect { archivedHabitIds.value = it } }
+        repoScope.launch {
+            datastore.getDayCutoffEnabledPref().collect { isCutoffEnabled.value = it }
+        }
+        repoScope.launch { datastore.getDayCutoffHourPref().collect { cutoffHour.value = it } }
     }
 
     override suspend fun upsertHabit(habit: Habit) {
@@ -161,7 +167,7 @@ class HabitRepository(
                                 dates = completedDates,
                                 firstDayOfWeek = firstDay,
                             ),
-                        startedDaysAgo = habit.time.date.daysUntil(LocalDate.now()).toLong(),
+                        startedDaysAgo = habit.time.date.daysUntil(getToday()).toLong(),
                         consistency = calculateConsistency(completedDates, habit.days),
                         pointsSummary = pointsSummary,
                     )
@@ -180,7 +186,7 @@ class HabitRepository(
                     .mapNotNull { habit ->
                         val todayStatus =
                             habitStatusesFlow.find {
-                                it.habitId == habit.id && it.date == LocalDate.now()
+                                it.habitId == habit.id && it.date == getToday()
                             }
                         if (
                             todayStatus != null && todayStatus.value >= (habit.targetValue ?: 1.0)
@@ -247,7 +253,7 @@ class HabitRepository(
                     } else emptyList()
                 val aggregateDailyHistory =
                     if (allPointsSummaries.isNotEmpty()) {
-                        (0..6).map { dayIdx ->
+                        (0..364).map { dayIdx ->
                             allPointsSummaries.sumOf {
                                 it.dailyPointsHistory.getOrElse(dayIdx) { 0 }
                             }
@@ -306,7 +312,7 @@ class HabitRepository(
                 val weeklyPoints = computeWeeklyPoints(activeHabits, statuses, firstDay)
                 val trend = computePointsTrend(weeklyPoints)
 
-                val today = LocalDate.now()
+                val today = getToday()
                 val todayDow = today.dayOfWeek.isoDayNumber
                 val firstDow = firstDay.isoDayNumber
                 val diff =
@@ -339,7 +345,7 @@ class HabitRepository(
         return habits.combine(habitStatuses) { habitsFlow, statusFlow ->
             habitsFlow.map { habit ->
                 val todayStatus =
-                    statusFlow.find { it.habitId == habit.id && it.date == LocalDate.now() }
+                    statusFlow.find { it.habitId == habit.id && it.date == getToday() }
                 habit to (todayStatus != null && todayStatus.value >= (habit.targetValue ?: 1.0))
             }
         }
@@ -352,7 +358,7 @@ class HabitRepository(
     override suspend fun insertHabitStatus(habitStatus: HabitStatus) {
         habitStatusDao.insertHabitStatus(habitStatus.toHabitStatusEntity())
 
-        if (habitStatus.date == LocalDate.now()) {
+        if (habitStatus.date == getToday()) {
             notificationManager.cancelNotification(habitId = habitStatus.habitId.toInt())
         }
         refreshWidgets()
@@ -387,7 +393,7 @@ class HabitRepository(
             )
         }
 
-        if (date == LocalDate.now()) {
+        if (date == getToday()) {
             notificationManager.cancelNotification(habitId = habitId.toInt())
         }
 
@@ -433,7 +439,7 @@ class HabitRepository(
         statuses: List<HabitStatus>,
         firstDayOfWeek: DayOfWeek,
     ): List<WeeklyPoints> {
-        val now = LocalDate.now()
+        val now = getToday()
         val weeksBack = 26
         val weekStarts =
             (0 until weeksBack)
@@ -572,15 +578,13 @@ class HabitRepository(
     ): Int {
         var totalPoints = 0
         habits.forEach { habit ->
-            val completed =
-                filterCompletedStatuses(habit, statuses.filter { it.habitId == habit.id })
-            val completedInPeriod = completed.filter { it.date in from..to }
+            val habitStatuses = statuses.filter { it.habitId == habit.id }
+            val completed = filterCompletedStatuses(habit, habitStatuses)
+            val statusesInPeriod = habitStatuses.filter { it.date in from..to }
 
-            for (status in completedInPeriod) {
+            for (status in statusesInPeriod) {
                 val allDatesUpTo = completed.filter { it.date <= status.date }.map { it.date }
-                val streak = countStreakAtDate(allDatesUpTo, habit.days, status.date)
-                val pts = 10 + (streak * 3)
-                totalPoints += pts
+                totalPoints += computePointsForStatus(habit, status, allDatesUpTo)
             }
         }
         return totalPoints

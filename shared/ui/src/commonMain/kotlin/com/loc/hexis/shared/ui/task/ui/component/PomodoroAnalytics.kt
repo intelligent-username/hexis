@@ -68,7 +68,6 @@ import androidx.compose.ui.unit.sp
 import com.kizitonwose.calendar.compose.HeatMapCalendar
 import com.kizitonwose.calendar.compose.heatmapcalendar.HeatMapCalendarState
 import com.kizitonwose.calendar.compose.heatmapcalendar.rememberHeatMapCalendarState
-import com.kizitonwose.calendar.core.minusMonths
 import com.kizitonwose.calendar.core.now
 import com.loc.hexis.core.habits.HabitRepo
 import com.loc.hexis.core.habits.countBestStreak
@@ -119,13 +118,13 @@ fun PomodoroAnalytics(onDismiss: () -> Unit, onSelectHabit: (Long?, String) -> U
     val startOfWeekPref by
         settingsDatastore.getStartOfTheWeekPref().collectAsState(initial = DayOfWeek.MONDAY)
 
-    val firstLaunchDate by
-        settingsDatastore.getFirstLaunchDate().collectAsState(initial = null)
+    val firstLaunchDate by settingsDatastore.getFirstLaunchDate().collectAsState(initial = null)
 
     val currentMonth = remember { YearMonth.now() }
-    val startMonth = remember(firstLaunchDate) {
-        firstLaunchDate?.let { YearMonth(it.year, it.month) } ?: currentMonth
-    }
+    val startMonth =
+        remember(firstLaunchDate) {
+            firstLaunchDate?.let { YearMonth(it.year, it.month) } ?: currentMonth
+        }
     val heatMapState: HeatMapCalendarState =
         key(startMonth, startOfWeekPref) {
             rememberHeatMapCalendarState(
@@ -162,7 +161,7 @@ fun PomodoroAnalytics(onDismiss: () -> Unit, onSelectHabit: (Long?, String) -> U
                     }
                 },
             )
-        }
+        },
     ) { padding ->
         Column(
             modifier =
@@ -478,89 +477,89 @@ private fun HabitBreakdownChart(onSelectHabit: (Long?, String) -> Unit = { _, _ 
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-            Canvas(
-                modifier =
-                    Modifier.size(donutSize).pointerInput(displayData, sweepAngles) {
-                        detectTapGestures { tapOffset ->
-                            val center = Offset(size.width / 2f, size.height / 2f)
-                            val dx = tapOffset.x - center.x
-                            val dy = tapOffset.y - center.y
-                            val angleRad = kotlin.math.atan2(dy, dx)
-                            var angleDeg = Math.toDegrees(angleRad.toDouble()).toFloat()
-                            if (angleDeg < 0) angleDeg += 360f
-                            val angleFromTop = (angleDeg - 270f + 360f) % 360f
+                Canvas(
+                    modifier =
+                        Modifier.size(donutSize).pointerInput(displayData, sweepAngles) {
+                            detectTapGestures { tapOffset ->
+                                val center = Offset(size.width / 2f, size.height / 2f)
+                                val dx = tapOffset.x - center.x
+                                val dy = tapOffset.y - center.y
+                                val angleRad = kotlin.math.atan2(dy, dx)
+                                var angleDeg = Math.toDegrees(angleRad.toDouble()).toFloat()
+                                if (angleDeg < 0) angleDeg += 360f
+                                val angleFromTop = (angleDeg - 270f + 360f) % 360f
 
-                            var currentAngle = 0f
-                            for (i in sweepAngles.indices) {
-                                val sweep = sweepAngles[i]
-                                if (
-                                    angleFromTop >= currentAngle &&
-                                        angleFromTop < currentAngle + sweep
-                                ) {
-                                    onSelectHabit(displayData[i].id, displayData[i].title)
-                                    break
+                                var currentAngle = 0f
+                                for (i in sweepAngles.indices) {
+                                    val sweep = sweepAngles[i]
+                                    if (
+                                        angleFromTop >= currentAngle &&
+                                            angleFromTop < currentAngle + sweep
+                                    ) {
+                                        onSelectHabit(displayData[i].id, displayData[i].title)
+                                        break
+                                    }
+                                    currentAngle += sweep
                                 }
-                                currentAngle += sweep
                             }
                         }
+                ) {
+                    var startAngle = -90f
+                    displayData.forEachIndexed { i, entry ->
+                        val sweep = sweepAngles[i]
+                        drawArc(
+                            color = getEntryColor(i),
+                            startAngle = startAngle,
+                            sweepAngle = sweep,
+                            useCenter = false,
+                            topLeft = Offset.Zero,
+                            size = Size(size.width, size.height),
+                            style = Stroke(width = 32f),
+                        )
+                        startAngle += sweep
                     }
-            ) {
-                var startAngle = -90f
-                displayData.forEachIndexed { i, entry ->
-                    val sweep = sweepAngles[i]
-                    drawArc(
-                        color = getEntryColor(i),
-                        startAngle = startAngle,
-                        sweepAngle = sweep,
-                        useCenter = false,
-                        topLeft = Offset.Zero,
-                        size = Size(size.width, size.height),
-                        style = Stroke(width = 32f),
-                    )
-                    startAngle += sweep
                 }
-            }
 
-            Column(
-                modifier = Modifier.weight(1f).padding(start = 20.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                displayData.forEachIndexed { i, entry ->
-                    val pct = ((sweepAngles[i] / 360f) * 100f).toInt()
-                    Row(
-                        modifier =
-                            Modifier.fillMaxWidth()
-                                .clip(RoundedCornerShape(8.dp))
-                                .clickable { onSelectHabit(entry.id, entry.title) }
-                                .padding(vertical = 4.dp, horizontal = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Box(
+                Column(
+                    modifier = Modifier.weight(1f).padding(start = 20.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    displayData.forEachIndexed { i, entry ->
+                        val pct = ((sweepAngles[i] / 360f) * 100f).toInt()
+                        Row(
                             modifier =
-                                Modifier.size(10.dp)
-                                    .background(color = getEntryColor(i), shape = CircleShape)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = entry.title,
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontFamily = flexFontRounded(),
-                            color = MaterialTheme.colorScheme.onSurface,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f),
-                        )
-                        Text(
-                            text = "$pct%",
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontFamily = flexFontRounded(),
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+                                Modifier.fillMaxWidth()
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .clickable { onSelectHabit(entry.id, entry.title) }
+                                    .padding(vertical = 4.dp, horizontal = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Box(
+                                modifier =
+                                    Modifier.size(10.dp)
+                                        .background(color = getEntryColor(i), shape = CircleShape)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = entry.title,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontFamily = flexFontRounded(),
+                                color = MaterialTheme.colorScheme.onSurface,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f),
+                            )
+                            Text(
+                                text = "$pct%",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontFamily = flexFontRounded(),
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                     }
                 }
             }
         }
     }
-}
 }

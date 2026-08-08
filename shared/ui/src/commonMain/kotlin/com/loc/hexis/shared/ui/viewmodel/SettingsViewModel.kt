@@ -39,6 +39,7 @@ import com.loc.hexis.shared.ui.setting.SettingsAction.ChangeIs24Hr
 import com.loc.hexis.shared.ui.setting.SettingsAction.ChangeMaterialYou
 import com.loc.hexis.shared.ui.setting.SettingsAction.ChangePaletteStyle
 import com.loc.hexis.shared.ui.setting.SettingsAction.ChangePauseNotifications
+import com.loc.hexis.shared.ui.setting.SettingsAction.ChangePutNewTasksAtTop
 import com.loc.hexis.shared.ui.setting.SettingsAction.ChangeReorderHabits
 import com.loc.hexis.shared.ui.setting.SettingsAction.ChangeReorderTasks
 import com.loc.hexis.shared.ui.setting.SettingsAction.ChangeSeedColor
@@ -163,11 +164,11 @@ class SettingsViewModel(
                 is ChangeShowPomodoroPieChart ->
                     settingsDatastore.setShowPomodoroPieChartPref(action.pref)
 
-                is ChangeDayCutoffEnabled ->
-                    settingsDatastore.setDayCutoffEnabled(action.pref)
+                is ChangeDayCutoffEnabled -> settingsDatastore.setDayCutoffEnabled(action.pref)
 
-                is ChangeDayCutoffHour ->
-                    settingsDatastore.setDayCutoffHour(action.hour)
+                is ChangeDayCutoffHour -> settingsDatastore.setDayCutoffHour(action.hour)
+
+                is ChangePutNewTasksAtTop -> settingsDatastore.setPutNewTasksAtTopPref(action.pref)
             }
         }
 
@@ -194,6 +195,11 @@ class SettingsViewModel(
                 settingsDatastore
                     .getTaskReorderPref()
                     .onEach { pref -> _state.update { it.copy(reorderTasks = pref) } }
+                    .launchIn(this)
+
+                settingsDatastore
+                    .getPutNewTasksAtTopPref()
+                    .onEach { pref -> _state.update { it.copy(putNewTasksAtTop = pref) } }
                     .launchIn(this)
 
                 settingsDatastore
@@ -297,7 +303,9 @@ class SettingsViewModel(
 
                 settingsDatastore
                     .getDayCutoffEnabledPref()
-                    .onEach { isEnabled -> _state.update { it.copy(isDayCutoffEnabled = isEnabled) } }
+                    .onEach { isEnabled ->
+                        _state.update { it.copy(isDayCutoffEnabled = isEnabled) }
+                    }
                     .launchIn(this)
 
                 settingsDatastore
