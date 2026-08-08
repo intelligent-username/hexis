@@ -149,7 +149,7 @@ fun computePointsSummary(
     val history =
         (0..totalWeeks).map { i -> weeklyPoints[periodStart.plus(i, DateTimeUnit.WEEK)] ?: 0 }
     val dailyHistory =
-        (0..6).map { i -> dailyPoints[today.minus(6 - i, DateTimeUnit.DAY)] ?: 0 }
+        (0..364).map { i -> dailyPoints[today.minus(364 - i, DateTimeUnit.DAY)] ?: 0 }
 
     val currentWeekStart = todayWeekStart
     val lastWeekStart = currentWeekStart.minus(1, DateTimeUnit.WEEK)

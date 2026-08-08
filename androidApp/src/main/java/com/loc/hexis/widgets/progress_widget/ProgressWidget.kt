@@ -33,8 +33,19 @@ import com.loc.hexis.core.habits.PointsTrend
 import com.loc.hexis.core.interfaces.ThemeDatastore
 import com.loc.hexis.core.interfaces.WidgetActions
 import com.loc.hexis.widgets.rememberWidgetColorProviders
-import org.koin.core.component.KoinComponent
-import org.koin.core.component.get
+import androidx.glance.action.ActionParameters
+import androidx.glance.appwidget.action.ActionCallback
+import androidx.glance.appwidget.action.actionRunCallback
+
+class RefreshProgressWidgetActionCallback : ActionCallback {
+    override suspend fun onAction(
+        context: Context,
+        glanceId: GlanceId,
+        parameters: ActionParameters,
+    ) {
+        ProgressWidget().update(context, glanceId)
+    }
+}
 
 class ProgressWidget : GlanceAppWidget(), KoinComponent {
     override val sizeMode: SizeMode = SizeMode.Exact
@@ -80,7 +91,7 @@ class ProgressWidget : GlanceAppWidget(), KoinComponent {
                 ProgressWidgetContent(
                     analytics = analytics,
                     trend = trend,
-                    onRefresh = {},
+                    onRefresh = actionRunCallback<RefreshProgressWidgetActionCallback>(),
                     onOpenApp = openAction,
                 )
             }

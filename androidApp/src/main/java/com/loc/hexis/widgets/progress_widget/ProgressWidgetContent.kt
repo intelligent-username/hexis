@@ -62,7 +62,7 @@ import kotlinx.datetime.minus
 fun ProgressWidgetContent(
     analytics: OverallAnalytics,
     trend: PointsTrend,
-    onRefresh: () -> Unit,
+    onRefresh: Action,
     onOpenApp: Action,
     modifier: GlanceModifier = GlanceModifier,
 ) {
@@ -121,7 +121,7 @@ fun ProgressWidgetContent(
 
 @Composable
 @GlanceComposable
-private fun WidgetTitleBar(showRefresh: Boolean, onRefresh: () -> Unit) {
+private fun WidgetTitleBar(showRefresh: Boolean, onRefresh: Action) {
     TitleBar(
         startIcon = ImageProvider(R.drawable.analytics),
         title = "Progress",
@@ -132,7 +132,7 @@ private fun WidgetTitleBar(showRefresh: Boolean, onRefresh: () -> Unit) {
                         provider = ImageProvider(R.drawable.refresh),
                         contentDescription = null,
                         colorFilter = ColorFilter.tint(GlanceTheme.colors.onSurface),
-                        modifier = GlanceModifier.clickable { onRefresh() },
+                        modifier = GlanceModifier.clickable(onRefresh),
                     )
                 }
             } else {

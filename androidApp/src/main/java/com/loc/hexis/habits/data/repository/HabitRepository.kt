@@ -57,13 +57,33 @@ import kotlinx.datetime.minus
 import kotlinx.datetime.plus
 import org.koin.core.annotation.Single
 
+import android.content.Context
+import androidx.glance.appwidget.updateAll
+import com.loc.hexis.widgets.all_tasks_widget.AllTasksWidget
+import com.loc.hexis.widgets.habit_overview_widget.HabitOverviewWidget
+import com.loc.hexis.widgets.habit_streak_widget.HabitStreakWidget
+import com.loc.hexis.widgets.habit_week_chart_widget.HabitWeekChartWidget
+import com.loc.hexis.widgets.progress_widget.ProgressWidget
+
 @Single(binds = [HabitRepo::class])
 class HabitRepository(
     private val habitDao: HabitsDao,
     private val habitStatusDao: HabitStatusDao,
     private val datastore: SettingsDatastore,
     private val notificationManager: HexisNotificationManager,
+    private val context: Context,
 ) : HabitRepo {
+
+    private fun refreshWidgets() {
+        try {
+            repoScope.launch {
+                ProgressWidget().updateAll(context)
+                HabitOverviewWidget().updateAll(context)
+                HabitStreakWidget().updateAll(context)
+                HabitWeekChartWidget().updateAll(context)
+            }
+        } catch (_: Exception) {}
+    }
 
     private val habits =
         habitDao
@@ -88,10 +108,12 @@ class HabitRepository(
 
     override suspend fun upsertHabit(habit: Habit) {
         habitDao.upsertHabit(habit.toHabitEntity())
+        refreshWidgets()
     }
 
     override suspend fun deleteHabit(habitId: Long) {
         habitDao.deleteHabit(habitId)
+        refreshWidgets()
     }
 
     override suspend fun getHabits(): List<Habit> {
@@ -333,10 +355,12 @@ class HabitRepository(
         if (habitStatus.date == LocalDate.now()) {
             notificationManager.cancelNotification(habitId = habitStatus.habitId.toInt())
         }
+        refreshWidgets()
     }
 
     override suspend fun deleteHabitStatus(habitId: Long, date: LocalDate) {
         habitStatusDao.deleteStatus(habitId, date)
+        refreshWidgets()
     }
 
     override suspend fun getCompletedHabitsForDate(date: LocalDate): List<Habit> {
@@ -367,6 +391,7 @@ class HabitRepository(
             notificationManager.cancelNotification(habitId = habitId.toInt())
         }
 
+        refreshWidgets()
         return newValue
     }
 
@@ -382,6 +407,7 @@ class HabitRepository(
         } else {
             habitStatusDao.upsert(existing.copy(value = newValue))
         }
+        refreshWidgets()
         return newValue.coerceAtLeast(0.0)
     }
 
@@ -428,9 +454,8 @@ class HabitRepository(
 
         val weeklyPointsMap = mutableMapOf<LocalDate, Int>()
         habits.forEach { habit ->
-            val completed =
-                filterCompletedStatuses(habit, statuses.filter { it.habitId == habit.id })
-            val summary = computePointsSummary(habit, completed, firstDayOfWeek)
+            val habitStatuses = statuses.filter { it.habitId == habit.id }
+            val summary = computePointsSummary(habit, habitStatuses, firstDayOfWeek)
             summary.weeklyPointsHistory.forEachIndexed { i, pts ->
                 val wStart = periodStart.plus(i, DateTimeUnit.WEEK)
                 weeklyPointsMap[wStart] = (weeklyPointsMap[wStart] ?: 0) + pts

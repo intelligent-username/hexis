@@ -70,15 +70,35 @@ import kotlin.random.Random
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.runtime.LaunchedEffect
+
 @Composable
 fun WeeklyActivity(lineChartData: List<Double>, modifier: Modifier = Modifier) {
     var selectedTimePeriod by rememberSaveable { mutableStateOf(WeeklyTimePeriod.DAYS_7) }
-    val max =
+
+    val pageCount =
         remember(selectedTimePeriod, lineChartData) {
-            lineChartData
-                .takeLast(selectedTimePeriod.toWeeks())
-                .takeIf { it.any { value -> value != 0.0 } }
-                ?.maxOrNull()
+            val weeks = selectedTimePeriod.toWeeks()
+            (lineChartData.size.coerceAtLeast(weeks) / weeks).coerceAtLeast(1)
+        }
+    val pagerState = rememberPagerState(pageCount = { pageCount })
+
+    LaunchedEffect(selectedTimePeriod) {
+        pagerState.scrollToPage(0)
+    }
+
+    val currentPageData =
+        remember(pagerState.currentPage, selectedTimePeriod, lineChartData) {
+            val weeks = selectedTimePeriod.toWeeks()
+            val dropCount = pagerState.currentPage * weeks
+            lineChartData.dropLast(dropCount).takeLast(weeks)
+        }
+
+    val max =
+        remember(currentPageData) {
+            currentPageData.takeIf { it.any { value -> value != 0.0 } }?.maxOrNull()
         }
     val animatedMax by
         animateFloatAsState(targetValue = max?.toFloat() ?: 1f, label = "WeeklyActivityMax")
@@ -118,73 +138,69 @@ fun WeeklyActivity(lineChartData: List<Double>, modifier: Modifier = Modifier) {
                 }
             }
 
-            val avg =
-                remember(selectedTimePeriod, lineChartData) {
-                    lineChartData
-                        .takeLast(selectedTimePeriod.toWeeks())
-                        .dropLast(1)
-                        .average()
-                        .fastRoundToInt()
-                }
+            HorizontalPager(
+                state = pagerState,
+                reverseLayout = true,
+                modifier = Modifier.fillMaxWidth(),
+            ) { page ->
+                val pageData =
+                    remember(page, selectedTimePeriod, lineChartData) {
+                        val weeks = selectedTimePeriod.toWeeks()
+                        val dropCount = page * weeks
+                        lineChartData.dropLast(dropCount).takeLast(weeks)
+                    }
+                val avg =
+                    remember(pageData) {
+                        if (pageData.isEmpty()) 0
+                        else pageData.average().fastRoundToInt()
+                    }
 
-            Column {
-                Spacer(modifier = Modifier.height(16.dp))
+                Column {
+                    Spacer(modifier = Modifier.height(16.dp))
 
-                Text(
-                    text =
-                        buildAnnotatedString {
-                            withStyle(
-                                style =
-                                    MaterialTheme.typography.displayMedium
-                                        .copy(fontFamily = flexFontRounded())
-                                        .toSpanStyle()
-                            ) {
-                                append("$avg ")
-                            }
+                    Text(
+                        text =
+                            buildAnnotatedString {
+                                withStyle(
+                                    style =
+                                        MaterialTheme.typography.displayMedium
+                                            .copy(fontFamily = flexFontRounded())
+                                            .toSpanStyle()
+                                ) {
+                                    append("$avg ")
+                                }
 
-                            withStyle(
-                                style =
-                                    MaterialTheme.typography.bodyMedium
-                                        .copy(fontFamily = flexFontRounded())
-                                        .toSpanStyle()
-                            ) {
-                                append("Completions per week (Avg)")
-                            }
-                        },
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                )
+                                withStyle(
+                                    style =
+                                        MaterialTheme.typography.bodyMedium
+                                            .copy(fontFamily = flexFontRounded())
+                                            .toSpanStyle()
+                                ) {
+                                    append("Completions per week (Avg)")
+                                }
+                            },
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                    )
 
-                Row(
-                    modifier =
-                        Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp, top = 8.dp),
-                    verticalAlignment = Alignment.Bottom,
-                    horizontalArrangement = Arrangement.spacedBy(2.dp),
-                ) {
-                    val allData =
-                        remember(lineChartData) {
-                            lineChartData.takeLast(WeeklyTimePeriod.YEARS_1.toWeeks())
-                        }
-                    allData.forEachIndexed { index, data ->
-                        val isVisible = index >= allData.size - selectedTimePeriod.toWeeks()
+                    Row(
+                        modifier =
+                            Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp, top = 8.dp),
+                        verticalAlignment = Alignment.Bottom,
+                        horizontalArrangement = Arrangement.spacedBy(2.dp),
+                    ) {
+                        pageData.forEachIndexed { index, data ->
+                            val height by
+                                animateDpAsState(
+                                    targetValue = ((data.toFloat() / animatedMax) * 200).dp,
+                                    animationSpec = MaterialTheme.motionScheme.slowSpatialSpec(),
+                                )
 
-                        val weight by
-                            animateFloatAsState(
-                                targetValue = if (isVisible) 1f else 0f,
-                                animationSpec = MaterialTheme.motionScheme.fastEffectsSpec(),
-                            )
-                        val height by
-                            animateDpAsState(
-                                targetValue = ((data.toFloat() / animatedMax) * 200).dp,
-                                animationSpec = MaterialTheme.motionScheme.slowSpatialSpec(),
-                            )
-
-                        if (weight > 0f) {
                             Column(
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 verticalArrangement = Arrangement.spacedBy(4.dp),
                                 modifier =
-                                    Modifier.weight(weight)
+                                    Modifier.weight(1f)
                                         .height(height)
                                         .background(
                                             color =

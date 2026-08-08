@@ -74,6 +74,87 @@ import kotlinx.datetime.isoDayNumber
 import kotlinx.datetime.minus
 import org.jetbrains.compose.resources.stringResource
 
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+
+/*
+ * Copyright (C) 2025-2026 Hexis
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+package com.loc.hexis.shared.ui.habit.ui.component.stats
+
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ButtonGroupDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.ToggleButton
+import androidx.compose.material3.ToggleButtonDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.text.drawText
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.unit.dp
+import com.loc.hexis.core.habits.WeeklyTimePeriod
+import com.loc.hexis.core.habits.WeeklyTimePeriod.Companion.toDisplayString
+import com.loc.hexis.core.habits.WeeklyTimePeriod.Companion.toWeeks
+import com.loc.hexis.core.now
+import com.loc.hexis.shared.ui.habit.ui.component.AnalyticsCard
+import com.loc.hexis.shared.ui.habit.ui.component.NotEnoughData
+import com.loc.hexis.shared.ui.theme.flexFontRounded
+import hexis.shared.ui.generated.resources.*
+import kotlin.math.abs
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.isoDayNumber
+import kotlinx.datetime.minus
+import org.jetbrains.compose.resources.stringResource
+
 private fun LocalDate.weekOfYear(): Int {
     val firstDayOfYear = LocalDate(year, 1, 1)
     val firstDayOfWeekOffset = firstDayOfYear.dayOfWeek.isoDayNumber - 1
@@ -87,23 +168,46 @@ fun TrendLineChart(
     modifier: Modifier = Modifier,
 ) {
     var selectedTimePeriod by rememberSaveable { mutableStateOf(WeeklyTimePeriod.DAYS_7) }
-    val visibleData =
+
+    val pageCount =
         remember(selectedTimePeriod, weeklyPointsHistory, dailyPointsHistory) {
+            when (selectedTimePeriod) {
+                WeeklyTimePeriod.DAYS_7 -> (dailyPointsHistory.size.coerceAtLeast(7)) / 7
+                WeeklyTimePeriod.MONTHS_2 -> (weeklyPointsHistory.size.coerceAtLeast(8)) / 8
+                WeeklyTimePeriod.MONTHS_6 -> (weeklyPointsHistory.size.coerceAtLeast(26)) / 26
+                WeeklyTimePeriod.YEARS_1 -> (weeklyPointsHistory.size.coerceAtLeast(52)) / 52
+            }.coerceAtLeast(1)
+        }
+    val pagerState = rememberPagerState(pageCount = { pageCount })
+
+    LaunchedEffect(selectedTimePeriod) {
+        pagerState.scrollToPage(0)
+    }
+
+    val pageDataList =
+        remember(pagerState.currentPage, selectedTimePeriod, weeklyPointsHistory, dailyPointsHistory) {
+            val page = pagerState.currentPage
             if (selectedTimePeriod == WeeklyTimePeriod.DAYS_7) {
-                if (dailyPointsHistory.isNotEmpty()) dailyPointsHistory
-                else listOf(0, 0, 0, 0, 0, 0, 0)
+                val fullList =
+                    if (dailyPointsHistory.isNotEmpty()) dailyPointsHistory
+                    else listOf(0, 0, 0, 0, 0, 0, 0)
+                val dropCount = page * 7
+                fullList.dropLast(dropCount).takeLast(7).ifEmpty { listOf(0, 0, 0, 0, 0, 0, 0) }
             } else {
-                weeklyPointsHistory.takeLast(selectedTimePeriod.toWeeks())
+                val weeks = selectedTimePeriod.toWeeks()
+                val dropCount = page * weeks
+                weeklyPointsHistory.dropLast(dropCount).takeLast(weeks).ifEmpty { List(weeks) { 0 } }
             }
         }
+
     val maxVal =
-        remember(visibleData) {
-            visibleData.maxOrNull()?.coerceAtLeast(1)?.takeIf { visibleData.any { it > 0 } }
+        remember(pageDataList) {
+            pageDataList.maxOrNull()?.coerceAtLeast(1)?.takeIf { pageDataList.any { it > 0 } }
         }
 
     // Draw-in animation: line traces itself left to right
-    val drawProgress = remember(selectedTimePeriod) { Animatable(0f) }
-    LaunchedEffect(selectedTimePeriod) {
+    val drawProgress = remember(selectedTimePeriod, pagerState.currentPage) { Animatable(0f) }
+    LaunchedEffect(selectedTimePeriod, pagerState.currentPage) {
         drawProgress.snapTo(0f)
         drawProgress.animateTo(1f, animationSpec = tween(700, easing = FastOutSlowInEasing))
     }
@@ -158,24 +262,23 @@ fun TrendLineChart(
                 contentAlignment = Alignment.CenterStart,
             ) {
                 val tooltipVal =
-                    if (selectedIndex >= 0 && selectedIndex < visibleData.size)
-                        visibleData[selectedIndex]
+                    if (selectedIndex >= 0 && selectedIndex < pageDataList.size)
+                        pageDataList[selectedIndex]
                     else null
                 if (tooltipVal != null) {
                     val today = LocalDate.now()
+                    val page = pagerState.currentPage
                     val labelText =
                         if (selectedTimePeriod == WeeklyTimePeriod.DAYS_7) {
-                            val dayDate =
-                                today.minus(visibleData.size - 1 - selectedIndex, DateTimeUnit.DAY)
+                            val dayOffset = page * 7 + (pageDataList.size - 1 - selectedIndex)
+                            val dayDate = today.minus(dayOffset, DateTimeUnit.DAY)
                             "$tooltipVal pts · ${dayDate.dayOfWeek.name.take(3)}"
                         } else {
                             val currentWeekStart =
                                 today.minus(today.dayOfWeek.isoDayNumber - 1, DateTimeUnit.DAY)
-                            val weekDate =
-                                currentWeekStart.minus(
-                                    visibleData.size - 1 - selectedIndex,
-                                    DateTimeUnit.WEEK,
-                                )
+                            val weekOffset =
+                                page * selectedTimePeriod.toWeeks() + (pageDataList.size - 1 - selectedIndex)
+                            val weekDate = currentWeekStart.minus(weekOffset, DateTimeUnit.WEEK)
                             "$tooltipVal pts · week ${weekDate.weekOfYear()}"
                         }
                     Surface(
@@ -202,168 +305,167 @@ fun TrendLineChart(
             val lineColor = MaterialTheme.colorScheme.primary
             val surfaceColor = MaterialTheme.colorScheme.surface
             val outlineVariantColor = MaterialTheme.colorScheme.outlineVariant
-            val onSurfaceVariantColor = MaterialTheme.colorScheme.onSurfaceVariant
             val textMeasurer = rememberTextMeasurer()
             val labelStyle =
                 MaterialTheme.typography.labelSmall.copy(fontFamily = flexFontRounded())
             val progress = drawProgress.value
 
-            Canvas(
-                modifier =
-                    Modifier.fillMaxWidth()
-                        .height(210.dp)
-                        .padding(horizontal = 16.dp, vertical = 4.dp)
-                        .pointerInput(visibleData) {
-                            detectTapGestures { offset -> touchX = offset.x }
-                        }
-            ) {
-                val w = size.width
-                val h = size.height
-                val padL = 36.dp.toPx()
-                val padR = 12.dp.toPx()
-                val padT = 8.dp.toPx()
-                val padB = 24.dp.toPx()
-                val gW = w - padL - padR
-                val gH = h - padT - padB
-                val n = visibleData.size
-
-                fun xOf(i: Int) = padL + (i.toFloat() / (n - 1).coerceAtLeast(1)) * gW
-                fun yOf(v: Int) = h - padB - (v.toFloat() / maxVal) * gH
-
-                val pts = visibleData.mapIndexed { i, v -> Offset(xOf(i), yOf(v)) }
-
-                // Resolve scrubbing index
-                if (touchX >= 0f && n > 1) {
-                    selectedIndex = pts.indices.minByOrNull { abs(pts[it].x - touchX) } ?: -1
-                }
-
-                // Dashed grid lines
-                val gridCount = 4
-                for (i in 0..gridCount) {
-                    val y = padT + (gH / gridCount) * i
-                    drawLine(
-                        color = outlineVariantColor.copy(alpha = 0.3f),
-                        start = Offset(padL, y),
-                        end = Offset(w - padR, y),
-                        strokeWidth = 1f,
-                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(5f, 5f)),
-                    )
-                    val labelVal = maxVal - (maxVal / gridCount) * i
-                    val labelResult = textMeasurer.measure("$labelVal", style = labelStyle)
-                    drawText(
-                        textLayoutResult = labelResult,
-                        topLeft = Offset(0f, y - labelResult.size.height / 2f),
-                        color = outlineVariantColor,
-                    )
-                }
-
-                if (pts.size >= 2) {
-                    // Catmull-Rom smooth path up to drawProgress fraction
-                    fun buildPath(clamp: Float): Path =
-                        Path().apply {
-                            moveTo(pts[0].x, pts[0].y)
-                            val cutIndex = ((n - 1) * clamp).toInt().coerceIn(0, n - 2)
-                            for (i in 0..cutIndex) {
-                                val p0 = if (i > 0) pts[i - 1] else pts[i]
-                                val p1 = pts[i]
-                                val p2 = pts[(i + 1).coerceAtMost(n - 1)]
-                                val p3 =
-                                    if (i < n - 2) pts[i + 2] else pts[(i + 1).coerceAtMost(n - 1)]
-                                val segFrac =
-                                    if (i == cutIndex) ((clamp * (n - 1)) - i).coerceIn(0f, 1f)
-                                    else 1f
-                                val tx = p1.x + (p2.x - p0.x) / 6f
-                                val ty = p1.y + (p2.y - p0.y) / 6f
-                                val ux = p2.x - (p3.x - p1.x) / 6f
-                                val uy = p2.y - (p3.y - p1.y) / 6f
-                                cubicTo(
-                                    p1.x + (tx - p1.x) * segFrac,
-                                    p1.y + (ty - p1.y) * segFrac,
-                                    p1.x + (ux - p1.x) * segFrac,
-                                    p1.y + (uy - p1.y) * segFrac,
-                                    p1.x + (p2.x - p1.x) * segFrac,
-                                    p1.y + (p2.y - p1.y) * segFrac,
-                                )
+            HorizontalPager(
+                state = pagerState,
+                reverseLayout = true,
+                modifier = Modifier.fillMaxWidth().height(210.dp),
+            ) { page ->
+                val currentData =
+                    if (selectedTimePeriod == WeeklyTimePeriod.DAYS_7) {
+                        val fullList =
+                            if (dailyPointsHistory.isNotEmpty()) dailyPointsHistory
+                            else listOf(0, 0, 0, 0, 0, 0, 0)
+                        val dropCount = page * 7
+                        fullList.dropLast(dropCount).takeLast(7).ifEmpty { listOf(0, 0, 0, 0, 0, 0, 0) }
+                    } else {
+                        val weeks = selectedTimePeriod.toWeeks()
+                        val dropCount = page * weeks
+                        weeklyPointsHistory.dropLast(dropCount).takeLast(weeks).ifEmpty { List(weeks) { 0 } }
+                    }
+                Canvas(
+                    modifier =
+                        Modifier.fillMaxWidth()
+                            .height(210.dp)
+                            .padding(horizontal = 16.dp, vertical = 4.dp)
+                            .pointerInput(currentData) {
+                                detectTapGestures { offset -> touchX = offset.x }
                             }
-                        }
+                ) {
+                    val w = size.width
+                    val h = size.height
+                    val padL = 36.dp.toPx()
+                    val padR = 12.dp.toPx()
+                    val padT = 8.dp.toPx()
+                    val padB = 24.dp.toPx()
+                    val gW = w - padL - padR
+                    val gH = h - padT - padB
+                    val n = currentData.size
 
-                    val sp = buildPath(progress)
+                    fun xOf(i: Int) = padL + (i.toFloat() / (n - 1).coerceAtLeast(1)) * gW
+                    fun yOf(v: Int) = h - padB - (v.toFloat() / maxVal!!) * gH
 
-                    // fill under curve
-                    val fillPath =
-                        Path().apply {
-                            addPath(sp)
-                            val lastPtX = pts[((n - 1) * progress).toInt().coerceAtMost(n - 1)].x
-                            lineTo(lastPtX, h - padB)
-                            lineTo(pts[0].x, h - padB)
-                            close()
-                        }
-                    drawPath(path = fillPath, color = lineColor.copy(alpha = 0.08f))
+                    val pts = currentData.mapIndexed { i, v -> Offset(xOf(i), yOf(v)) }
 
-                    // stroke
-                    drawPath(
-                        path = sp,
-                        color = lineColor,
-                        style =
-                            Stroke(
-                                width = 2.5.dp.toPx(),
-                                cap = StrokeCap.Round,
-                                join = StrokeJoin.Round,
-                            ),
-                    )
-
-                    // Dots
-                    val visibleCount = ((n - 1) * progress).toInt() + 1
-                    pts.take(visibleCount).forEachIndexed { i, pt ->
-                        val isSelected = i == selectedIndex
-                        if (isSelected) {
-                            // Scrubber line
-                            drawLine(
-                                color = lineColor.copy(alpha = 0.25f),
-                                start = Offset(pt.x, padT),
-                                end = Offset(pt.x, h - padB),
-                                strokeWidth = 1f,
-                                pathEffect = PathEffect.dashPathEffect(floatArrayOf(4f, 4f)),
-                            )
-                            drawCircle(
-                                color = lineColor.copy(alpha = 0.15f),
-                                center = pt,
-                                radius = 8.dp.toPx(),
-                            )
-                            drawCircle(color = lineColor, center = pt, radius = 4.dp.toPx())
-                            drawCircle(color = surfaceColor, center = pt, radius = 2.dp.toPx())
-                        } else {
-                            drawCircle(
-                                color = lineColor.copy(alpha = 0.55f),
-                                center = pt,
-                                radius = 2.5.dp.toPx(),
-                            )
-                            drawCircle(color = surfaceColor, center = pt, radius = 1.2.dp.toPx())
-                        }
+                    // Resolve scrubbing index
+                    if (touchX >= 0f && n > 1) {
+                        selectedIndex = pts.indices.minByOrNull { abs(pts[it].x - touchX) } ?: -1
                     }
 
-                    // Value label at last point when not scrubbing
-                    if (progress >= 1f && selectedIndex < 0) {
-                        val lastPt = pts.last()
-                        val label = "${visibleData.last()}"
-                        val labelResult = textMeasurer.measure(label, style = labelStyle)
-                        val lx =
-                            if (lastPt.x + labelResult.size.width + 8.dp.toPx() <= w - padR)
-                                lastPt.x + 8.dp.toPx()
-                            else lastPt.x - labelResult.size.width - 8.dp.toPx()
+                    // Dashed grid lines
+                    val gridCount = 4
+                    for (i in 0..gridCount) {
+                        val y = padT + (gH / gridCount) * i
+                        drawLine(
+                            color = outlineVariantColor.copy(alpha = 0.3f),
+                            start = Offset(padL, y),
+                            end = Offset(w - padR, y),
+                            strokeWidth = 1f,
+                            pathEffect = PathEffect.dashPathEffect(floatArrayOf(5f, 5f)),
+                        )
+                        val labelVal = maxVal - (maxVal / gridCount) * i
+                        val labelResult = textMeasurer.measure("$labelVal", style = labelStyle)
                         drawText(
                             textLayoutResult = labelResult,
-                            topLeft = Offset(lx, lastPt.y - labelResult.size.height / 2f),
-                            color = lineColor,
+                            topLeft = Offset(0f, y - labelResult.size.height / 2f),
+                            color = outlineVariantColor,
                         )
                     }
-                } else if (pts.size == 1) {
-                    drawCircle(
-                        color = lineColor.copy(alpha = 0.8f),
-                        center = pts.first(),
-                        radius = 4.dp.toPx(),
-                    )
-                    drawCircle(color = surfaceColor, center = pts.first(), radius = 2.dp.toPx())
+
+                    if (pts.size >= 2) {
+                        fun buildPath(clamp: Float): Path =
+                            Path().apply {
+                                moveTo(pts[0].x, pts[0].y)
+                                val cutIndex = ((n - 1) * clamp).toInt().coerceIn(0, n - 2)
+                                for (i in 0..cutIndex) {
+                                    val p0 = if (i > 0) pts[i - 1] else pts[i]
+                                    val p1 = pts[i]
+                                    val p2 = pts[(i + 1).coerceAtMost(n - 1)]
+                                    val p3 =
+                                        if (i < n - 2) pts[i + 2] else pts[(i + 1).coerceAtMost(n - 1)]
+                                    val segFrac =
+                                        if (i == cutIndex) ((clamp * (n - 1)) - i).coerceIn(0f, 1f)
+                                        else 1f
+                                    val tx = p1.x + (p2.x - p0.x) / 6f
+                                    val ty = p1.y + (p2.y - p0.y) / 6f
+                                    val ux = p2.x - (p3.x - p1.x) / 6f
+                                    val uy = p2.y - (p3.y - p1.y) / 6f
+                                    cubicTo(
+                                        p1.x + (tx - p1.x) * segFrac,
+                                        p1.y + (ty - p1.y) * segFrac,
+                                        p1.x + (ux - p1.x) * segFrac,
+                                        p1.y + (uy - p1.y) * segFrac,
+                                        p1.x + (p2.x - p1.x) * segFrac,
+                                        p1.y + (p2.y - p1.y) * segFrac,
+                                    )
+                                }
+                            }
+
+                        val sp = buildPath(progress)
+
+                        // fill under curve
+                        val fillPath =
+                            Path().apply {
+                                addPath(sp)
+                                val lastPtX = pts[((n - 1) * progress).toInt().coerceAtMost(n - 1)].x
+                                lineTo(lastPtX, h - padB)
+                                lineTo(pts[0].x, h - padB)
+                                close()
+                            }
+                        drawPath(path = fillPath, color = lineColor.copy(alpha = 0.08f))
+
+                        // stroke
+                        drawPath(
+                            path = sp,
+                            color = lineColor,
+                            style =
+                                Stroke(
+                                    width = 2.5.dp.toPx(),
+                                    cap = StrokeCap.Round,
+                                    join = StrokeJoin.Round,
+                                ),
+                        )
+
+                        // Dots
+                        val visibleCount = ((n - 1) * progress).toInt() + 1
+                        pts.take(visibleCount).forEachIndexed { i, pt ->
+                            val isSelected = i == selectedIndex
+                            if (isSelected) {
+                                drawLine(
+                                    color = lineColor.copy(alpha = 0.25f),
+                                    start = Offset(pt.x, padT),
+                                    end = Offset(pt.x, h - padB),
+                                    strokeWidth = 1f,
+                                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(4f, 4f)),
+                                )
+                                drawCircle(
+                                    color = lineColor.copy(alpha = 0.15f),
+                                    center = pt,
+                                    radius = 8.dp.toPx(),
+                                )
+                                drawCircle(color = lineColor, center = pt, radius = 4.dp.toPx())
+                                drawCircle(color = surfaceColor, center = pt, radius = 2.dp.toPx())
+                            } else {
+                                drawCircle(
+                                    color = lineColor.copy(alpha = 0.55f),
+                                    center = pt,
+                                    radius = 2.5.dp.toPx(),
+                                )
+                                drawCircle(color = surfaceColor, center = pt, radius = 1.2.dp.toPx())
+                            }
+                        }
+                    } else if (pts.size == 1) {
+                        drawCircle(
+                            color = lineColor.copy(alpha = 0.8f),
+                            center = pts.first(),
+                            radius = 4.dp.toPx(),
+                        )
+                        drawCircle(color = surfaceColor, center = pts.first(), radius = 2.dp.toPx())
+                    }
                 }
             }
 
@@ -373,14 +475,19 @@ fun TrendLineChart(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
+                val page = pagerState.currentPage
+                val periodLabel =
+                    if (page == 0) "Current"
+                    else if (selectedTimePeriod == WeeklyTimePeriod.DAYS_7) "${page}w ago"
+                    else "${page * selectedTimePeriod.toWeeks()}w ago"
                 Text(
-                    text = "${visibleData.size}w ago",
+                    text = periodLabel,
                     style =
                         MaterialTheme.typography.labelSmall.copy(fontFamily = flexFontRounded()),
                     color = outlineVariantColor,
                 )
                 Text(
-                    text = "now",
+                    text = if (page == 0) "Now" else "${page} period${if (page > 1) "s" else ""} ago",
                     style =
                         MaterialTheme.typography.labelSmall.copy(fontFamily = flexFontRounded()),
                     color = outlineVariantColor,
