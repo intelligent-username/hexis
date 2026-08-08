@@ -118,7 +118,9 @@ fun PomodoroPage(linkedHabitId: Long? = null, onDismiss: () -> Unit) {
     var longBreakText by remember { mutableStateOf("") }
     var intervalText by remember { mutableStateOf("") }
 
-    var currentHabitId by remember(linkedHabitId) { mutableStateOf(linkedHabitId) }
+    var currentHabitId by remember(linkedHabitId, pomodoroState.linkedHabitId) {
+        mutableStateOf(linkedHabitId ?: pomodoroState.linkedHabitId)
+    }
     var habitTitle by remember { mutableStateOf("") }
 
     val habitRepo: HabitRepo = koinInject()
@@ -127,6 +129,8 @@ fun PomodoroPage(linkedHabitId: Long? = null, onDismiss: () -> Unit) {
         if (currentHabitId != null) {
             val h = habitRepo.getHabitById(currentHabitId!!)
             if (h != null) habitTitle = h.title
+        } else {
+            habitTitle = ""
         }
     }
 

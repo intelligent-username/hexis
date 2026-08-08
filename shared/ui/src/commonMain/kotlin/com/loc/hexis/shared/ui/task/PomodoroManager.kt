@@ -254,6 +254,7 @@ class PomodoroManager(
                     targetEndTimeMillis = targetEndMs,
                     currentSessionId = sessionId,
                     sessionStartTimeMillis = nowMs,
+                    linkedHabitId = linkedHabitId ?: currentState.linkedHabitId,
                 )
             }
 
