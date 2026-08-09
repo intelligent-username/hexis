@@ -1,5 +1,16 @@
 # Changelog
 
+# 1.7.2
+
+Multiple bug fixes.
+
+- "Custom day start time" habit enforcement and subsequent bug fixes
+- Notes movability, tasks arrangement settings
+- Pomodoro slightly better colors.
+- Pomodoro linked habit incrementing
+- Improved data exports
+- Better progress analytics stats
+
 ## 1.7.1
 
 - Pomodoro-based habits shortcut improvement & tracking accuracy

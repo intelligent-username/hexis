@@ -146,13 +146,15 @@ fun HabitsList(
 
     if (state.showHabitAddSheet) {
         val newHabitId = requireNotNull(state.newHabitId)
+        val logicalToday = com.loc.hexis.core.getLogicalToday(state.isDayCutoffEnabled, state.dayCutoffHour)
+        val nowTime = kotlinx.datetime.LocalTime.now()
         HabitUpsertSheet(
             habit =
                 Habit(
                     id = newHabitId,
                     title = "",
                     description = "",
-                    time = LocalDateTime.now(),
+                    time = LocalDateTime(date = logicalToday, time = nowTime),
                     days = DayOfWeek.entries.toSet(),
                     index = state.habitsWithAnalytics.size,
                     reminder = false,
@@ -167,6 +169,7 @@ fun HabitsList(
             is24Hr = state.is24Hr,
         )
     }
+
 
 
 }

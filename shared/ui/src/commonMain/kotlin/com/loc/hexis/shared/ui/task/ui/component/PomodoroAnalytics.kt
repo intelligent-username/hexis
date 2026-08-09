@@ -429,12 +429,16 @@ private fun HabitBreakdownChart(onSelectHabit: (Long?, String) -> Unit = { _, _ 
 
     val palette =
         listOf(
-            MaterialTheme.colorScheme.primary,
-            MaterialTheme.colorScheme.secondary,
-            Color(0xFF81C784), // Emerald Green
-            Color(0xFFFFB74D), // Warm Amber
-            Color(0xFFBA68C8), // Violet / Purple
-            Color(0xFF4DB6AC), // Teal
+            Color(0xFF5C6BC0), // Indigo
+            Color(0xFFEF5350), // Red
+            Color(0xFF66BB6A), // Green
+            Color(0xFFFFCA28), // Amber
+            Color(0xFFAB47BC), // Purple
+            Color(0xFF26A69A), // Teal
+            Color(0xFFEC407A), // Pink
+            Color(0xFF29B6F6), // Light Blue
+            Color(0xFFFF7043), // Deep Orange
+            Color(0xFF8D6E63)  // Brown
         )
 
     fun getEntryColor(index: Int): Color = palette[index % palette.size]
