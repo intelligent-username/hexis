@@ -1,25 +1,11 @@
-/*
- * Copyright (C) 2025-2026 Hexis
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- */
-
 package com.loc.hexis.core.data.backup
 
 import com.loc.hexis.core.data.Converters
+import com.loc.hexis.core.habits.DisplayMode
 import com.loc.hexis.core.habits.Habit
 import com.loc.hexis.core.habits.HabitStatus
+import com.loc.hexis.core.note.Note
+import com.loc.hexis.core.note.NoteType
 import com.loc.hexis.core.tasks.Category
 import com.loc.hexis.core.tasks.PomodoroSession
 import com.loc.hexis.core.tasks.Task
@@ -37,6 +23,10 @@ fun Habit.toHabitSchema(): HabitSchema {
         time = time.toInstant(TimeZone.currentSystemDefault()).toEpochMilliseconds(),
         days = Converters.dayOfWeekToString(days),
         reminder = reminder,
+        displayMode = displayMode.name,
+        targetValue = targetValue,
+        pomodoroLinked = pomodoroLinked,
+        incrementBy = incrementBy,
     )
 }
 
@@ -49,15 +39,29 @@ fun HabitSchema.toHabit(): Habit {
         time = Instant.fromEpochMilliseconds(time).toLocalDateTime(TimeZone.currentSystemDefault()),
         days = Converters.dayOfWeekFromString(days),
         reminder = reminder,
+        displayMode = runCatching { DisplayMode.valueOf(displayMode) }.getOrDefault(DisplayMode.CHECKBOX),
+        targetValue = targetValue ?: 1.0,
+        pomodoroLinked = pomodoroLinked,
+        incrementBy = incrementBy,
     )
 }
 
 fun HabitStatus.toHabitStatusSchema(): HabitStatusSchema {
-    return HabitStatusSchema(id = id, habitId = habitId, date = Converters.dayToTimestamp(date))
+    return HabitStatusSchema(
+        id = id,
+        habitId = habitId,
+        date = Converters.dayToTimestamp(date),
+        value = value,
+    )
 }
 
 fun HabitStatusSchema.toHabitStatus(): HabitStatus {
-    return HabitStatus(id = id, habitId = habitId, date = Converters.dayFromTimestamp(date))
+    return HabitStatus(
+        id = id,
+        habitId = habitId,
+        date = Converters.dayFromTimestamp(date),
+        value = value,
+    )
 }
 
 fun TaskSchema.toTask(): Task {
@@ -113,3 +117,36 @@ fun PomodoroSessionSchema.toPomodoroSession(): PomodoroSession {
         linkedHabitId = linkedHabitId,
     )
 }
+
+fun Note.toNoteSchema(): NoteSchema {
+    return NoteSchema(
+        id = id,
+        title = title,
+        content = content,
+        type = type.name,
+        payloadJson = payloadJson,
+        metadata = metadata,
+        sortOrder = sortOrder,
+        createdAt = createdAt.toInstant(TimeZone.currentSystemDefault()).toEpochMilliseconds(),
+        updatedAt = updatedAt.toInstant(TimeZone.currentSystemDefault()).toEpochMilliseconds(),
+        pinned = pinned,
+        archived = archived,
+    )
+}
+
+fun NoteSchema.toNote(): Note {
+    return Note(
+        id = id,
+        title = title,
+        content = content,
+        type = runCatching { NoteType.valueOf(type) }.getOrDefault(NoteType.MARKDOWN),
+        payloadJson = payloadJson,
+        metadata = metadata,
+        sortOrder = sortOrder,
+        createdAt = Instant.fromEpochMilliseconds(createdAt).toLocalDateTime(TimeZone.currentSystemDefault()),
+        updatedAt = Instant.fromEpochMilliseconds(updatedAt).toLocalDateTime(TimeZone.currentSystemDefault()),
+        pinned = pinned,
+        archived = archived,
+    )
+}
+

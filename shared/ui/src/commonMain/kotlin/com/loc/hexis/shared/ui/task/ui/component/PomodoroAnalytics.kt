@@ -1,20 +1,3 @@
-/*
- * Copyright (C) 2025-2026 Hexis
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- */
-
 package com.loc.hexis.shared.ui.task.ui.component
 
 import androidx.compose.foundation.Canvas
@@ -447,12 +430,15 @@ private fun HabitBreakdownChart(onSelectHabit: (Long?, String) -> Unit = { _, _ 
     val palette =
         listOf(
             MaterialTheme.colorScheme.primary,
-            MaterialTheme.colorScheme.tertiary,
             MaterialTheme.colorScheme.secondary,
-            MaterialTheme.colorScheme.error,
+            Color(0xFF81C784), // Emerald Green
+            Color(0xFFFFB74D), // Warm Amber
+            Color(0xFFBA68C8), // Violet / Purple
+            Color(0xFF4DB6AC), // Teal
         )
 
     fun getEntryColor(index: Int): Color = palette[index % palette.size]
+
 
     Surface(
         shape = MaterialTheme.shapes.medium,

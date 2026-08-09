@@ -1,31 +1,17 @@
-/*
- * Copyright (C) 2025-2026 Hexis
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- */
-
 package com.loc.hexis.core.data.backup.export
 
 import com.loc.hexis.core.data.backup.ExportSchema
 import com.loc.hexis.core.data.backup.HabitTimeDivisionPairSchema
+import com.loc.hexis.core.data.backup.UserSettingsSchema
 import com.loc.hexis.core.data.backup.toCategorySchema
 import com.loc.hexis.core.data.backup.toHabitSchema
 import com.loc.hexis.core.data.backup.toHabitStatusSchema
+import com.loc.hexis.core.data.backup.toNoteSchema
 import com.loc.hexis.core.data.backup.toPomodoroSessionSchema
 import com.loc.hexis.core.data.backup.toTaskSchema
 import com.loc.hexis.core.habits.HabitRepo
 import com.loc.hexis.core.interfaces.SettingsDatastore
+import com.loc.hexis.core.note.NoteRepo
 import com.loc.hexis.core.now
 import com.loc.hexis.core.settings.backup.ExportRepo
 import com.loc.hexis.core.tasks.PomodoroRepo
@@ -47,6 +33,7 @@ class ExportImpl(
     private val taskRepo: TaskRepo,
     private val habitsRepo: HabitRepo,
     private val pomodoroRepo: PomodoroRepo,
+    private val noteRepo: NoteRepo,
     private val settingsDatastore: SettingsDatastore,
 ) : ExportRepo {
     override suspend fun exportToJson() {
@@ -115,6 +102,49 @@ class ExportImpl(
                     }
                     .await()
 
+            val notesDef =
+                async {
+                        withContext(Dispatchers.IO) {
+                            val active = noteRepo.getNotesFlow().first()
+                            val archived = noteRepo.getArchivedNotesFlow().first()
+                            (active + archived).distinctBy { it.id }.map { it.toNoteSchema() }
+                        }
+                    }
+                    .await()
+
+            val archivedHabitIdsDef =
+                async {
+                        withContext(Dispatchers.IO) {
+                            settingsDatastore.getArchivedHabitIds().first().toList()
+                        }
+                    }
+                    .await()
+
+            val userSettingsDef =
+                async {
+                        withContext(Dispatchers.IO) {
+                            UserSettingsSchema(
+                                startOfTheWeek =
+                                    settingsDatastore.getStartOfTheWeekPref().first().name,
+                                is24Hr = settingsDatastore.getIs24Hr().first(),
+                                dayCutoffEnabled =
+                                    settingsDatastore.getDayCutoffEnabledPref().first(),
+                                dayCutoffHour = settingsDatastore.getDayCutoffHourPref().first(),
+                                compactHabitView = settingsDatastore.getCompactViewPref().first(),
+                                taskReorderPref = settingsDatastore.getTaskReorderPref().first(),
+                                habitReorderPref = settingsDatastore.getHabitReorderPref().first(),
+                                putNewTasksAtTopPref =
+                                    settingsDatastore.getPutNewTasksAtTopPref().first(),
+                                showPomodoroPieChartPref =
+                                    settingsDatastore.getShowPomodoroPieChartPref().first(),
+                                lockVaultNotesPref =
+                                    settingsDatastore.getLockVaultNotesPref().first(),
+                                vaultPasswordHash = settingsDatastore.getVaultPasswordHash().first(),
+                            )
+                        }
+                    }
+                    .await()
+
             val time = LocalDateTime.now().toString().replace(":", "").replace(" ", "")
             val file =
                 FileKit.openFileSaver(
@@ -133,9 +163,13 @@ class ExportImpl(
                         timeDivisions = timeDivisionsDef,
                         pomodoroSettings = pomodoroSettingsDef,
                         habitTimeDivisionPairs = habitTimeDivisionMapDef,
+                        notes = notesDef,
+                        archivedHabitIds = archivedHabitIdsDef,
+                        userSettings = userSettingsDef,
                     )
                 )
             )
         }
     }
 }
+

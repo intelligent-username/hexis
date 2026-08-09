@@ -1,20 +1,3 @@
-/*
- * Copyright (C) 2025-2026 Hexis
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- */
-
 package com.loc.hexis.core.data.backup
 
 import com.loc.hexis.core.habits.TimeDivision
@@ -35,6 +18,9 @@ data class ExportSchema(
     val timeDivisions: List<TimeDivision> = emptyList(),
     val pomodoroSettings: PomodoroSettings? = null,
     val habitTimeDivisionPairs: List<HabitTimeDivisionPairSchema> = emptyList(),
+    val notes: List<NoteSchema> = emptyList(),
+    val archivedHabitIds: List<Long> = emptyList(),
+    val userSettings: UserSettingsSchema? = null,
 )
 
 @Serializable
@@ -46,9 +32,19 @@ data class HabitSchema(
     val time: Long,
     val days: String,
     val reminder: Boolean,
+    val displayMode: String = "CHECKBOX",
+    val targetValue: Double? = 1.0,
+    val pomodoroLinked: Boolean = false,
+    val incrementBy: Double = 1.0,
 )
 
-@Serializable data class HabitStatusSchema(val id: Long = 0, val habitId: Long, val date: Long)
+@Serializable
+data class HabitStatusSchema(
+    val id: Long = 0,
+    val habitId: Long,
+    val date: Long,
+    val value: Double = 1.0,
+)
 
 @Serializable
 data class TaskSchema(
@@ -75,3 +71,34 @@ data class PomodoroSessionSchema(
 )
 
 @Serializable data class HabitTimeDivisionPairSchema(val habitId: Long, val divisionId: Long)
+
+@Serializable
+data class NoteSchema(
+    val id: Long = 0,
+    val title: String,
+    val content: String = "",
+    val type: String = "MARKDOWN",
+    val payloadJson: String? = null,
+    val metadata: String? = null,
+    val sortOrder: Int = 0,
+    val createdAt: Long,
+    val updatedAt: Long,
+    val pinned: Boolean = false,
+    val archived: Boolean = false,
+)
+
+@Serializable
+data class UserSettingsSchema(
+    val startOfTheWeek: String = "MONDAY",
+    val is24Hr: Boolean = false,
+    val dayCutoffEnabled: Boolean = false,
+    val dayCutoffHour: Int = 4,
+    val compactHabitView: Boolean = false,
+    val taskReorderPref: Boolean = true,
+    val habitReorderPref: Boolean = false,
+    val putNewTasksAtTopPref: Boolean = false,
+    val showPomodoroPieChartPref: Boolean = true,
+    val lockVaultNotesPref: Boolean = false,
+    val vaultPasswordHash: String? = null,
+)
+

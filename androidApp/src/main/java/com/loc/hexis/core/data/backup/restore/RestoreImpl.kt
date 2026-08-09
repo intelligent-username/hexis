@@ -1,20 +1,3 @@
-/*
- * Copyright (C) 2025-2026 Hexis
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- */
-
 package com.loc.hexis.core.data.backup.restore
 
 import android.util.Log
@@ -22,11 +5,13 @@ import com.loc.hexis.core.data.backup.ExportSchema
 import com.loc.hexis.core.data.backup.toCategory
 import com.loc.hexis.core.data.backup.toHabit
 import com.loc.hexis.core.data.backup.toHabitStatus
+import com.loc.hexis.core.data.backup.toNote
 import com.loc.hexis.core.data.backup.toPomodoroSession
 import com.loc.hexis.core.data.backup.toTask
 import com.loc.hexis.core.habits.HabitRepo
 import com.loc.hexis.core.interfaces.AlarmScheduler
 import com.loc.hexis.core.interfaces.SettingsDatastore
+import com.loc.hexis.core.note.NoteRepo
 import com.loc.hexis.core.settings.backup.RestoreFailedException
 import com.loc.hexis.core.settings.backup.RestoreRepo
 import com.loc.hexis.core.settings.backup.RestoreResult
@@ -44,6 +29,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.withContext
+import kotlinx.datetime.DayOfWeek
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import org.koin.core.annotation.Single
@@ -54,6 +40,7 @@ class RestoreImpl(
     private val habitRepo: HabitRepo,
     private val alarmScheduler: AlarmScheduler,
     private val pomodoroRepo: PomodoroRepo,
+    private val noteRepo: NoteRepo,
     private val settingsDatastore: SettingsDatastore,
 ) : RestoreRepo {
     override suspend fun restoreData(): RestoreResult {
@@ -118,6 +105,34 @@ class RestoreImpl(
                                 it.habitId to it.divisionId
                             }
                         )
+
+                        jsonDeserialized.notes
+                            .map { it.toNote() }
+                            .forEach { noteRepo.upsertNote(it) }
+
+                        settingsDatastore.setArchivedHabitIds(
+                            jsonDeserialized.archivedHabitIds.toSet()
+                        )
+
+                        jsonDeserialized.userSettings?.let { settings ->
+                            runCatching { DayOfWeek.valueOf(settings.startOfTheWeek) }
+                                .getOrNull()
+                                ?.let { settingsDatastore.setStartOfWeek(it) }
+                            settingsDatastore.setIs24Hr(settings.is24Hr)
+                            settingsDatastore.setDayCutoffEnabled(settings.dayCutoffEnabled)
+                            settingsDatastore.setDayCutoffHour(settings.dayCutoffHour)
+                            settingsDatastore.setCompactView(settings.compactHabitView)
+                            settingsDatastore.setTaskReorderPref(settings.taskReorderPref)
+                            settingsDatastore.setHabitReorderPref(settings.habitReorderPref)
+                            settingsDatastore.setPutNewTasksAtTopPref(
+                                settings.putNewTasksAtTopPref
+                            )
+                            settingsDatastore.setShowPomodoroPieChartPref(
+                                settings.showPomodoroPieChartPref
+                            )
+                            settingsDatastore.setLockVaultNotesPref(settings.lockVaultNotesPref)
+                            settingsDatastore.setVaultPasswordHash(settings.vaultPasswordHash)
+                        }
                     },
                 )
             }
@@ -132,3 +147,4 @@ class RestoreImpl(
         }
     }
 }
+
