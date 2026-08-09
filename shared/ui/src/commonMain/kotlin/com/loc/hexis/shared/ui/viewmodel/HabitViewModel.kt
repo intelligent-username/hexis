@@ -1,4 +1,4 @@
-﻿
+
 package com.loc.hexis.shared.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
@@ -7,6 +7,7 @@ import com.loc.hexis.core.habits.Habit
 import com.loc.hexis.core.habits.HabitRepo
 import com.loc.hexis.core.interfaces.AlarmScheduler
 import com.loc.hexis.core.interfaces.SettingsDatastore
+import com.loc.hexis.core.getLogicalToday
 import com.loc.hexis.core.now
 import com.loc.hexis.shared.ui.habit.HabitState
 import com.loc.hexis.shared.ui.habit.HabitsAction
@@ -59,10 +60,24 @@ class HabitViewModel(
     fun onAction(action: HabitsAction) {
         viewModelScope.launch {
             when (action) {
-                is HabitsAction.AddHabit -> upsertHabit(action.habit)
+                is HabitsAction.AddHabit -> {
+                    val logicalToday = getLogicalToday(_state.value.isDayCutoffEnabled, _state.value.dayCutoffHour)
+                    val habitToSave = if (action.habit.time.date > logicalToday) {
+                        action.habit.copy(time = LocalDateTime(date = logicalToday, time = action.habit.time.time))
+                    } else {
+                        action.habit
+                    }
+                    upsertHabit(habitToSave)
+                }
 
                 is HabitsAction.AddHabitWithDivision -> {
-                    upsertHabit(action.habit)
+                    val logicalToday = getLogicalToday(_state.value.isDayCutoffEnabled, _state.value.dayCutoffHour)
+                    val habitToSave = if (action.habit.time.date > logicalToday) {
+                        action.habit.copy(time = LocalDateTime(date = logicalToday, time = action.habit.time.time))
+                    } else {
+                        action.habit
+                    }
+                    upsertHabit(habitToSave)
                     datastore.setHabitTimeDivision(action.habit.id, action.divisionId)
                 }
 

@@ -343,7 +343,7 @@ fun HabitCard(
                             }
                         val validDay =
                             weekDay.date <= today &&
-                                weekDay.date >= effectiveStartDate &&
+                                weekDay.date >= startDate &&
                                 weekDay.date.dayOfWeek in habitWithAnalytics.habit.days
 
                         Box(
