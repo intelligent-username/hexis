@@ -7,6 +7,7 @@ import com.loc.hexis.widgets.habit_overview_widget.HabitOverviewWidget
 import com.loc.hexis.widgets.habit_streak_widget.HabitStreakWidget
 import com.loc.hexis.widgets.habit_week_chart_widget.HabitWeekChartWidget
 import com.loc.hexis.widgets.notes_shortcut_widget.NotesShortcutWidget
+import com.loc.hexis.widgets.pomodoro_widget.PomodoroWidget
 import com.loc.hexis.widgets.progress_widget.ProgressWidget
 import com.loc.hexis.widgets.single_note_widget.SingleNoteWidget
 import kotlinx.coroutines.CoroutineScope
@@ -27,6 +28,7 @@ class GlanceWidgetRefresher(@Provided private val context: Context) : WidgetRefr
                 HabitOverviewWidget().updateAll(context)
                 HabitStreakWidget().updateAll(context)
                 HabitWeekChartWidget().updateAll(context)
+                PomodoroWidget().updateAll(context)
             }
         }
     }
@@ -36,6 +38,14 @@ class GlanceWidgetRefresher(@Provided private val context: Context) : WidgetRefr
             runCatching {
                 NotesShortcutWidget().updateAll(context)
                 SingleNoteWidget().updateAll(context)
+            }
+        }
+    }
+
+    override fun refreshPomodoroWidgets() {
+        scope.launch {
+            runCatching {
+                PomodoroWidget().updateAll(context)
             }
         }
     }

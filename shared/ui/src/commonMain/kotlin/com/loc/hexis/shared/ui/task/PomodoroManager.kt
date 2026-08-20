@@ -1,4 +1,4 @@
-﻿
+
 package com.loc.hexis.shared.ui.task
 
 import com.loc.hexis.core.habits.HabitRepo
@@ -29,6 +29,7 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import org.koin.core.annotation.Provided
 import org.koin.core.annotation.Single
+import com.loc.hexis.core.interfaces.WidgetRefresher
 
 enum class PomodoroPhase {
     FOCUS,
@@ -58,6 +59,7 @@ class PomodoroManager(
     @Provided private val settingsDatastore: SettingsDatastore,
     @Provided private val pomodoroAlarm: PomodoroAlarm,
     @Provided private val vibrator: VibratorUtil,
+    @Provided private val widgetRefresher: WidgetRefresher? = null,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private val _state = MutableStateFlow(ActivePomodoroState())
@@ -85,6 +87,28 @@ class PomodoroManager(
 
     private suspend fun restoreAndSyncActiveSession() {
         val activeData = settingsDatastore.getActivePomodoroSessionData().first() ?: return
+        if (activeData.isPaused) {
+            val totalDuration =
+                if (activeData.totalDurationSeconds > 0) activeData.totalDurationSeconds
+                else (activeData.focusMinutes * 60).toInt()
+            val remaining =
+                if (activeData.pausedSecondsRemaining > 0) activeData.pausedSecondsRemaining
+                else totalDuration
+            _state.update {
+                it.copy(
+                    phase = PomodoroPhase.FOCUS,
+                    isRunning = false,
+                    targetEndTimeMillis = null,
+                    durationSeconds = totalDuration,
+                    secondsRemaining = remaining,
+                    currentSessionId = activeData.sessionId,
+                    sessionStartTimeMillis = null,
+                    linkedHabitId = activeData.linkedHabitId,
+                )
+            }
+            return
+        }
+
         val nowMs = Clock.System.now().toEpochMilliseconds()
 
         if (nowMs >= activeData.targetEndTimeMillis) {
@@ -170,6 +194,9 @@ class PomodoroManager(
                     targetEndTimeMillis = targetEndMs,
                     focusMinutes = currentSettings.focusMinutes,
                     linkedHabitId = linkedHabitId,
+                    isPaused = false,
+                    pausedSecondsRemaining = durationSec,
+                    totalDurationSeconds = durationSec,
                 )
             )
 
@@ -187,6 +214,7 @@ class PomodoroManager(
             }
 
             pomodoroAlarm.schedule(targetEndMs)
+            widgetRefresher?.refreshPomodoroWidgets()
         }
     }
 
@@ -194,9 +222,28 @@ class PomodoroManager(
         pomodoroAlarm.cancel()
         scope.launch {
             savePartialSessionIfActive(closeSession = false)
-            settingsDatastore.clearActivePomodoroSessionData()
+            val currentState = _state.value
+            val currentSessionId = currentState.currentSessionId
+            if (currentSessionId != null && currentState.phase == PomodoroPhase.FOCUS) {
+                val now = LocalDateTime.now()
+                settingsDatastore.setActivePomodoroSessionData(
+                    ActivePomodoroSessionData(
+                        sessionId = currentSessionId,
+                        startTimeIso = now.toString(),
+                        targetEndTimeMillis = 0L,
+                        focusMinutes = currentState.settings.focusMinutes,
+                        linkedHabitId = currentState.linkedHabitId,
+                        isPaused = true,
+                        pausedSecondsRemaining = currentState.secondsRemaining,
+                        totalDurationSeconds = currentState.durationSeconds,
+                    )
+                )
+            } else {
+                settingsDatastore.clearActivePomodoroSessionData()
+            }
             refreshTodayStats()
             _state.update { it.copy(isRunning = false, targetEndTimeMillis = null) }
+            widgetRefresher?.refreshPomodoroWidgets()
         }
     }
 
@@ -228,6 +275,9 @@ class PomodoroManager(
                         targetEndTimeMillis = targetEndMs,
                         focusMinutes = currentState.settings.focusMinutes,
                         linkedHabitId = linkedHabitId ?: currentState.linkedHabitId,
+                        isPaused = false,
+                        pausedSecondsRemaining = currentState.secondsRemaining,
+                        totalDurationSeconds = currentState.durationSeconds,
                     )
                 )
             }
@@ -243,6 +293,7 @@ class PomodoroManager(
             }
 
             pomodoroAlarm.schedule(targetEndMs)
+            widgetRefresher?.refreshPomodoroWidgets()
         }
     }
 
@@ -374,6 +425,7 @@ class PomodoroManager(
                     sessionStartTimeMillis = null,
                 )
             }
+            widgetRefresher?.refreshPomodoroWidgets()
         }
     }
 
@@ -389,6 +441,7 @@ class PomodoroManager(
                 secondsRemaining = focusSec,
             )
         }
+        widgetRefresher?.refreshPomodoroWidgets()
     }
 
     private suspend fun savePartialSessionIfActive(closeSession: Boolean = true) {
@@ -427,6 +480,7 @@ class PomodoroManager(
                     secondsRemaining = if (!isRunning && isFocus) focusSec else it.secondsRemaining,
                 )
             }
+            widgetRefresher?.refreshPomodoroWidgets()
         }
     }
 

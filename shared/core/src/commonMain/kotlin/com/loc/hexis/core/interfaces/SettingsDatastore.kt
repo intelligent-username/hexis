@@ -1,4 +1,4 @@
-﻿
+
 package com.loc.hexis.core.interfaces
 
 import com.loc.hexis.core.habits.TimeDivision
@@ -106,4 +106,7 @@ data class ActivePomodoroSessionData(
     val focusMinutes: Float,
     val linkedHabitId: Long? = null,
     val phase: String = "FOCUS",
+    val isPaused: Boolean = false,
+    val pausedSecondsRemaining: Int = 0,
+    val totalDurationSeconds: Int = 0,
 )

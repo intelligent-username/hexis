@@ -1,4 +1,4 @@
-﻿
+
 package com.loc.hexis.shared.ui.app
 
 import androidx.compose.foundation.background
@@ -86,6 +86,9 @@ fun MainApp(state: MainAppState) {
 
     var showPomodoro by remember { mutableStateOf(false) }
     var pomodoroLinkedHabitId by remember { mutableStateOf<Long?>(null) }
+    var pomodoroAutoStart by remember { mutableStateOf(false) }
+    var pomodoroInitialSettings by remember { mutableStateOf(false) }
+    var pomodoroInitialHistory by remember { mutableStateOf(false) }
     var showNotes by remember { mutableStateOf(false) }
     var targetNoteId by remember { mutableStateOf<Long?>(null) }
 
@@ -145,6 +148,30 @@ fun MainApp(state: MainAppState) {
                 WidgetActions.OPEN_NOTE -> {
                     targetNoteId = state.targetNoteId
                     showNotes = true
+                }
+                WidgetActions.OPEN_POMODORO -> {
+                    pomodoroAutoStart = false
+                    pomodoroInitialSettings = false
+                    pomodoroInitialHistory = false
+                    showPomodoro = true
+                }
+                WidgetActions.OPEN_POMODORO_START -> {
+                    pomodoroAutoStart = true
+                    pomodoroInitialSettings = false
+                    pomodoroInitialHistory = false
+                    showPomodoro = true
+                }
+                WidgetActions.OPEN_POMODORO_SETTINGS -> {
+                    pomodoroAutoStart = false
+                    pomodoroInitialSettings = true
+                    pomodoroInitialHistory = false
+                    showPomodoro = true
+                }
+                WidgetActions.OPEN_POMODORO_HISTORY -> {
+                    pomodoroAutoStart = false
+                    pomodoroInitialSettings = false
+                    pomodoroInitialHistory = true
+                    showPomodoro = true
                 }
             }
             mvm.setShortcutAction(null)
@@ -269,9 +296,15 @@ fun MainApp(state: MainAppState) {
     if (showPomodoro || pomodoroLinkedHabitId != null) {
         PomodoroPage(
             linkedHabitId = if (showPomodoro) null else pomodoroLinkedHabitId,
+            autoStart = pomodoroAutoStart,
+            initialShowSettings = pomodoroInitialSettings,
+            initialShowAnalytics = pomodoroInitialHistory,
             onDismiss = {
                 showPomodoro = false
                 pomodoroLinkedHabitId = null
+                pomodoroAutoStart = false
+                pomodoroInitialSettings = false
+                pomodoroInitialHistory = false
             },
         )
     }

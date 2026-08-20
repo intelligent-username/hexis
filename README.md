@@ -12,7 +12,7 @@ Hexis is a Kotlin app that's both pleasant to use and functional. I made this ap
 - Tasks with categories, pomodoro timer, and filtering.
 - Notes: write notes in the `Tasks` app to keep up with protocols and more.
 - Analytics: streaks, weekly charts, heat maps, consistency scores.
-- Widgets: habit overview, streak display, week chart, progress analytics, all tasks.
+- Widgets: habit overview, streak display, week chart, progress analytics, pomodoro focus, all tasks.
 - Backup and restore, Material You theming, 8 font options.
 - No ads, trackers, limitations, or anything of that sort.
 

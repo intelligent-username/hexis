@@ -2,4 +2,6 @@
 <resources>
     <string name="widget_progress_name">Progress</string>
     <string name="widget_progress_desc">Track your weekly progress and habit completion trends</string>
+    <string name="widget_pomodoro_name">Pomodoro Focus</string>
+    <string name="widget_pomodoro_desc">Quick access to your Pomodoro focus timer and daily stats</string>
 </resources>

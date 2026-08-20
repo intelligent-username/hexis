@@ -1,4 +1,4 @@
-﻿
+
 package com.loc.hexis.shared.ui.task.ui.component
 
 import androidx.compose.animation.AnimatedVisibility
@@ -81,7 +81,13 @@ import org.jetbrains.compose.resources.vectorResource
 import org.koin.compose.koinInject
 
 @Composable
-fun PomodoroPage(linkedHabitId: Long? = null, onDismiss: () -> Unit) {
+fun PomodoroPage(
+    linkedHabitId: Long? = null,
+    autoStart: Boolean = false,
+    initialShowSettings: Boolean = false,
+    initialShowAnalytics: Boolean = false,
+    onDismiss: () -> Unit,
+) {
     val themeDatastore: ThemeDatastore = koinInject()
     val isAmoled by themeDatastore.getAmoledPref().collectAsStateWithLifecycle(initialValue = false)
 
@@ -95,8 +101,27 @@ fun PomodoroPage(linkedHabitId: Long? = null, onDismiss: () -> Unit) {
     val currentSessionInBatch = pomodoroState.currentSessionInBatch
     val todayStats = pomodoroState.todayStats
 
-    var showSettings by remember { mutableStateOf(false) }
-    var showAnalytics by remember { mutableStateOf(false) }
+    var showSettings by remember(initialShowSettings) { mutableStateOf(initialShowSettings) }
+    var showAnalytics by remember(initialShowAnalytics) { mutableStateOf(initialShowAnalytics) }
+
+    LaunchedEffect(initialShowSettings) {
+        if (initialShowSettings) showSettings = true
+    }
+
+    LaunchedEffect(initialShowAnalytics) {
+        if (initialShowAnalytics) showAnalytics = true
+    }
+
+    LaunchedEffect(autoStart) {
+        if (autoStart && !pomodoroState.isRunning) {
+            if (pomodoroState.currentSessionId == null) {
+                pomodoroManager.startSession(linkedHabitId ?: pomodoroState.linkedHabitId)
+            } else {
+                pomodoroManager.resumeSession(linkedHabitId ?: pomodoroState.linkedHabitId)
+            }
+        }
+    }
+
     var focusText by remember { mutableStateOf("") }
     var shortBreakText by remember { mutableStateOf("") }
     var longBreakText by remember { mutableStateOf("") }
