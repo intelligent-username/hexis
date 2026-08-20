@@ -1,4 +1,4 @@
-﻿
+
 package com.loc.hexis.shared.ui.habit.ui.component.stats
 
 import androidx.compose.animation.core.Animatable
@@ -224,6 +224,20 @@ fun TrendLineChart(
                 MaterialTheme.typography.labelSmall.copy(fontFamily = flexFontRounded())
             val progress = drawProgress.value
 
+            val initialWeekData =
+                remember(selectedTimePeriod, weeklyPointsHistory, dailyPointsHistory) {
+                    if (selectedTimePeriod == WeeklyTimePeriod.DAYS_7) {
+                        val fullList =
+                            if (dailyPointsHistory.isNotEmpty()) dailyPointsHistory
+                            else listOf(0, 0, 0, 0, 0, 0, 0)
+                        fullList.takeLast(7).ifEmpty { listOf(0, 0, 0, 0, 0, 0, 0) }
+                    } else {
+                        val weeks = selectedTimePeriod.toWeeks()
+                        weeklyPointsHistory.takeLast(weeks).ifEmpty { List(weeks) { 0 } }
+                    }
+                }
+            val constantMax = remember(initialWeekData) { initialWeekData.maxOrNull()?.coerceAtLeast(1) ?: 1 }
+
             HorizontalPager(
                 state = pagerState,
                 reverseLayout = true,
@@ -245,7 +259,6 @@ fun TrendLineChart(
                             List(weeks) { 0 }
                         }
                     }
-                val pageMax = currentData.maxOrNull()?.coerceAtLeast(1) ?: 1
                 Canvas(
                     modifier =
                         Modifier.fillMaxWidth()
@@ -266,7 +279,7 @@ fun TrendLineChart(
                     val n = currentData.size
 
                     fun xOf(i: Int) = padL + (i.toFloat() / (n - 1).coerceAtLeast(1)) * gW
-                    fun yOf(v: Int) = h - padB - (v.toFloat() / pageMax) * gH
+                    fun yOf(v: Int) = h - padB - (v.toFloat() / constantMax) * gH
 
                     val pts = currentData.mapIndexed { i, v -> Offset(xOf(i), yOf(v)) }
 
@@ -286,7 +299,7 @@ fun TrendLineChart(
                             strokeWidth = 1f,
                             pathEffect = PathEffect.dashPathEffect(floatArrayOf(5f, 5f)),
                         )
-                        val labelVal = pageMax - (pageMax / gridCount) * i
+                        val labelVal = constantMax - (constantMax / gridCount) * i
                         val labelResult = textMeasurer.measure("$labelVal", style = labelStyle)
                         drawText(
                             textLayoutResult = labelResult,
