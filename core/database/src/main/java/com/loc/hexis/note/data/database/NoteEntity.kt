@@ -1,0 +1,21 @@
+
+package com.loc.hexis.note.data.database
+
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+import kotlinx.datetime.LocalDateTime
+
+@Entity(tableName = "notes")
+data class NoteEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val title: String,
+    val content: String,
+    val type: String = "MARKDOWN",
+    val payloadJson: String? = null,
+    val metadata: String? = null,
+    val sortOrder: Int = 0,
+    val createdAt: LocalDateTime,
+    val updatedAt: LocalDateTime,
+    val pinned: Boolean = false,
+    val archived: Boolean = false,
+)

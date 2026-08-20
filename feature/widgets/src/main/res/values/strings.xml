@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_progress_name">Progress</string>
+    <string name="widget_progress_desc">Track your weekly progress and habit completion trends</string>
+</resources>

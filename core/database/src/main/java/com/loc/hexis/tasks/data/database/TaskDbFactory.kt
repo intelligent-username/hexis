@@ -1,0 +1,42 @@
+
+package com.loc.hexis.tasks.data.database
+
+import android.content.Context
+import com.loc.hexis.tasks.data.database.TaskDatabase
+import androidx.room.Room
+import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
+import org.koin.core.annotation.Single
+
+@Single
+class TaskDbFactory(private val context: Context) {
+    fun create(): RoomDatabase.Builder<TaskDatabase> {
+        val appContext = context.applicationContext
+        return Room.databaseBuilder(appContext, TaskDatabase::class.java, TaskDatabase.DB_NAME)
+            .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+    }
+
+    companion object {
+        private val MIGRATION_2_3 =
+            Migration(2, 3) { db ->
+                db.execSQL("ALTER TABLE notes ADD COLUMN archived INTEGER NOT NULL DEFAULT 0")
+            }
+
+        private val MIGRATION_3_4 =
+            Migration(3, 4) { db ->
+                db.execSQL("ALTER TABLE task ADD COLUMN description TEXT NOT NULL DEFAULT ''")
+            }
+
+        private val MIGRATION_4_5 =
+            Migration(4, 5) { db ->
+                db.execSQL("ALTER TABLE notes ADD COLUMN type TEXT NOT NULL DEFAULT 'MARKDOWN'")
+                db.execSQL("ALTER TABLE notes ADD COLUMN payloadJson TEXT DEFAULT NULL")
+                db.execSQL("ALTER TABLE notes ADD COLUMN metadata TEXT DEFAULT NULL")
+                db.execSQL("ALTER TABLE notes ADD COLUMN sortOrder INTEGER NOT NULL DEFAULT 0")
+            }
+
+        // Non-destructive — goalDurationMinutes is Int in both v5 and v6.
+        private val MIGRATION_5_6 = Migration(5, 6) {}
+    }
+}

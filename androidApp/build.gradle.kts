@@ -1,4 +1,4 @@
-﻿
+
 
 import java.io.FileInputStream
 import java.util.Properties
@@ -6,9 +6,7 @@ import java.util.Properties
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.compose.compiler)
-    alias(libs.plugins.ksp)
     alias(libs.plugins.kotlin.serialization)
-    alias(libs.plugins.room)
     alias(libs.plugins.compose.multiplatform)
     alias(libs.plugins.koin.compiler)
 }
@@ -51,8 +49,10 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         vectorDrawables { useSupportLibrary = true }
-        androidResources { generateLocaleConfig = true }
-        resConfigs("en")
+        androidResources {
+            generateLocaleConfig = true
+            localeFilters += "en"
+        }
     }
 
     buildTypes {
@@ -134,6 +134,10 @@ kotlin {
 dependencies {
     implementation(projects.shared.core)
     implementation(projects.shared.ui)
+    implementation(projects.core.database)
+    implementation(projects.core.platform)
+    implementation(projects.feature.backup)
+    implementation(projects.feature.widgets)
 
     implementation(libs.filekit.core)
     implementation(libs.filekit.dialogs)
@@ -149,8 +153,6 @@ dependencies {
     implementation(libs.jetbrains.navigation3.ui)
     implementation(libs.compose.windowsizeclass)
     implementation(libs.androidx.core.splashscreen)
-    implementation(libs.androidx.room.runtime)
-    ksp(libs.androidx.room.compiler)
 
     implementation(libs.androidx.glance.appwidget)
     implementation(libs.androidx.glance.material3)
@@ -177,69 +179,5 @@ dependencies {
     implementation(libs.koin.annotations)
 }
 
-room3 { schemaDirectory("$projectDir/schemas") }
-
 fun execute(vararg command: String): String =
     providers.exec { commandLine(*command) }.standardOutput.asText.get().trim()
-
-val generateChangelogJson by
-    tasks.registering {
-        description = "Assembling Changelog"
-        val inputFile = rootProject.file("CHANGELOG.md")
-        val outputDir = file("$projectDir/src/main/assets/")
-        val outputFile = File(outputDir, "changelog.json")
-
-        inputs.file(inputFile)
-        outputs.file(outputFile)
-
-        doLast {
-            if (!outputDir.exists()) outputDir.mkdirs()
-
-            val lines = inputFile.readLines()
-
-            val map = mutableMapOf<String, MutableList<String>>()
-            var currentVersion: String? = null
-
-            for (line in lines) {
-                when {
-                    line.startsWith("## ") -> {
-                        currentVersion = line.removePrefix("## ").substringBefore(":").trim()
-                        map[currentVersion] = mutableListOf()
-                    }
-
-                    line.startsWith("- ") && currentVersion != null -> {
-                        map[currentVersion]?.add(line.removePrefix("- ").trim())
-                    }
-                }
-            }
-
-            val json = buildString {
-                append("[\n")
-
-                val entriesToKeep = map.entries.take(10)
-                entriesToKeep.forEachIndexed { index, entry ->
-                    append("  {\n")
-                    append("    \"version\": \"${entry.key}\",\n")
-                    append("    \"changes\": [\n")
-
-                    entry.value.forEachIndexed { i, item ->
-                        append("      \"${item.replace("\"", "\\\"")}\"")
-                        if (i != entry.value.lastIndex) append(",")
-                        append("\n")
-                    }
-
-                    append("    ]\n")
-                    append("  }")
-
-                    if (index != entriesToKeep.lastIndex) append(",")
-                    append("\n")
-                }
-
-                append("]")
-            }
-
-            outputFile.writeText(json)
-        }
-    }
-
-tasks.named("preBuild") { dependsOn(generateChangelogJson) }
