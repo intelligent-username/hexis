@@ -1,4 +1,4 @@
-﻿
+
 
 import com.diffplug.gradle.spotless.SpotlessExtension
 

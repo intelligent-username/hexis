@@ -18,7 +18,7 @@ import com.loc.hexis.core.tasks.PomodoroRepo
 import com.loc.hexis.core.tasks.TaskRepo
 import io.github.vinceglb.filekit.FileKit
 import io.github.vinceglb.filekit.dialogs.openFileSaver
-import io.github.vinceglb.filekit.writeString
+import io.github.vinceglb.filekit.write
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -153,7 +153,7 @@ class ExportImpl(
                     defaultExtension = "json",
                 )
 
-            file?.writeString(
+            val jsonString =
                 Json.encodeToString(
                     ExportSchema(
                         habits = habitsDef,
@@ -169,7 +169,8 @@ class ExportImpl(
                         userSettings = userSettingsDef,
                     )
                 )
-            )
+
+            file?.write(jsonString.encodeToByteArray())
         }
     }
 }

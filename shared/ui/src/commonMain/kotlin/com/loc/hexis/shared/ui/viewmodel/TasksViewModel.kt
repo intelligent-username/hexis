@@ -1,4 +1,4 @@
-﻿
+
 package com.loc.hexis.shared.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
@@ -9,6 +9,15 @@ import com.loc.hexis.core.tasks.Category
 import com.loc.hexis.core.tasks.CategoryColors
 import com.loc.hexis.core.tasks.TaskRepo
 import com.loc.hexis.shared.ui.task.TaskAction
+import com.loc.hexis.shared.ui.task.TaskAction.AddCategory
+import com.loc.hexis.shared.ui.task.TaskAction.ChangeCategory
+import com.loc.hexis.shared.ui.task.TaskAction.DeleteCategory
+import com.loc.hexis.shared.ui.task.TaskAction.DeleteTask
+import com.loc.hexis.shared.ui.task.TaskAction.DeleteTasks
+import com.loc.hexis.shared.ui.task.TaskAction.ReorderCategories
+import com.loc.hexis.shared.ui.task.TaskAction.ReorderTasks
+import com.loc.hexis.shared.ui.task.TaskAction.ToggleAddTaskSheet
+import com.loc.hexis.shared.ui.task.TaskAction.UpsertTask
 import com.loc.hexis.shared.ui.task.TaskState
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay

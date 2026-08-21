@@ -23,3 +23,6 @@ notes/
 !LICENSE.md
 !docs/*.md
 *.lnk
+
+
+.vscode/
