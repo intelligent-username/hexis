@@ -1,4 +1,4 @@
-﻿
+
 package com.loc.hexis.shared.ui.task.ui.component
 
 import androidx.compose.animation.animateColorAsState

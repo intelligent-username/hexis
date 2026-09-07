@@ -112,7 +112,7 @@ fun TaskList(
     var editState by remember { mutableStateOf(false) }
     var editTask: Task? by remember { mutableStateOf(null) }
 
-    val taskListState = rememberLazyListState()
+    val taskListState = remember(state.currentCategory?.id) { LazyListState() }
     val isScrolled by remember {
         derivedStateOf {
             taskListState.firstVisibleItemIndex > 0 ||
@@ -443,8 +443,11 @@ private fun CompactTasksView(
                             }
                         )
                     }
+                val listState =
+                    if (categoryId == state.currentCategory?.id) lazyListState
+                    else remember(categoryId) { LazyListState() }
                 val reorderableListState =
-                    rememberReorderableLazyListState(lazyListState) { from, to ->
+                    rememberReorderableLazyListState(listState) { from, to ->
                         reorderableTasks =
                             reorderableTasks.toMutableList().apply {
                                 add(to.index, removeAt(from.index))
@@ -452,13 +455,18 @@ private fun CompactTasksView(
                     }
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    state = lazyListState,
+                    state = listState,
                     contentPadding = PaddingValues(8.dp),
                     verticalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
                     itemsIndexed(items = reorderableTasks, key = { _, it -> it.id }) { index, task
                         ->
-                        ReorderableItem(reorderableListState, key = task.id) {
+                        ReorderableItem(
+                            state = reorderableListState,
+                            key = task.id,
+                            animateItemModifier =
+                                Modifier.animateItem(fadeInSpec = null, fadeOutSpec = null),
+                        ) {
                             val cardShape =
                                 when {
                                     reorderableTasks.size == 1 -> RoundedCornerShape(20.dp)
