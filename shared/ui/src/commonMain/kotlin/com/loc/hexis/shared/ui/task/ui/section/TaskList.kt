@@ -1,4 +1,4 @@
-﻿
+
 package com.loc.hexis.shared.ui.task.ui.section
 
 import androidx.compose.animation.AnimatedContent
@@ -434,7 +434,7 @@ private fun CompactTasksView(
             val category = state.tasks.keys.firstOrNull { it.id == categoryId }
             if (category != null) {
                 var reorderableTasks by
-                    remember(state.tasks.values) {
+                    remember(category, state.tasks) {
                         mutableStateOf(
                             (state.tasks[category] ?: emptyList()).run {
                                 if (state.reorderTasks) {

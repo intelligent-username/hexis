@@ -394,7 +394,7 @@ class PomodoroManager(
                 if (habit != null) {
                     habitRepo.incrementHabitProgress(
                         linkedHabitId,
-                        LocalDate.now(),
+                        existingSession.timeStarted.date,
                         habit.incrementBy,
                     )
                 }

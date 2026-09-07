@@ -50,7 +50,7 @@ The timer spans three layers: domain types in `shared:core`, UI state in `shared
 
 ### Habit linking
 
-If a habit has `pomodoroLinked = true` and a session has `linkedHabitId` pointing to that habit, completing the session (i.e. `finishSession` with `completed = true`) auto-completes the habit. The repository handles this atomically.
+If a habit has `pomodoroLinked = true` and a session has `linkedHabitId` pointing to that habit, completing the session triggers an automatic progress increment (`habitRepo.incrementHabitProgress`) for that habit. This is coordinated by `PomodoroManager.finalizeCompletedSession`, which updates both the session record in `PomodoroRepo` and the status in `HabitRepo`.
 
 ---
 
