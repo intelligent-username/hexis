@@ -69,11 +69,24 @@ fun HabitsList(
                     localHabits.sortedBy { it.habit.id in state.completedHabitIds }
                 else localHabits
 
-            itemsIndexed(displayedHabits, key = { _, it -> it.habit.id }) {
-                index,
-                habitWithAnalytics ->
-                ReorderableItem(reorderableListState, key = habitWithAnalytics.habit.id) {
-                    val completed = state.completedHabitIds.contains(habitWithAnalytics.habit.id)
+            itemsIndexed(
+                items = displayedHabits,
+                key = { _, it ->
+                    if (state.reorderHabits && !state.editState && it.habit.id in state.completedHabitIds) {
+                        "completed_${it.habit.id}"
+                    } else {
+                        it.habit.id
+                    }
+                },
+            ) { index, habitWithAnalytics ->
+                val completed = state.completedHabitIds.contains(habitWithAnalytics.habit.id)
+                val itemKey =
+                    if (state.reorderHabits && !state.editState && completed) {
+                        "completed_${habitWithAnalytics.habit.id}"
+                    } else {
+                        habitWithAnalytics.habit.id
+                    }
+                ReorderableItem(reorderableListState, key = itemKey) {
                     val completedIndices =
                         displayedHabits.indices.filter {
                             displayedHabits[it].habit.id in state.completedHabitIds

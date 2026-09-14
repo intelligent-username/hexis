@@ -156,7 +156,7 @@ fun TaskImportSheet(
                 placeholder = {
                     Text(
                         text =
-                            "- Homework 1\n> Due September 15th\n\n- Homework 2\n> Due September 16th",
+                            "- Homework 1\n> Due September 15th, worth 15%\n>Will cover prereqs and W1\n\n- Homework 2\n> Due September 16th",
                         color = MaterialTheme.colorScheme.outline,
                     )
                 },

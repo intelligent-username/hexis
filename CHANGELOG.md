@@ -1,6 +1,14 @@
 # Changelog
 
-# 1.7.2
+## 1.8.0
+
+- Import to-do lists directly from plain text by pasting items starting with `-` or `*`
+- Support for multi-line task descriptions prefixed with `>`
+- Dynamic category selection when importing tasks (automatically uses the sole category if only one exists)
+- Quick "Undo" action after importing to instantly revert accidental additions
+- Fixed bunch of bugs with Habit and Tasks UX
+
+## 1.7.2
 
 Multiple bug fixes.
 
