@@ -95,4 +95,12 @@ class TasksRepository(
     override suspend fun deleteAllCategories() {
         categoryDao.deleteAllCategories()
     }
+
+    override suspend fun importTasks(tasks: List<Task>): List<Long> {
+        return tasksDao.upsertTasks(tasks.map { it.toTaskEntity() })
+    }
+
+    override suspend fun deleteTasksByIds(ids: List<Long>) {
+        tasksDao.deleteTasksByIds(ids)
+    }
 }

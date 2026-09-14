@@ -102,4 +102,9 @@
     <string name="regular_style">Text</string>
     <string name="points_trend">Progression Trends</string>
     <string name="total_points">Total Points</string>
+    <string name="import_tasks">Import Tasks</string>
+    <string name="import_tasks_desc">Paste your to-do list below. Lines starting with - or * become tasks; lines starting with > below them become descriptions.</string>
+    <string name="import_to_category">Category</string>
+    <string name="tasks_imported">tasks imported</string>
+    <string name="import_label">Import</string>
 </resources>

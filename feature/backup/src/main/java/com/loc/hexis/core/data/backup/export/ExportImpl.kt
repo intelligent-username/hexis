@@ -1,5 +1,6 @@
 package com.loc.hexis.core.data.backup.export
 
+import android.content.Context
 import com.loc.hexis.core.data.backup.ExportSchema
 import com.loc.hexis.core.data.backup.HabitTimeDivisionPairSchema
 import com.loc.hexis.core.data.backup.UserSettingsSchema
@@ -16,9 +17,9 @@ import com.loc.hexis.core.now
 import com.loc.hexis.core.settings.backup.ExportRepo
 import com.loc.hexis.core.tasks.PomodoroRepo
 import com.loc.hexis.core.tasks.TaskRepo
+import io.github.vinceglb.filekit.AndroidFile
 import io.github.vinceglb.filekit.FileKit
 import io.github.vinceglb.filekit.dialogs.openFileSaver
-import io.github.vinceglb.filekit.write
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -31,6 +32,7 @@ import org.koin.core.annotation.Single
 
 @Single(binds = [ExportRepo::class])
 class ExportImpl(
+    @Provided private val context: Context,
     @Provided private val taskRepo: TaskRepo,
     @Provided private val habitsRepo: HabitRepo,
     @Provided private val pomodoroRepo: PomodoroRepo,
@@ -146,31 +148,47 @@ class ExportImpl(
                     }
                     .await()
 
-            val time = LocalDateTime.now().toString().replace(":", "").replace(" ", "")
+            val jsonString =
+                withContext(Dispatchers.IO) {
+                    Json.encodeToString(
+                        ExportSchema(
+                            habits = habitsDef,
+                            habitStatus = statusesDef,
+                            tasks = tasksDef,
+                            categories = categoriesDef,
+                            pomodoroSessions = pomodoroSessionsDef,
+                            timeDivisions = timeDivisionsDef,
+                            pomodoroSettings = pomodoroSettingsDef,
+                            habitTimeDivisionPairs = habitTimeDivisionMapDef,
+                            notes = notesDef,
+                            archivedHabitIds = archivedHabitIdsDef,
+                            userSettings = userSettingsDef,
+                        )
+                    )
+                }
+
+            val now = LocalDateTime.now()
+            val time =
+                "${now.date}_${now.hour.toString().padStart(2, '0')}${now.minute.toString().padStart(2, '0')}${now.second.toString().padStart(2, '0')}"
             val file =
                 FileKit.openFileSaver(
                     suggestedName = "Hexis-Export-$time",
                     defaultExtension = "json",
                 )
 
-            val jsonString =
-                Json.encodeToString(
-                    ExportSchema(
-                        habits = habitsDef,
-                        habitStatus = statusesDef,
-                        tasks = tasksDef,
-                        categories = categoriesDef,
-                        pomodoroSessions = pomodoroSessionsDef,
-                        timeDivisions = timeDivisionsDef,
-                        pomodoroSettings = pomodoroSettingsDef,
-                        habitTimeDivisionPairs = habitTimeDivisionMapDef,
-                        notes = notesDef,
-                        archivedHabitIds = archivedHabitIdsDef,
-                        userSettings = userSettingsDef,
-                    )
-                )
-
-            file?.write(jsonString.encodeToByteArray())
+            if (file != null) {
+                withContext(Dispatchers.IO) {
+                    val outputStream =
+                        when (val af = file.androidFile) {
+                            is AndroidFile.UriWrapper -> context.contentResolver.openOutputStream(af.uri)
+                            is AndroidFile.FileWrapper -> af.file.outputStream()
+                        }
+                    outputStream?.use { stream ->
+                        stream.write(jsonString.toByteArray(Charsets.UTF_8))
+                        stream.flush()
+                    }
+                }
+            }
         }
     }
 }

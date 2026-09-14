@@ -1,4 +1,4 @@
-﻿
+
 package com.loc.hexis.shared.ui.task
 
 import com.loc.hexis.core.tasks.Category
@@ -22,4 +22,10 @@ sealed interface TaskAction {
     data class UpsertTask(val task: Task) : TaskAction
 
     data class ToggleAddTaskSheet(val show: Boolean) : TaskAction
+
+    data class ImportTasks(val tasks: List<Task>, val categoryId: Long) : TaskAction
+
+    data object UndoImport : TaskAction
+
+    data object DismissUndo : TaskAction
 }

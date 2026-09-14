@@ -1,4 +1,4 @@
-﻿
+
 package com.loc.hexis.shared.ui.task.ui.component
 
 import android.Manifest
@@ -28,6 +28,7 @@ actual fun TaskUpsertSheet(
     is24Hr: Boolean,
     modifier: Modifier,
     isEditSheet: Boolean,
+    onImport: ((List<Task>, Long) -> Unit)?,
 ) {
     val context = LocalContext.current
 
@@ -70,5 +71,6 @@ actual fun TaskUpsertSheet(
             }
         },
         modifier = modifier,
+        onImport = onImport,
     )
 }

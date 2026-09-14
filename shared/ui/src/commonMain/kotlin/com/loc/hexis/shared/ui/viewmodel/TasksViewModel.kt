@@ -14,9 +14,12 @@ import com.loc.hexis.shared.ui.task.TaskAction.ChangeCategory
 import com.loc.hexis.shared.ui.task.TaskAction.DeleteCategory
 import com.loc.hexis.shared.ui.task.TaskAction.DeleteTask
 import com.loc.hexis.shared.ui.task.TaskAction.DeleteTasks
+import com.loc.hexis.shared.ui.task.TaskAction.DismissUndo
+import com.loc.hexis.shared.ui.task.TaskAction.ImportTasks
 import com.loc.hexis.shared.ui.task.TaskAction.ReorderCategories
 import com.loc.hexis.shared.ui.task.TaskAction.ReorderTasks
 import com.loc.hexis.shared.ui.task.TaskAction.ToggleAddTaskSheet
+import com.loc.hexis.shared.ui.task.TaskAction.UndoImport
 import com.loc.hexis.shared.ui.task.TaskAction.UpsertTask
 import com.loc.hexis.shared.ui.task.TaskState
 import kotlinx.coroutines.Job
@@ -46,6 +49,8 @@ class TasksViewModel(
 
     private var savedJob: Job? = null
     private var observerJob: Job? = null
+    private var undoJob: Job? = null
+    private var lastImportedTaskIds: List<Long> = emptyList()
 
     private val _state = MutableStateFlow(TaskState())
 
@@ -130,6 +135,70 @@ class TasksViewModel(
                 is DeleteTask -> repo.deleteTask(action.task)
 
                 is ToggleAddTaskSheet -> _state.update { it.copy(showAddTaskSheet = action.show) }
+
+                is ImportTasks -> {
+                    if (action.tasks.isEmpty()) return@launch
+                    val targetCategory =
+                        _state.value.tasks.keys.find { it.id == action.categoryId }
+                    if (targetCategory != null) {
+                        _state.update { it.copy(currentCategory = targetCategory) }
+                    }
+
+                    val existingTasks =
+                        if (targetCategory != null) {
+                            _state.value.tasks[targetCategory] ?: emptyList()
+                        } else {
+                            emptyList()
+                        }
+
+                    val finalTasks =
+                        if (_state.value.putNewTasksAtTop) {
+                            existingTasks.forEach { existing ->
+                                repo.updateTaskIndexById(
+                                    existing.id,
+                                    existing.index + action.tasks.size,
+                                )
+                            }
+                            action.tasks.mapIndexed { index, task ->
+                                task.copy(categoryId = action.categoryId, index = index)
+                            }
+                        } else {
+                            val startIndex = existingTasks.size
+                            action.tasks.mapIndexed { index, task ->
+                                task.copy(
+                                    categoryId = action.categoryId,
+                                    index = startIndex + index,
+                                )
+                            }
+                        }
+
+                    val ids = repo.importTasks(finalTasks)
+                    lastImportedTaskIds = ids
+                    _state.update { it.copy(undoImportCount = finalTasks.size) }
+
+                    undoJob?.cancel()
+                    undoJob =
+                        viewModelScope.launch {
+                            delay(5000)
+                            _state.update { it.copy(undoImportCount = null) }
+                            lastImportedTaskIds = emptyList()
+                        }
+                }
+
+                UndoImport -> {
+                    undoJob?.cancel()
+                    if (lastImportedTaskIds.isNotEmpty()) {
+                        repo.deleteTasksByIds(lastImportedTaskIds)
+                        lastImportedTaskIds = emptyList()
+                    }
+                    _state.update { it.copy(undoImportCount = null) }
+                }
+
+                DismissUndo -> {
+                    undoJob?.cancel()
+                    lastImportedTaskIds = emptyList()
+                    _state.update { it.copy(undoImportCount = null) }
+                }
             }
         }
     }

@@ -7,6 +7,8 @@ import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -69,6 +71,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.loc.hexis.core.tasks.Category
@@ -87,6 +90,7 @@ import com.loc.hexis.shared.ui.task.TaskAction
 import com.loc.hexis.shared.ui.task.TaskState
 import com.loc.hexis.shared.ui.task.ui.component.CategoryUpsertSheet
 import com.loc.hexis.shared.ui.task.ui.component.TaskCard
+import com.loc.hexis.shared.ui.task.ui.component.TaskImportSheet
 import com.loc.hexis.shared.ui.task.ui.component.TaskUpsertSheet
 import com.loc.hexis.shared.ui.theme.flexFontEmphasis
 import hexis.shared.ui.generated.resources.*
@@ -108,6 +112,7 @@ fun TaskList(
 
     var showTaskAddSheet by remember { mutableStateOf(false) }
     var showCategoryAddSheet by remember { mutableStateOf(false) }
+    var showImportSheet by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var editState by remember { mutableStateOf(false) }
     var editTask: Task? by remember { mutableStateOf(null) }
@@ -135,6 +140,7 @@ fun TaskList(
             onDeleteClick = { showDeleteDialog = true },
             onPomodoroClick = onPomodoroClick,
             onNotesClick = onNotesClick,
+            onImportClick = { showImportSheet = true },
             isExpanded = windowSizeClass.widthSizeClass == WindowWidthSizeClass.Expanded,
         )
 
@@ -209,6 +215,60 @@ fun TaskList(
         }
     }
 
+    AnimatedVisibility(
+        visible = state.undoImportCount != null,
+        modifier =
+            Modifier.align(Alignment.BottomStart)
+                .padding(16.dp)
+                .then(
+                    if (windowSizeClass.widthSizeClass != WindowWidthSizeClass.Expanded) {
+                        Modifier.navigationBarsPadding()
+                    } else {
+                        Modifier
+                    }
+                ),
+        enter = fadeIn(MaterialTheme.motionScheme.fastEffectsSpec()) + slideInVertically { it },
+        exit = fadeOut(MaterialTheme.motionScheme.fastEffectsSpec()) + slideOutVertically { it },
+    ) {
+        Surface(
+            shape = RoundedCornerShape(16.dp),
+            color = MaterialTheme.colorScheme.inverseSurface,
+            shadowElevation = 6.dp,
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Text(
+                    text =
+                        "${state.undoImportCount ?: 0} " +
+                            stringResource(Res.string.tasks_imported),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.inverseOnSurface,
+                )
+                TextButton(
+                    onClick = { onAction(TaskAction.UndoImport) },
+                    shapes =
+                        ButtonShapes(
+                            shape = MaterialTheme.shapes.small,
+                            pressedShape = MaterialTheme.shapes.extraSmall,
+                        ),
+                ) {
+                    Text(
+                        text = stringResource(Res.string.undo),
+                        color = MaterialTheme.colorScheme.inversePrimary,
+                        style =
+                            MaterialTheme.typography.labelLarge.copy(
+                                fontFamily = flexFontEmphasis(),
+                                fontWeight = FontWeight.Bold,
+                            ),
+                    )
+                }
+            }
+        }
+    }
+
     if (showDeleteDialog) {
         DeleteTasksDialog(
             onDismiss = { showDeleteDialog = false },
@@ -226,6 +286,17 @@ fun TaskList(
             onUpsertCategory = {
                 onAction(TaskAction.AddCategory(it))
                 showCategoryAddSheet = false
+            },
+        )
+    }
+
+    if (showImportSheet) {
+        TaskImportSheet(
+            categories = state.tasks.keys.toList(),
+            currentCategory = state.currentCategory,
+            onDismissRequest = { showImportSheet = false },
+            onImport = { tasks, categoryId ->
+                onAction(TaskAction.ImportTasks(tasks, categoryId))
             },
         )
     }
@@ -262,6 +333,9 @@ fun TaskList(
             onDismissRequest = { showTaskAddSheet = false },
             onUpsert = { onAction(TaskAction.UpsertTask(it)) },
             onDelete = {},
+            onImport = { tasks, categoryId ->
+                onAction(TaskAction.ImportTasks(tasks, categoryId))
+            },
         )
     }
 }
@@ -274,6 +348,7 @@ private fun TaskListTopBar(
     onDeleteClick: () -> Unit,
     onPomodoroClick: () -> Unit,
     onNotesClick: () -> Unit,
+    onImportClick: () -> Unit,
     isExpanded: Boolean,
 ) {
     MainTabHeader(
@@ -300,6 +375,13 @@ private fun TaskListTopBar(
                         contentDescription = null,
                     )
                 }
+            }
+
+            FilledTonalIconButton(onClick = onImportClick) {
+                Icon(
+                    imageVector = vectorResource(Res.drawable.download),
+                    contentDescription = stringResource(Res.string.import_tasks),
+                )
             }
 
             FilledTonalIconButton(onClick = onNotesClick) {

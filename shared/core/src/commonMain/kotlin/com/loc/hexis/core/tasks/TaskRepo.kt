@@ -1,4 +1,4 @@
-﻿
+
 package com.loc.hexis.core.tasks
 
 import kotlinx.coroutines.flow.Flow
@@ -28,4 +28,8 @@ interface TaskRepo {
     suspend fun deleteCategory(category: Category)
 
     suspend fun deleteAllCategories()
+
+    suspend fun importTasks(tasks: List<Task>): List<Long>
+
+    suspend fun deleteTasksByIds(ids: List<Long>)
 }

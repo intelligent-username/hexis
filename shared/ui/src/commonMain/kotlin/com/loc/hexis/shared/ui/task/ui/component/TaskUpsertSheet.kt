@@ -1,4 +1,4 @@
-﻿
+
 package com.loc.hexis.shared.ui.task.ui.component
 
 import androidx.compose.foundation.background
@@ -9,10 +9,13 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.rememberTextFieldState
@@ -20,6 +23,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonShapes
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
@@ -55,6 +59,7 @@ import androidx.compose.ui.unit.dp
 import com.loc.hexis.core.now
 import com.loc.hexis.core.tasks.Category
 import com.loc.hexis.core.tasks.Task
+import com.loc.hexis.core.tasks.TaskImportParser
 import com.loc.hexis.core.toFormattedString
 import com.loc.hexis.shared.ui.components.ExpressiveSwitch
 import com.loc.hexis.shared.ui.components.HexisBottomSheet
@@ -83,6 +88,7 @@ expect fun TaskUpsertSheet(
     is24Hr: Boolean,
     modifier: Modifier = Modifier,
     isEditSheet: Boolean = false,
+    onImport: ((List<Task>, Long) -> Unit)? = null,
 )
 
 @Composable
@@ -99,8 +105,12 @@ fun TaskUpsertSheetContent(
     updateDateTimePickerVisibility: (Boolean) -> Unit,
     onPermissionRequest: () -> Unit,
     modifier: Modifier = Modifier,
+    onImport: ((List<Task>, Long) -> Unit)? = null,
 ) {
     var newTask by remember { mutableStateOf(task) }
+    var isImportMode by remember { mutableStateOf(false) }
+    var importText by remember { mutableStateOf("") }
+    val parsedImportItems = remember(importText) { TaskImportParser.parse(importText) }
 
     val textFieldState =
         rememberTextFieldState(
@@ -135,28 +145,74 @@ fun TaskUpsertSheetContent(
             verticalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
         ) {
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier =
-                    Modifier.size(48.dp)
-                        .background(
-                            color = MaterialTheme.colorScheme.primaryContainer,
-                            shape = MaterialShapes.Pill.toShape(),
-                        ),
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Icon(
-                    imageVector =
-                        vectorResource(if (isEditSheet) Res.drawable.edit else Res.drawable.add),
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                )
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier =
+                        Modifier.size(48.dp)
+                            .background(
+                                color = MaterialTheme.colorScheme.primaryContainer,
+                                shape = MaterialShapes.Pill.toShape(),
+                            ),
+                ) {
+                    Icon(
+                        imageVector =
+                            vectorResource(
+                                if (isEditSheet) Res.drawable.edit
+                                else if (isImportMode) Res.drawable.download
+                                else Res.drawable.add
+                            ),
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                    )
+                }
+
+                if (!isEditSheet && onImport != null) {
+                    FilledTonalButton(
+                        onClick = { isImportMode = !isImportMode },
+                        shapes =
+                            ButtonShapes(
+                                shape = MaterialTheme.shapes.extraLarge,
+                                pressedShape = MaterialTheme.shapes.small,
+                            ),
+                    ) {
+                        Icon(
+                            imageVector =
+                                vectorResource(
+                                    if (isImportMode) Res.drawable.add else Res.drawable.download
+                                ),
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text =
+                                if (isImportMode) stringResource(Res.string.add_task)
+                                else stringResource(Res.string.import_tasks)
+                        )
+                    }
+                }
             }
 
             Text(
                 text =
-                    stringResource(if (isEditSheet) Res.string.edit_task else Res.string.add_task),
+                    if (isEditSheet) stringResource(Res.string.edit_task)
+                    else if (isImportMode) stringResource(Res.string.import_tasks)
+                    else stringResource(Res.string.add_task),
                 style = MaterialTheme.typography.headlineSmall.copy(fontFamily = flexFontEmphasis()),
             )
+
+            if (isImportMode) {
+                Text(
+                    text = stringResource(Res.string.import_tasks_desc),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
 
         LazyColumn(
@@ -177,134 +233,56 @@ fun TaskUpsertSheetContent(
                 }
             }
 
-            item {
-                val keyboardController = LocalSoftwareKeyboardController.current
-                val focusRequester = remember { FocusRequester() }
-
-                LaunchedEffect(Unit) {
-                    delay(400.milliseconds)
-                    focusRequester.requestFocus()
-                    keyboardController?.show()
-                }
-
-                val isTitleOverLimit = textFieldState.text.length > 100
-
-                OutlinedTextField(
-                    state = textFieldState,
-                    shape = MaterialTheme.shapes.medium,
-                    placeholder = { Text(text = stringResource(Res.string.add_task)) },
-                    keyboardOptions =
-                        KeyboardOptions.Default.copy(
-                            capitalization = KeyboardCapitalization.Sentences,
-                            imeAction = ImeAction.None,
-                        ),
-                    onKeyboardAction = { defaultAction ->
-                        textFieldState.edit { append("\n") }
-                        defaultAction()
-                    },
-                    modifier = Modifier.fillMaxWidth().focusRequester(focusRequester),
-                )
-
-                if (isTitleOverLimit) {
-                    Text(
-                        text = "Character limit reached (${textFieldState.text.length}/100)",
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.labelSmall,
-                        modifier = Modifier.padding(start = 16.dp, top = 4.dp),
+            if (isImportMode) {
+                item {
+                    OutlinedTextField(
+                        value = importText,
+                        onValueChange = { importText = it },
+                        shape = MaterialTheme.shapes.medium,
+                        placeholder = {
+                            Text(
+                                text =
+                                    "- Homework 1\n> Due September 15th\n\n- Homework 2\n> Due September 16th",
+                                color = MaterialTheme.colorScheme.outline,
+                            )
+                        },
+                        modifier =
+                            Modifier.fillMaxWidth()
+                                .heightIn(min = 160.dp, max = 260.dp),
                     )
                 }
-            }
 
-            item {
-                OutlinedTextField(
-                    state = descFieldState,
-                    shape = MaterialTheme.shapes.medium,
-                    placeholder = { Text(text = stringResource(Res.string.description)) },
-                    label = { Text(text = stringResource(Res.string.description)) },
-                    keyboardOptions =
-                        KeyboardOptions.Default.copy(
-                            capitalization = KeyboardCapitalization.Sentences,
-                            imeAction = ImeAction.None,
-                        ),
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-
-            item {
-                ListItem(
-                    modifier = Modifier.clip(detachedItemShape()),
-                    colors = listItemColors(),
-                    leadingContent = {
-                        Icon(
-                            imageVector = vectorResource(Res.drawable.alarm),
-                            contentDescription = null,
-                        )
-                    },
-                    headlineContent = { Text(text = stringResource(Res.string.add_reminder)) },
-                    supportingContent = {
-                        if (newTask.reminder != null) {
-                            Column {
-                                Text(text = newTask.reminder!!.toFormattedString(is24Hr = is24Hr))
-                                if (!isValidDateTime) {
-                                    Text(
-                                        text = stringResource(Res.string.invalid_date_time),
-                                        color = MaterialTheme.colorScheme.error,
-                                    )
-                                }
-                            }
-                        }
-                    },
-                    trailingContent = {
-                        ExpressiveSwitch(
-                            checked = newTask.reminder != null,
-                            onCheckedChange = { checked ->
-                                if (checked) {
-                                    if (notificationPermission) {
-                                        updateDateTimePickerVisibility(true)
-                                    } else {
-                                        onPermissionRequest()
-                                    }
-                                } else {
-                                    newTask = newTask.copy(reminder = null)
-                                }
-                            },
-                        )
-                    },
-                )
-            }
-
-            item {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
+                item {
                     Row(
                         modifier = Modifier.padding(bottom = 32.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        if (isEditSheet) {
-                            OutlinedButton(
-                                onClick = onDelete,
-                                shapes =
-                                    ButtonShapes(
-                                        shape = MaterialTheme.shapes.extraLarge,
-                                        pressedShape = MaterialTheme.shapes.small,
-                                    ),
-                                modifier = Modifier.weight(1f),
-                            ) {
-                                Text(stringResource(Res.string.delete))
-                            }
+                        OutlinedButton(
+                            onClick = onDismissRequest,
+                            shapes =
+                                ButtonShapes(
+                                    shape = MaterialTheme.shapes.extraLarge,
+                                    pressedShape = MaterialTheme.shapes.small,
+                                ),
+                            modifier = Modifier.weight(1f),
+                        ) {
+                            Text(stringResource(Res.string.cancel))
                         }
 
                         Button(
                             onClick = {
-                                onUpsert(
-                                    newTask.copy(
-                                        title = textFieldState.text.toString(),
-                                        description = descFieldState.text.toString(),
-                                    )
-                                )
-                                onDismissRequest()
+                                if (parsedImportItems.isNotEmpty()) {
+                                    val tasksToImport =
+                                        parsedImportItems.map { item ->
+                                            Task(
+                                                categoryId = newTask.categoryId,
+                                                title = item.title,
+                                                description = item.description,
+                                            )
+                                        }
+                                    onImport?.invoke(tasksToImport, newTask.categoryId)
+                                    onDismissRequest()
+                                }
                             },
                             shapes =
                                 ButtonShapes(
@@ -312,20 +290,170 @@ fun TaskUpsertSheetContent(
                                     pressedShape = MaterialTheme.shapes.small,
                                 ),
                             modifier = Modifier.weight(1f),
-                            enabled =
-                                textFieldState.text.isNotBlank() &&
-                                    textFieldState.text.length <= 100 &&
-                                    isValidDateTime &&
-                                    (newTask.reminder != task.reminder ||
-                                        textFieldState.text.toString() != task.title ||
-                                        descFieldState.text.toString() != task.description ||
-                                        newTask.categoryId != task.categoryId),
+                            enabled = parsedImportItems.isNotEmpty(),
                         ) {
                             Text(
-                                stringResource(
-                                    if (isEditSheet) Res.string.save else Res.string.add_task
-                                )
+                                text =
+                                    if (parsedImportItems.isNotEmpty()) {
+                                        "${stringResource(Res.string.import_label)} (${parsedImportItems.size})"
+                                    } else {
+                                        stringResource(Res.string.import_label)
+                                    }
                             )
+                        }
+                    }
+                }
+            } else {
+                item {
+                    val keyboardController = LocalSoftwareKeyboardController.current
+                    val focusRequester = remember { FocusRequester() }
+
+                    LaunchedEffect(Unit) {
+                        delay(400.milliseconds)
+                        focusRequester.requestFocus()
+                        keyboardController?.show()
+                    }
+
+                    val isTitleOverLimit = textFieldState.text.length > 100
+
+                    OutlinedTextField(
+                        state = textFieldState,
+                        shape = MaterialTheme.shapes.medium,
+                        placeholder = { Text(text = stringResource(Res.string.add_task)) },
+                        keyboardOptions =
+                            KeyboardOptions.Default.copy(
+                                capitalization = KeyboardCapitalization.Sentences,
+                                imeAction = ImeAction.None,
+                            ),
+                        onKeyboardAction = { defaultAction ->
+                            textFieldState.edit { append("\n") }
+                            defaultAction()
+                        },
+                        modifier = Modifier.fillMaxWidth().focusRequester(focusRequester),
+                    )
+
+                    if (isTitleOverLimit) {
+                        Text(
+                            text = "Character limit reached (${textFieldState.text.length}/100)",
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.labelSmall,
+                            modifier = Modifier.padding(start = 16.dp, top = 4.dp),
+                        )
+                    }
+                }
+
+                item {
+                    OutlinedTextField(
+                        state = descFieldState,
+                        shape = MaterialTheme.shapes.medium,
+                        placeholder = { Text(text = stringResource(Res.string.description)) },
+                        label = { Text(text = stringResource(Res.string.description)) },
+                        keyboardOptions =
+                            KeyboardOptions.Default.copy(
+                                capitalization = KeyboardCapitalization.Sentences,
+                                imeAction = ImeAction.None,
+                            ),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+
+                item {
+                    ListItem(
+                        modifier = Modifier.clip(detachedItemShape()),
+                        colors = listItemColors(),
+                        leadingContent = {
+                            Icon(
+                                imageVector = vectorResource(Res.drawable.alarm),
+                                contentDescription = null,
+                            )
+                        },
+                        headlineContent = { Text(text = stringResource(Res.string.add_reminder)) },
+                        supportingContent = {
+                            if (newTask.reminder != null) {
+                                Column {
+                                    Text(text = newTask.reminder!!.toFormattedString(is24Hr = is24Hr))
+                                    if (!isValidDateTime) {
+                                        Text(
+                                            text = stringResource(Res.string.invalid_date_time),
+                                            color = MaterialTheme.colorScheme.error,
+                                        )
+                                    }
+                                }
+                            }
+                        },
+                        trailingContent = {
+                            ExpressiveSwitch(
+                                checked = newTask.reminder != null,
+                                onCheckedChange = { checked ->
+                                    if (checked) {
+                                        if (notificationPermission) {
+                                            updateDateTimePickerVisibility(true)
+                                        } else {
+                                            onPermissionRequest()
+                                        }
+                                    } else {
+                                        newTask = newTask.copy(reminder = null)
+                                    }
+                                },
+                            )
+                        },
+                    )
+                }
+
+                item {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(bottom = 32.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            if (isEditSheet) {
+                                OutlinedButton(
+                                    onClick = onDelete,
+                                    shapes =
+                                        ButtonShapes(
+                                            shape = MaterialTheme.shapes.extraLarge,
+                                            pressedShape = MaterialTheme.shapes.small,
+                                        ),
+                                    modifier = Modifier.weight(1f),
+                                ) {
+                                    Text(stringResource(Res.string.delete))
+                                }
+                            }
+
+                            Button(
+                                onClick = {
+                                    onUpsert(
+                                        newTask.copy(
+                                            title = textFieldState.text.toString(),
+                                            description = descFieldState.text.toString(),
+                                        )
+                                    )
+                                    onDismissRequest()
+                                },
+                                shapes =
+                                    ButtonShapes(
+                                        shape = MaterialTheme.shapes.extraLarge,
+                                        pressedShape = MaterialTheme.shapes.small,
+                                    ),
+                                modifier = Modifier.weight(1f),
+                                enabled =
+                                    textFieldState.text.isNotBlank() &&
+                                        textFieldState.text.length <= 100 &&
+                                        isValidDateTime &&
+                                        (newTask.reminder != task.reminder ||
+                                            textFieldState.text.toString() != task.title ||
+                                            descFieldState.text.toString() != task.description ||
+                                            newTask.categoryId != task.categoryId),
+                            ) {
+                                Text(
+                                    stringResource(
+                                        if (isEditSheet) Res.string.save else Res.string.add_task
+                                    )
+                                )
+                            }
                         }
                     }
                 }

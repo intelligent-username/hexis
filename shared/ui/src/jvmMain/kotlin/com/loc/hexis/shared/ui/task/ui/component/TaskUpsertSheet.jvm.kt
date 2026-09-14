@@ -1,4 +1,4 @@
-﻿
+
 package com.loc.hexis.shared.ui.task.ui.component
 
 import androidx.compose.runtime.Composable
@@ -20,6 +20,7 @@ actual fun TaskUpsertSheet(
     is24Hr: Boolean,
     modifier: Modifier,
     isEditSheet: Boolean,
+    onImport: ((List<Task>, Long) -> Unit)?,
 ) {
     var showDateTimePicker by remember { mutableStateOf(false) }
 
@@ -36,5 +37,6 @@ actual fun TaskUpsertSheet(
         updateDateTimePickerVisibility = { showDateTimePicker = it },
         onPermissionRequest = {},
         modifier = modifier,
+        onImport = onImport,
     )
 }

@@ -1,4 +1,4 @@
-﻿
+
 package com.loc.hexis.shared.ui.task
 
 import androidx.compose.runtime.Immutable
@@ -16,4 +16,5 @@ data class TaskState(
     val reorderTasks: Boolean = true,
     val putNewTasksAtTop: Boolean = false,
     val showAddTaskSheet: Boolean = false,
+    val undoImportCount: Int? = null,
 )
