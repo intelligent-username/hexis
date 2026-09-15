@@ -1,4 +1,4 @@
-﻿
+
 package com.loc.hexis.shared.ui.note.ui
 
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -110,7 +110,7 @@ fun BaseNoteCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Text(
-                    text = note.title.ifEmpty { stringResource(Res.string.untitled) },
+                    text = note.title.trimEnd().ifEmpty { stringResource(Res.string.untitled) },
                     style =
                         MaterialTheme.typography.titleMedium.copy(fontFamily = flexFontEmphasis()),
                     color = onSurfaceColor,
@@ -235,9 +235,10 @@ fun NoteCard(
         onDelete = onDelete,
         modifier = modifier,
     ) {
-        if (note.content.isNotEmpty()) {
+        val preview = getContentPreview(note.content).trimEnd()
+        if (preview.isNotEmpty()) {
             Text(
-                text = getContentPreview(note.content),
+                text = preview,
                 style = MaterialTheme.typography.bodyMedium,
                 color = onSurfaceVariantColor,
                 maxLines = 3,

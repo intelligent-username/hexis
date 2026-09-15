@@ -180,19 +180,10 @@ fun TaskUpsertSheetContent(
                                 pressedShape = MaterialTheme.shapes.small,
                             ),
                     ) {
-                        Icon(
-                            imageVector =
-                                vectorResource(
-                                    if (isImportMode) Res.drawable.add else Res.drawable.download
-                                ),
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp),
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
                         Text(
                             text =
                                 if (isImportMode) stringResource(Res.string.add_task)
-                                else stringResource(Res.string.import_tasks)
+                                else stringResource(Res.string.add_many)
                         )
                     }
                 }
@@ -235,6 +226,17 @@ fun TaskUpsertSheetContent(
 
             if (isImportMode) {
                 item {
+                    val primaryColor = MaterialTheme.colorScheme.primary
+                    val onSurfaceColor = MaterialTheme.colorScheme.onSurface
+                    val onSurfaceVariantColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    val visualTransformation =
+                        remember(primaryColor, onSurfaceColor, onSurfaceVariantColor) {
+                            TaskImportVisualTransformation(
+                                primaryColor,
+                                onSurfaceColor,
+                                onSurfaceVariantColor,
+                            )
+                        }
                     OutlinedTextField(
                         value = importText,
                         onValueChange = { importText = it },
@@ -246,6 +248,7 @@ fun TaskUpsertSheetContent(
                                 color = MaterialTheme.colorScheme.outline,
                             )
                         },
+                        visualTransformation = visualTransformation,
                         modifier =
                             Modifier.fillMaxWidth()
                                 .heightIn(min = 160.dp, max = 260.dp),

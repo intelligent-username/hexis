@@ -1,4 +1,4 @@
-﻿
+
 package com.loc.hexis.shared.ui.note.ui
 
 import androidx.compose.animation.AnimatedVisibility
@@ -57,7 +57,14 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.isAltPressed
+import androidx.compose.ui.input.key.isCtrlPressed
+import androidx.compose.ui.input.key.isMetaPressed
+import androidx.compose.ui.input.key.isShiftPressed
 import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.PointerEventTimeoutCancellationException
@@ -233,6 +240,29 @@ fun NoteEditorSheet(
         contentValue = TextFieldValue(newText, TextRange(newCursor))
     }
 
+    fun handleEnterPress(value: TextFieldValue): TextFieldValue? {
+        if (value.selection.start != value.selection.end) return null
+        val cursor = value.selection.start
+        val text = value.text
+        if (cursor < 0 || cursor > text.length) return null
+
+        val lineStart = text.substring(0, cursor).lastIndexOf('\n') + 1
+        val lineEnd = text.indexOf('\n', lineStart).let { if (it == -1) text.length else it }
+        val currentLine = text.substring(lineStart, lineEnd)
+
+        val prefix = getNextListPrefix(currentLine) ?: return null
+        val cleanLine = removePrefix(currentLine).trim()
+
+        return if (cleanLine.isEmpty()) {
+            val resultText = text.substring(0, lineStart) + text.substring(lineEnd)
+            TextFieldValue(resultText, TextRange(lineStart))
+        } else {
+            val resultText = text.substring(0, cursor) + "\n" + prefix + text.substring(cursor)
+            val newCursor = cursor + 1 + prefix.length
+            TextFieldValue(resultText, TextRange(newCursor))
+        }
+    }
+
     fun handleListEnter(oldValue: TextFieldValue, newValue: TextFieldValue): TextFieldValue? {
         val oldText = oldValue.text
         val newText = newValue.text
@@ -243,22 +273,7 @@ fun NoteEditorSheet(
         if (newValue.selection.start != oldCursor + 1) return null
         if (newText.getOrNull(oldCursor) != '\n') return null
 
-        val lineStart = oldText.substring(0, oldCursor).lastIndexOf('\n') + 1
-        val lineEnd = oldText.indexOf('\n', lineStart).let { if (it == -1) oldText.length else it }
-        val currentLine = oldText.substring(lineStart, lineEnd)
-
-        val prefix = getNextListPrefix(currentLine) ?: return null
-        val cleanLine = removePrefix(currentLine).trim()
-
-        return if (cleanLine.isEmpty()) {
-            val resultText = oldText.substring(0, lineStart) + oldText.substring(lineEnd)
-            TextFieldValue(resultText, TextRange(lineStart))
-        } else {
-            val resultText =
-                oldText.substring(0, oldCursor) + "\n" + prefix + oldText.substring(oldCursor)
-            val newCursor = oldCursor + 1 + prefix.length
-            TextFieldValue(resultText, TextRange(newCursor))
-        }
+        return handleEnterPress(oldValue)
     }
 
     val focusManager = LocalFocusManager.current
@@ -719,6 +734,26 @@ fun NoteEditorSheet(
                         modifier =
                             Modifier.fillMaxWidth()
                                 .focusRequester(contentFocusRequester)
+                                .onPreviewKeyEvent { event ->
+                                    if (
+                                        event.type == KeyEventType.KeyDown &&
+                                            (event.key == Key.Enter || event.key == Key.NumPadEnter) &&
+                                            !event.isShiftPressed &&
+                                            !event.isCtrlPressed &&
+                                            !event.isAltPressed &&
+                                            !event.isMetaPressed
+                                    ) {
+                                        val handled = handleEnterPress(contentValue)
+                                        if (handled != null) {
+                                            contentValue = handled
+                                            true
+                                        } else {
+                                            false
+                                        }
+                                    } else {
+                                        false
+                                    }
+                                }
                                 .pointerInput(contentValue.text) {
                                     awaitEachGesture {
                                         val down = awaitFirstDown(pass = PointerEventPass.Initial)
@@ -1077,20 +1112,26 @@ fun NoteEditorSheet(
                                             modifier = Modifier.weight(1f),
                                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                                         ) {
+                                            val valueText =
+                                                remember(row.id) {
+                                                    mutableStateOf(
+                                                        if (row.isInteger)
+                                                            row.value.toLong().toString()
+                                                        else row.value.toString()
+                                                    )
+                                                }
                                             FloatingLabelTextField(
-                                                value =
-                                                    if (row.value == 0.0) ""
-                                                    else if (row.isInteger)
-                                                        row.value.toLong().toString()
-                                                    else row.value.toString(),
+                                                value = valueText.value,
                                                 onValueChange = { valStr ->
-                                                    val parsed = valStr.toDoubleOrNull() ?: 0.0
+                                                    valueText.value = valStr
+                                                    val parsed = valStr.toDoubleOrNull()
                                                     val targetIdx =
                                                         counterRows.indexOfFirst { it.id == row.id }
                                                     if (targetIdx != -1) {
                                                         counterRows[targetIdx] =
                                                             counterRows[targetIdx].copy(
-                                                                value = parsed
+                                                                value = parsed ?: 0.0,
+                                                                isInteger = !valStr.contains('.'),
                                                             )
                                                     }
                                                 },

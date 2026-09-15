@@ -90,7 +90,6 @@ import com.loc.hexis.shared.ui.task.TaskAction
 import com.loc.hexis.shared.ui.task.TaskState
 import com.loc.hexis.shared.ui.task.ui.component.CategoryUpsertSheet
 import com.loc.hexis.shared.ui.task.ui.component.TaskCard
-import com.loc.hexis.shared.ui.task.ui.component.TaskImportSheet
 import com.loc.hexis.shared.ui.task.ui.component.TaskUpsertSheet
 import com.loc.hexis.shared.ui.theme.flexFontEmphasis
 import hexis.shared.ui.generated.resources.*
@@ -112,7 +111,6 @@ fun TaskList(
 
     var showTaskAddSheet by remember { mutableStateOf(false) }
     var showCategoryAddSheet by remember { mutableStateOf(false) }
-    var showImportSheet by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var editState by remember { mutableStateOf(false) }
     var editTask: Task? by remember { mutableStateOf(null) }
@@ -140,7 +138,6 @@ fun TaskList(
             onDeleteClick = { showDeleteDialog = true },
             onPomodoroClick = onPomodoroClick,
             onNotesClick = onNotesClick,
-            onImportClick = { showImportSheet = true },
             isExpanded = windowSizeClass.widthSizeClass == WindowWidthSizeClass.Expanded,
         )
 
@@ -290,17 +287,6 @@ fun TaskList(
         )
     }
 
-    if (showImportSheet) {
-        TaskImportSheet(
-            categories = state.tasks.keys.toList(),
-            currentCategory = state.currentCategory,
-            onDismissRequest = { showImportSheet = false },
-            onImport = { tasks, categoryId ->
-                onAction(TaskAction.ImportTasks(tasks, categoryId))
-            },
-        )
-    }
-
     if (editTask != null) {
         TaskUpsertSheet(
             task = editTask!!,
@@ -348,7 +334,6 @@ private fun TaskListTopBar(
     onDeleteClick: () -> Unit,
     onPomodoroClick: () -> Unit,
     onNotesClick: () -> Unit,
-    onImportClick: () -> Unit,
     isExpanded: Boolean,
 ) {
     MainTabHeader(
@@ -375,13 +360,6 @@ private fun TaskListTopBar(
                         contentDescription = null,
                     )
                 }
-            }
-
-            FilledTonalIconButton(onClick = onImportClick) {
-                Icon(
-                    imageVector = vectorResource(Res.drawable.download),
-                    contentDescription = stringResource(Res.string.import_tasks),
-                )
             }
 
             FilledTonalIconButton(onClick = onNotesClick) {

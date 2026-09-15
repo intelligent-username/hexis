@@ -1,4 +1,4 @@
-﻿
+
 package com.loc.hexis.shared.ui.note
 
 enum class LineType {
@@ -46,6 +46,8 @@ fun parseContentLines(content: String): List<FormattedLine> {
                 FormattedLine(LineType.BULLET_LIST, trimmed.removePrefix("* "), indent / 2)
             trimmed.startsWith("- ") ->
                 FormattedLine(LineType.BULLET_LIST, trimmed.removePrefix("- "), indent / 2)
+            trimmed.startsWith("+ ") ->
+                FormattedLine(LineType.BULLET_LIST, trimmed.removePrefix("+ "), indent / 2)
             trimmed.startsWith("> ") ->
                 FormattedLine(LineType.QUOTE, trimmed.removePrefix("> "), indent / 2)
             numberedListRegex.containsMatchIn(trimmed) -> {
@@ -78,49 +80,58 @@ fun getLinePrefix(line: FormattedLine): String {
 fun isListLine(text: String): Boolean {
     val trimmed = text.trimStart()
     return trimmed.startsWith("* ") ||
+        trimmed == "*" ||
         trimmed.startsWith("- ") ||
+        trimmed == "-" ||
+        trimmed.startsWith("+ ") ||
+        trimmed == "+" ||
         checklistRegex.matches(trimmed) ||
         numberedListRegex.containsMatchIn(trimmed)
 }
 
 fun getListPrefix(text: String): String? {
-    val trimmed = text.trimStart()
+    val indent = text.takeWhile { it == ' ' || it == '\t' }
+    val trimmed = text.substring(indent.length)
     return when {
         checklistRegex.matches(trimmed) -> {
             val match = checklistRegex.find(trimmed)!!
             val isChecked = match.groupValues[2].equals("x", ignoreCase = true)
-            if (isChecked) "- [x] " else "- [ ] "
+            if (isChecked) "$indent- [x] " else "$indent- [ ] "
         }
-        trimmed.startsWith("* ") -> "* "
-        trimmed.startsWith("- ") -> "- "
+        trimmed.startsWith("* ") || trimmed == "*" -> "$indent* "
+        trimmed.startsWith("- ") || trimmed == "-" -> "$indent- "
+        trimmed.startsWith("+ ") || trimmed == "+" -> "$indent+ "
         numberedListRegex.containsMatchIn(trimmed) -> {
             val match = numberedListRegex.find(trimmed)!!
             val num = match.groupValues[1]
             val sep = if (match.value.contains(')')) ')' else '.'
-            "$num$sep "
+            "$indent$num$sep "
         }
         else -> null
     }
 }
 
 fun getNextListPrefix(text: String): String? {
-    val trimmed = text.trimStart()
+    val indent = text.takeWhile { it == ' ' || it == '\t' }
+    val trimmed = text.substring(indent.length)
     return when {
-        checklistRegex.matches(trimmed) -> "- [ ] "
-        trimmed.startsWith("* ") -> "* "
-        trimmed.startsWith("- ") -> "- "
+        checklistRegex.matches(trimmed) -> "$indent- [ ] "
+        trimmed.startsWith("* ") || trimmed == "*" -> "$indent* "
+        trimmed.startsWith("- ") || trimmed == "-" -> "$indent- "
+        trimmed.startsWith("+ ") || trimmed == "+" -> "$indent+ "
         numberedListRegex.containsMatchIn(trimmed) -> {
             val match = numberedListRegex.find(trimmed)!!
             val num = match.groupValues[1].toIntOrNull() ?: return null
             val sep = if (match.value.contains(')')) ')' else '.'
-            "${num + 1}$sep "
+            "$indent${num + 1}$sep "
         }
         else -> null
     }
 }
 
 fun removePrefix(text: String): String {
-    val trimmed = text.trimStart()
+    val indent = text.takeWhile { it == ' ' || it == '\t' }
+    val trimmed = text.substring(indent.length)
     return when {
         trimmed.startsWith("### ") -> trimmed.removePrefix("### ")
         trimmed.startsWith("## ") -> trimmed.removePrefix("## ")
@@ -130,7 +141,11 @@ fun removePrefix(text: String): String {
             match.groupValues[3]
         }
         trimmed.startsWith("* ") -> trimmed.removePrefix("* ")
+        trimmed == "*" -> ""
         trimmed.startsWith("- ") -> trimmed.removePrefix("- ")
+        trimmed == "-" -> ""
+        trimmed.startsWith("+ ") -> trimmed.removePrefix("+ ")
+        trimmed == "+" -> ""
         trimmed.startsWith("> ") -> trimmed.removePrefix("> ")
         numberedListRegex.containsMatchIn(trimmed) -> trimmed.replaceFirst(numberedListRegex, "")
         trimmed.matches(Regex("""^[-*_]{3,}\s*$""")) -> ""
@@ -139,23 +154,24 @@ fun removePrefix(text: String): String {
 }
 
 fun getContentPreview(content: String, maxChars: Int = 120): String {
-    val lines = parseContentLines(content)
+    val lines = parseContentLines(content.trimEnd())
     val previewParts =
         lines.mapNotNull { line ->
+            val text = line.text.trimEnd()
             when (line.type) {
                 LineType.HEADER,
                 LineType.SUB_HEADER,
-                LineType.SUB_SUB_HEADER -> line.text.ifEmpty { null }
-                LineType.BULLET_LIST -> if (line.text.isNotEmpty()) "• ${line.text}" else null
+                LineType.SUB_SUB_HEADER -> text.ifEmpty { null }
+                LineType.BULLET_LIST -> if (text.isNotEmpty()) "• $text" else null
                 LineType.NUMBERED_LIST ->
-                    if (line.text.isNotEmpty()) "${line.number ?: 1}. ${line.text}" else null
+                    if (text.isNotEmpty()) "${line.number ?: 1}. $text" else null
                 LineType.CHECKLIST ->
-                    if (line.text.isNotEmpty()) "${if (line.isChecked) "☑" else "☐"} ${line.text}"
+                    if (text.isNotEmpty()) "${if (line.isChecked) "☑" else "☐"} $text"
                     else null
-                LineType.QUOTE -> if (line.text.isNotEmpty()) "│ ${line.text}" else null
+                LineType.QUOTE -> if (text.isNotEmpty()) "│ $text" else null
                 LineType.HORIZONTAL_RULE -> null
-                LineType.REGULAR -> line.text.ifEmpty { null }
+                LineType.REGULAR -> text.ifEmpty { null }
             }
         }
-    return previewParts.joinToString("\n").trim().take(maxChars)
+    return previewParts.joinToString("\n").trimEnd().take(maxChars)
 }

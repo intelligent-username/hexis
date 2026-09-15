@@ -1,8 +1,10 @@
-﻿
+
 package com.loc.hexis.shared.ui.note.ui
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
@@ -281,7 +283,6 @@ fun NotesPage(
             showCreateTypeSheet = false
         } else if (showEditor) {
             showEditor = false
-            editingNote = null
         } else {
             onDismiss()
         }
@@ -389,16 +390,10 @@ fun NotesPage(
                     }
                 } else {
                     // Standard header bar
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        IconButton(onClick = onDismiss, modifier = Modifier.size(40.dp)) {
-                            Icon(
-                                imageVector = vectorResource(Res.drawable.close),
-                                contentDescription = "Close",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(18.dp),
-                            )
-                        }
-
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(start = 16.dp),
+                    ) {
                         Text(
                             text =
                                 if (showArchived) stringResource(Res.string.archived_notes)
@@ -482,6 +477,16 @@ fun NotesPage(
                             Text(
                                 text = if (isGridMode) "☰" else "⊞",
                                 style = MaterialTheme.typography.titleMedium,
+                            )
+                        }
+
+                        // Close Button
+                        IconButton(onClick = onDismiss, modifier = Modifier.size(40.dp)) {
+                            Icon(
+                                imageVector = vectorResource(Res.drawable.close),
+                                contentDescription = "Close",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(18.dp),
                             )
                         }
                     }
@@ -1600,12 +1605,25 @@ fun NotesPage(
     }
 
     // Editor bottom sheet
-    if (showEditor) {
+    AnimatedVisibility(
+        visible = showEditor,
+        enter =
+            fadeIn(animationSpec = tween(durationMillis = 280, easing = FastOutSlowInEasing)) +
+                slideInVertically(
+                    animationSpec = tween(durationMillis = 320, easing = FastOutSlowInEasing),
+                    initialOffsetY = { fullHeight -> fullHeight / 5 },
+                ),
+        exit =
+            fadeOut(animationSpec = tween(durationMillis = 200)) +
+                slideOutVertically(
+                    animationSpec = tween(durationMillis = 220),
+                    targetOffsetY = { fullHeight -> fullHeight / 6 },
+                ),
+    ) {
         NoteEditorSheet(
             note = editingNote,
             onDismissRequest = {
                 showEditor = false
-                editingNote = null
             },
             onSave = { saved -> scope.launch { repo.upsertNote(saved) } },
             onArchive = { noteId ->

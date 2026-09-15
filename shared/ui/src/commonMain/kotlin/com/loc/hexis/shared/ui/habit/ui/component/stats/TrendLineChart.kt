@@ -54,6 +54,11 @@ import com.loc.hexis.shared.ui.habit.ui.component.NotEnoughData
 import com.loc.hexis.shared.ui.theme.flexFontRounded
 import hexis.shared.ui.generated.resources.*
 import kotlin.math.abs
+import kotlin.math.ceil
+import kotlin.math.floor
+import kotlin.math.log10
+import kotlin.math.pow
+import kotlin.math.roundToInt
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.isoDayNumber
@@ -64,6 +69,40 @@ private fun LocalDate.weekOfYear(): Int {
     val firstDayOfYear = LocalDate(year, 1, 1)
     val firstDayOfWeekOffset = firstDayOfYear.dayOfWeek.isoDayNumber - 1
     return (dayOfYear + firstDayOfWeekOffset - 1) / 7 + 1
+}
+
+private data class NiceScale(val chartMax: Int, val step: Int, val gridCount: Int)
+
+private fun calculateNiceScale(rawMax: Int): NiceScale {
+    if (rawMax <= 2) return NiceScale(chartMax = 2, step = 1, gridCount = 2)
+    if (rawMax <= 4) return NiceScale(chartMax = rawMax, step = 1, gridCount = rawMax)
+
+    val roughStep = rawMax.toDouble() / 4
+    val exponent = floor(log10(roughStep))
+    val powerOfTen = 10.0.pow(exponent)
+    val candidates =
+        if (exponent >= 1.0) listOf(1.0, 2.0, 2.5, 5.0, 10.0)
+        else listOf(1.0, 2.0, 5.0, 10.0)
+
+    var bestStep = (candidates.first() * powerOfTen).roundToInt().coerceAtLeast(1)
+    var bestDiff = Int.MAX_VALUE
+    var bestChartMax = rawMax
+
+    for (c in candidates) {
+        val s = (c * powerOfTen).roundToInt().coerceAtLeast(1)
+        val max = ceil(rawMax.toDouble() / s).toInt() * s
+        val intervals = max / s
+        if (intervals in 2..6) {
+            val diff = abs(intervals - 4)
+            if (diff < bestDiff || (diff == bestDiff && max < bestChartMax)) {
+                bestDiff = diff
+                bestStep = s
+                bestChartMax = max
+            }
+        }
+    }
+
+    return NiceScale(bestChartMax, bestStep, (bestChartMax / bestStep).coerceAtLeast(1))
 }
 
 @Composable
@@ -224,19 +263,14 @@ fun TrendLineChart(
                 MaterialTheme.typography.labelSmall.copy(fontFamily = flexFontRounded())
             val progress = drawProgress.value
 
-            val initialWeekData =
+            val niceScale =
                 remember(selectedTimePeriod, weeklyPointsHistory, dailyPointsHistory) {
-                    if (selectedTimePeriod == WeeklyTimePeriod.DAYS_7) {
-                        val fullList =
-                            if (dailyPointsHistory.isNotEmpty()) dailyPointsHistory
-                            else listOf(0, 0, 0, 0, 0, 0, 0)
-                        fullList.takeLast(7).ifEmpty { listOf(0, 0, 0, 0, 0, 0, 0) }
-                    } else {
-                        val weeks = selectedTimePeriod.toWeeks()
-                        weeklyPointsHistory.takeLast(weeks).ifEmpty { List(weeks) { 0 } }
-                    }
+                    val fullList =
+                        if (selectedTimePeriod == WeeklyTimePeriod.DAYS_7) dailyPointsHistory
+                        else weeklyPointsHistory
+                    val rawMax = fullList.maxOrNull()?.coerceAtLeast(1) ?: 1
+                    calculateNiceScale(rawMax)
                 }
-            val constantMax = remember(initialWeekData) { initialWeekData.maxOrNull()?.coerceAtLeast(1) ?: 1 }
 
             HorizontalPager(
                 state = pagerState,
@@ -279,7 +313,7 @@ fun TrendLineChart(
                     val n = currentData.size
 
                     fun xOf(i: Int) = padL + (i.toFloat() / (n - 1).coerceAtLeast(1)) * gW
-                    fun yOf(v: Int) = h - padB - (v.toFloat() / constantMax) * gH
+                    fun yOf(v: Int) = h - padB - (v.toFloat() / niceScale.chartMax) * gH
 
                     val pts = currentData.mapIndexed { i, v -> Offset(xOf(i), yOf(v)) }
 
@@ -289,7 +323,7 @@ fun TrendLineChart(
                     }
 
                     // Dashed grid lines
-                    val gridCount = 4
+                    val gridCount = niceScale.gridCount
                     for (i in 0..gridCount) {
                         val y = padT + (gH / gridCount) * i
                         drawLine(
@@ -299,7 +333,7 @@ fun TrendLineChart(
                             strokeWidth = 1f,
                             pathEffect = PathEffect.dashPathEffect(floatArrayOf(5f, 5f)),
                         )
-                        val labelVal = constantMax - (constantMax / gridCount) * i
+                        val labelVal = niceScale.chartMax - niceScale.step * i
                         val labelResult = textMeasurer.measure("$labelVal", style = labelStyle)
                         drawText(
                             textLayoutResult = labelResult,

@@ -149,6 +149,18 @@ fun TaskImportSheet(
                 }
             }
 
+            val primaryColor = MaterialTheme.colorScheme.primary
+            val onSurfaceColor = MaterialTheme.colorScheme.onSurface
+            val onSurfaceVariantColor = MaterialTheme.colorScheme.onSurfaceVariant
+            val visualTransformation =
+                remember(primaryColor, onSurfaceColor, onSurfaceVariantColor) {
+                    TaskImportVisualTransformation(
+                        primaryColor,
+                        onSurfaceColor,
+                        onSurfaceVariantColor,
+                    )
+                }
+
             OutlinedTextField(
                 value = text,
                 onValueChange = { text = it },
@@ -160,6 +172,7 @@ fun TaskImportSheet(
                         color = MaterialTheme.colorScheme.outline,
                     )
                 },
+                visualTransformation = visualTransformation,
                 modifier =
                     Modifier.fillMaxWidth()
                         .heightIn(min = 140.dp, max = 240.dp)
