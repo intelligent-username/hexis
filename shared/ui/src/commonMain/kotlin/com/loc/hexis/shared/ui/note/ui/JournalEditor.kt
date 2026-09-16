@@ -1,4 +1,4 @@
-﻿
+
 package com.loc.hexis.shared.ui.note.ui
 
 import androidx.compose.animation.AnimatedVisibility
@@ -51,9 +51,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -210,10 +212,38 @@ fun JournalEditor(
 
                 // Optional Journal Note Description / Subtitle
                 AnimatedVisibility(visible = showDescriptionField) {
+                    var descValue by remember(description) {
+                        mutableStateOf(TextFieldValue(description, TextRange(description.length)))
+                    }
+
                     OutlinedTextField(
-                        value = description,
-                        onValueChange = {
-                            onDescriptionChange(it)
+                        value = descValue,
+                        onValueChange = { newValue ->
+                            val cleanValue =
+                                if (newValue.text.contains('\r')) {
+                                    val cleanText =
+                                        newValue.text.replace("\r\n", "\n").replace('\r', '\n')
+                                    val cursorOffset =
+                                        newValue.text
+                                            .substring(
+                                                0,
+                                                newValue.selection.start.coerceAtMost(
+                                                    newValue.text.length
+                                                ),
+                                            )
+                                            .count { it == '\r' }
+                                    val newCursor =
+                                        (newValue.selection.start - cursorOffset).coerceIn(
+                                            0,
+                                            cleanText.length,
+                                        )
+                                    TextFieldValue(cleanText, TextRange(newCursor))
+                                } else {
+                                    newValue
+                                }
+
+                            descValue = cleanValue
+                            onDescriptionChange(cleanValue.text)
                             save()
                         },
                         placeholder = { Text("Journal description or summary notes…") },
@@ -222,7 +252,6 @@ fun JournalEditor(
                         textStyle =
                             MaterialTheme.typography.bodySmall.copy(fontFamily = flexFontRounded()),
                         colors = textFieldColors,
-                        maxLines = 3,
                     )
                 }
             }

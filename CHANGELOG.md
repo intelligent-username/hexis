@@ -1,5 +1,14 @@
 # Changelog
 
+<!-- 
+New releease
+
+Got rid of monthly breakdown for per-hahbit stats
+Point-form support for task descriptions
+New note opening animation
+
+ -->
+
 ## 1.8.0
 
 - Import to-do lists directly from plain text by pasting items starting with `-` or `*`

@@ -1,4 +1,4 @@
-﻿
+
 package com.loc.hexis.shared.ui.habit.ui.sections
 
 import androidx.compose.foundation.background
@@ -50,7 +50,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kizitonwose.calendar.compose.heatmapcalendar.rememberHeatMapCalendarState
-import com.kizitonwose.calendar.compose.rememberCalendarState
 import com.kizitonwose.calendar.core.minusMonths
 import com.loc.hexis.core.toFormattedString
 import com.loc.hexis.shared.ui.LocalWindowSizeClass
@@ -59,7 +58,6 @@ import com.loc.hexis.shared.ui.habit.HabitState
 import com.loc.hexis.shared.ui.habit.HabitsAction
 import com.loc.hexis.shared.ui.habit.ui.component.HabitUpsertSheet
 import com.loc.hexis.shared.ui.habit.ui.component.TimeDivisionEditDialog
-import com.loc.hexis.shared.ui.habit.ui.component.stats.CalendarMap
 import com.loc.hexis.shared.ui.habit.ui.component.stats.PointsStatCards
 import com.loc.hexis.shared.ui.habit.ui.component.stats.StartStats
 import com.loc.hexis.shared.ui.habit.ui.component.stats.TrendLineChart
@@ -82,7 +80,6 @@ fun AnalyticsPage(
     state: HabitState,
     onAction: (HabitsAction) -> Unit,
     onNavigateBack: () -> Unit,
-    onNavigateToCalendar: () -> Unit,
     onPomodoroClick: (Long?) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
@@ -96,13 +93,6 @@ fun AnalyticsPage(
 
     val heatMapState =
         rememberHeatMapCalendarState(
-            startMonth = currentMonth.minusMonths(12),
-            endMonth = currentMonth,
-            firstVisibleMonth = currentMonth,
-            firstDayOfWeek = state.startingDay,
-        )
-    val calendarState =
-        rememberCalendarState(
             startMonth = currentMonth.minusMonths(12),
             endMonth = currentMonth,
             firstVisibleMonth = currentMonth,
@@ -510,32 +500,6 @@ fun AnalyticsPage(
                                 com.loc.hexis.core.habits.DisplayMode.PROGRESS
                         ) {
                             onAction(HabitsAction.ToggleHabitProgress(currentHabit.habit, it))
-                        }
-                    },
-                )
-            }
-
-            item {
-                CalendarMap(
-                    calendarState = calendarState,
-                    statuses = currentHabit.statuses,
-                    targetValue = currentHabit.habit.targetValue ?: 1.0,
-                    displayMode = currentHabit.habit.displayMode,
-                    days = currentHabit.habit.days,
-                    startDate = currentHabit.habit.time.date,
-                    onNavigateToCalendar = onNavigateToCalendar,
-                    onDateClick = {
-                        selectedDate = it
-                        if (
-                            currentHabit.habit.displayMode !=
-                                com.loc.hexis.core.habits.DisplayMode.PROGRESS
-                        ) {
-                            onAction(
-                                HabitsAction.ToggleHabitProgress(
-                                    habit = currentHabit.habit,
-                                    date = it,
-                                )
-                            )
                         }
                     },
                 )

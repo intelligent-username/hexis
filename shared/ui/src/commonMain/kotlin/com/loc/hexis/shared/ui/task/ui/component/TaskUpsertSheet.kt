@@ -351,6 +351,7 @@ fun TaskUpsertSheetContent(
                         shape = MaterialTheme.shapes.medium,
                         placeholder = { Text(text = stringResource(Res.string.description)) },
                         label = { Text(text = stringResource(Res.string.description)) },
+                        inputTransformation = TaskListInputTransformation,
                         keyboardOptions =
                             KeyboardOptions.Default.copy(
                                 capitalization = KeyboardCapitalization.Sentences,

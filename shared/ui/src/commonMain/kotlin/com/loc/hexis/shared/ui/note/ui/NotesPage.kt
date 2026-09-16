@@ -2,6 +2,7 @@
 package com.loc.hexis.shared.ui.note.ui
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -67,10 +68,16 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
@@ -148,6 +155,31 @@ fun NotesPage(
     val vaultPasswordHash by settingsDatastore.getVaultPasswordHash().collectAsState(null)
     var pendingVaultNote by remember { mutableStateOf<Note?>(null) }
 
+    // Bounds tracking and container transform animation
+    var rootLayoutCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
+    val cardBoundsMap = remember { mutableMapOf<Long, Rect>() }
+    var fabBounds by remember { mutableStateOf<Rect?>(null) }
+    var activeOriginBounds by remember { mutableStateOf<Rect?>(null) }
+
+    val editorAnimatable = remember { Animatable(0f) }
+    var renderEditor by remember { mutableStateOf(false) }
+
+    LaunchedEffect(showEditor) {
+        if (showEditor) {
+            renderEditor = true
+            editorAnimatable.animateTo(
+                targetValue = 1f,
+                animationSpec = tween(durationMillis = 320, easing = FastOutSlowInEasing),
+            )
+        } else {
+            editorAnimatable.animateTo(
+                targetValue = 0f,
+                animationSpec = tween(durationMillis = 280, easing = FastOutSlowInEasing),
+            )
+            renderEditor = false
+        }
+    }
+
     // Multi-select state
     var selectedNoteIds by remember { mutableStateOf(emptySet<Long>()) }
     val isSelectionMode = selectedNoteIds.isNotEmpty()
@@ -174,6 +206,20 @@ fun NotesPage(
 
     var initialNoteOpened by remember(initialNoteId) { mutableStateOf(false) }
 
+    fun openNote(note: Note) {
+        activeOriginBounds = cardBoundsMap[note.id]
+        if (
+            note.type == NoteType.VAULT &&
+                isLockVaultNotesOn &&
+                !vaultPasswordHash.isNullOrEmpty()
+        ) {
+            pendingVaultNote = note
+        } else {
+            editingNote = note
+            showEditor = true
+        }
+    }
+
     LaunchedEffect(showArchived) {
         val flow = if (showArchived) repo.getArchivedNotesFlow() else repo.getNotesFlow()
         flow.collect { list ->
@@ -189,16 +235,7 @@ fun NotesPage(
         if (initialNoteId != null && notesLoaded && !initialNoteOpened) {
             val target = notes.firstOrNull { it.id == initialNoteId }
             if (target != null) {
-                if (
-                    target.type == NoteType.VAULT &&
-                        isLockVaultNotesOn &&
-                        !vaultPasswordHash.isNullOrEmpty()
-                ) {
-                    pendingVaultNote = target
-                } else {
-                    editingNote = target
-                    showEditor = true
-                }
+                openNote(target)
                 initialNoteOpened = true
             }
         }
@@ -288,7 +325,12 @@ fun NotesPage(
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
+    Box(
+        modifier =
+            Modifier.fillMaxSize()
+                .background(MaterialTheme.colorScheme.surface)
+                .onGloballyPositioned { rootLayoutCoordinates = it }
+    ) {
         Column(modifier = Modifier.fillMaxSize()) {
             // Top bar
             Row(
@@ -586,6 +628,14 @@ fun NotesPage(
                                         translationY = transY
                                         alpha = if (isDragging) 0.9f else 1.0f
                                     }
+                                    .onGloballyPositioned { coords ->
+                                        rootLayoutCoordinates?.let { root ->
+                                            if (root.isAttached && coords.isAttached) {
+                                                cardBoundsMap[note.id] =
+                                                    root.localBoundingBoxOf(coords)
+                                            }
+                                        }
+                                    }
                                     .then(
                                         if (isSelected)
                                             Modifier.border(
@@ -623,7 +673,7 @@ fun NotesPage(
                                                                         n.id to i
                                                                     }
                                                                     .toMap()
-                                                            scope.launch {
+                                                                                            scope.launch {
                                                                 repo.updateSortOrders(orderMap)
                                                             }
                                                         } else {
@@ -705,10 +755,7 @@ fun NotesPage(
                                         showArchived = showArchived,
                                         onClick = {
                                             if (isSelectionMode) toggleSelectNote(note.id)
-                                            else {
-                                                editingNote = note
-                                                showEditor = true
-                                            }
+                                            else openNote(note)
                                         },
                                         onValueChange = { rowId, newValue ->
                                             val data = note.parseCountingTable()
@@ -768,10 +815,7 @@ fun NotesPage(
                                         showArchived = showArchived,
                                         onClick = {
                                             if (isSelectionMode) toggleSelectNote(note.id)
-                                            else {
-                                                editingNote = note
-                                                showEditor = true
-                                            }
+                                            else openNote(note)
                                         },
                                         onTogglePin = {
                                             if (!isSelectionMode) {
@@ -818,15 +862,7 @@ fun NotesPage(
                                         showArchived = showArchived,
                                         onClick = {
                                             if (isSelectionMode) toggleSelectNote(note.id)
-                                            else if (
-                                                isLockVaultNotesOn &&
-                                                    !vaultPasswordHash.isNullOrBlank()
-                                            ) {
-                                                pendingVaultNote = note
-                                            } else {
-                                                editingNote = note
-                                                showEditor = true
-                                            }
+                                            else openNote(note)
                                         },
                                         onTogglePin = {
                                             if (!isSelectionMode) {
@@ -873,10 +909,7 @@ fun NotesPage(
                                         showArchived = showArchived,
                                         onClick = {
                                             if (isSelectionMode) toggleSelectNote(note.id)
-                                            else {
-                                                editingNote = note
-                                                showEditor = true
-                                            }
+                                            else openNote(note)
                                         },
                                         onTogglePin = {
                                             if (!isSelectionMode) {
@@ -995,14 +1028,21 @@ fun NotesPage(
                                         translationY = transY
                                         alpha = if (isDragging) 0.9f else 1.0f
                                     }
+                                    .onGloballyPositioned { coords ->
+                                        rootLayoutCoordinates?.let { root ->
+                                            if (root.isAttached && coords.isAttached) {
+                                                cardBoundsMap[note.id] =
+                                                    root.localBoundingBoxOf(coords)
+                                            }
+                                        }
+                                    }
                                     .pointerInput(note.id, isSelectionMode) {
                                         detectTapGestures(
                                             onTap = {
                                                 if (isSelectionMode) {
                                                     toggleSelectNote(note.id)
                                                 } else {
-                                                    editingNote = note
-                                                    showEditor = true
+                                                    openNote(note)
                                                 }
                                             }
                                         )
@@ -1108,10 +1148,7 @@ fun NotesPage(
                                         showArchived = showArchived,
                                         onClick = {
                                             if (isSelectionMode) toggleSelectNote(note.id)
-                                            else {
-                                                editingNote = note
-                                                showEditor = true
-                                            }
+                                            else openNote(note)
                                         },
                                         onValueChange = { rowId, newValue ->
                                             val data = note.parseCountingTable()
@@ -1159,10 +1196,7 @@ fun NotesPage(
                                         showArchived = showArchived,
                                         onClick = {
                                             if (isSelectionMode) toggleSelectNote(note.id)
-                                            else {
-                                                editingNote = note
-                                                showEditor = true
-                                            }
+                                            else openNote(note)
                                         },
                                         onTogglePin = {
                                             scope.launch {
@@ -1197,10 +1231,7 @@ fun NotesPage(
                                         showArchived = showArchived,
                                         onClick = {
                                             if (isSelectionMode) toggleSelectNote(note.id)
-                                            else {
-                                                editingNote = note
-                                                showEditor = true
-                                            }
+                                            else openNote(note)
                                         },
                                         onTogglePin = {
                                             scope.launch {
@@ -1235,10 +1266,7 @@ fun NotesPage(
                                         showArchived = showArchived,
                                         onClick = {
                                             if (isSelectionMode) toggleSelectNote(note.id)
-                                            else {
-                                                editingNote = note
-                                                showEditor = true
-                                            }
+                                            else openNote(note)
                                         },
                                         onTogglePin = {
                                             scope.launch {
@@ -1316,12 +1344,22 @@ fun NotesPage(
         // FAB — only in active view and not selecting
         if (!showArchived && !isSelectionMode) {
             MediumFloatingActionButton(
-                onClick = { showCreateTypeSheet = true },
+                onClick = {
+                    activeOriginBounds = fabBounds
+                    showCreateTypeSheet = true
+                },
                 containerColor = MaterialTheme.colorScheme.tertiaryContainer,
                 contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
                 modifier =
                     Modifier.align(Alignment.BottomEnd)
                         .padding(16.dp)
+                        .onGloballyPositioned { coords ->
+                            rootLayoutCoordinates?.let { root ->
+                                if (root.isAttached && coords.isAttached) {
+                                    fabBounds = root.localBoundingBoxOf(coords)
+                                }
+                            }
+                        }
                         .animateFloatingActionButton(
                             visible = true,
                             alignment = Alignment.BottomEnd,
@@ -1425,6 +1463,7 @@ fun NotesPage(
                     modifier =
                         Modifier.fillMaxWidth().clickable {
                             showCreateTypeSheet = false
+                            activeOriginBounds = fabBounds
                             val now = LocalDateTime.now()
                             val newId = Random.nextLong(100_000_000L, 999_999_999L)
                             editingNote =
@@ -1468,6 +1507,7 @@ fun NotesPage(
                     modifier =
                         Modifier.fillMaxWidth().clickable {
                             showCreateTypeSheet = false
+                            activeOriginBounds = fabBounds
                             val now = LocalDateTime.now()
                             val newId = Random.nextLong(100_000_000L, 999_999_999L)
                             val initialRow =
@@ -1517,6 +1557,7 @@ fun NotesPage(
                     modifier =
                         Modifier.fillMaxWidth().clickable {
                             showCreateTypeSheet = false
+                            activeOriginBounds = fabBounds
                             val now = LocalDateTime.now()
                             val newId = Random.nextLong(100_000_000L, 999_999_999L)
                             editingNote =
@@ -1561,6 +1602,7 @@ fun NotesPage(
                     modifier =
                         Modifier.fillMaxWidth().clickable {
                             showCreateTypeSheet = false
+                            activeOriginBounds = fabBounds
                             val now = LocalDateTime.now()
                             val newId = Random.nextLong(100_000_000L, 999_999_999L)
                             editingNote =
@@ -1604,53 +1646,80 @@ fun NotesPage(
         }
     }
 
-    // Editor bottom sheet
-    AnimatedVisibility(
-        visible = showEditor,
-        enter =
-            fadeIn(animationSpec = tween(durationMillis = 280, easing = FastOutSlowInEasing)) +
-                slideInVertically(
-                    animationSpec = tween(durationMillis = 320, easing = FastOutSlowInEasing),
-                    initialOffsetY = { fullHeight -> fullHeight / 5 },
-                ),
-        exit =
-            fadeOut(animationSpec = tween(durationMillis = 200)) +
-                slideOutVertically(
-                    animationSpec = tween(durationMillis = 220),
-                    targetOffsetY = { fullHeight -> fullHeight / 6 },
-                ),
-    ) {
-        NoteEditorSheet(
-            note = editingNote,
-            onDismissRequest = {
-                showEditor = false
-            },
-            onSave = { saved -> scope.launch { repo.upsertNote(saved) } },
-            onArchive = { noteId ->
-                scope.launch {
-                    val noteToArchive = notes.firstOrNull { it.id == noteId } ?: editingNote
-                    if (noteToArchive != null) {
-                        val newArchivedState = !noteToArchive.archived
-                        repo.upsertNote(noteToArchive.copy(archived = newArchivedState))
-                        showUndo(if (newArchivedState) msgNoteArchived else msgNoteUnarchived) {
-                            scope.launch { repo.upsertNote(noteToArchive) }
-                        }
+    // Editor overlay - expands outward from preview card/FAB on open, shrinks inward on close
+    if (renderEditor) {
+        val progress = editorAnimatable.value
+        val origin = activeOriginBounds
+
+        Box(
+            modifier =
+                Modifier.fillMaxSize().graphicsLayer {
+                    val rootW = size.width
+                    val rootH = size.height
+
+                    if (origin != null && rootW > 0f && rootH > 0f) {
+                        val cardW = origin.width.coerceAtLeast(10f)
+                        val cardH = origin.height.coerceAtLeast(10f)
+                        val pivotX = (origin.center.x / rootW).coerceIn(0f, 1f)
+                        val pivotY = (origin.center.y / rootH).coerceIn(0f, 1f)
+
+                        val startScaleX = cardW / rootW
+                        val startScaleY = cardH / rootH
+
+                        scaleX = startScaleX + (1f - startScaleX) * progress
+                        scaleY = startScaleY + (1f - startScaleY) * progress
+                        translationX = 0f
+                        translationY = 0f
+                        transformOrigin = TransformOrigin(pivotX, pivotY)
+                        shape = RoundedCornerShape(((1f - progress) * 20f).dp)
+                        clip = progress < 0.999f
+                        alpha = progress.coerceIn(0f, 1f)
+                    } else {
+                        val startScale = 0.8f
+                        scaleX = startScale + (1f - startScale) * progress
+                        scaleY = startScale + (1f - startScale) * progress
+                        translationX = 0f
+                        translationY = 0f
+                        transformOrigin = TransformOrigin.Center
+                        shape = RoundedCornerShape(((1f - progress) * 20f).dp)
+                        clip = progress < 0.999f
+                        alpha = progress.coerceIn(0f, 1f)
                     }
                 }
-            },
-            onDuplicate = { copy ->
-                scope.launch {
-                    repo.upsertNote(copy)
-                    editingNote = copy
-                }
-            },
-        )
+        ) {
+            NoteEditorSheet(
+                note = editingNote,
+                onDismissRequest = {
+                    showEditor = false
+                },
+                onSave = { saved -> scope.launch { repo.upsertNote(saved) } },
+                onArchive = { noteId ->
+                    scope.launch {
+                        val noteToArchive = notes.firstOrNull { it.id == noteId } ?: editingNote
+                        if (noteToArchive != null) {
+                            val newArchivedState = !noteToArchive.archived
+                            repo.upsertNote(noteToArchive.copy(archived = newArchivedState))
+                            showUndo(if (newArchivedState) msgNoteArchived else msgNoteUnarchived) {
+                                scope.launch { repo.upsertNote(noteToArchive) }
+                            }
+                        }
+                    }
+                },
+                onDuplicate = { copy ->
+                    scope.launch {
+                        repo.upsertNote(copy)
+                        editingNote = copy
+                    }
+                },
+            )
+        }
     }
 
     if (pendingVaultNote != null) {
         VaultLockDialog(
             storedPasswordHash = vaultPasswordHash,
             onUnlocked = {
+                activeOriginBounds = cardBoundsMap[pendingVaultNote?.id] ?: activeOriginBounds
                 editingNote = pendingVaultNote
                 pendingVaultNote = null
                 showEditor = true

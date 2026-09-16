@@ -1,6 +1,8 @@
 
 package com.loc.hexis.shared.ui.note
 
+
+
 enum class LineType {
     HEADER,
     SUB_HEADER,
@@ -21,7 +23,8 @@ data class FormattedLine(
     val isChecked: Boolean = false,
 )
 
-private val numberedListRegex = Regex("""^(\d+)[\.\)]\s""")
+private val numberedListRegex = Regex("""^(\d+)([\.\)])(?:\s+|$)""")
+private val numberedListPrefixRegex = Regex("""^(\d+)[\.\)]\s*""")
 private val checklistRegex = Regex("""^(-\s+|\*\s+)?\[([ xX])\]\s+(.*)""")
 
 fun parseContentLines(content: String): List<FormattedLine> {
@@ -53,7 +56,7 @@ fun parseContentLines(content: String): List<FormattedLine> {
             numberedListRegex.containsMatchIn(trimmed) -> {
                 val match = numberedListRegex.find(trimmed)!!
                 val num = match.groupValues[1].toIntOrNull()
-                val rest = trimmed.replaceFirst(numberedListRegex, "")
+                val rest = trimmed.replaceFirst(numberedListPrefixRegex, "")
                 FormattedLine(LineType.NUMBERED_LIST, rest, indent / 2, num)
             }
             trimmed.matches(Regex("""^[-*_]{3,}\s*$""")) ->
@@ -64,23 +67,6 @@ fun parseContentLines(content: String): List<FormattedLine> {
 }
 
 
-fun getNextListPrefix(text: String): String? {
-    val indent = text.takeWhile { it == ' ' || it == '\t' }
-    val trimmed = text.substring(indent.length)
-    return when {
-        checklistRegex.matches(trimmed) -> "$indent- [ ] "
-        trimmed.startsWith("* ") || trimmed == "*" -> "$indent* "
-        trimmed.startsWith("- ") || trimmed == "-" -> "$indent- "
-        trimmed.startsWith("+ ") || trimmed == "+" -> "$indent+ "
-        numberedListRegex.containsMatchIn(trimmed) -> {
-            val match = numberedListRegex.find(trimmed)!!
-            val num = match.groupValues[1].toIntOrNull() ?: return null
-            val sep = if (match.value.contains(')')) ')' else '.'
-            "$indent${num + 1}$sep "
-        }
-        else -> null
-    }
-}
 
 fun removePrefix(text: String): String {
     val indent = text.takeWhile { it == ' ' || it == '\t' }
@@ -94,13 +80,13 @@ fun removePrefix(text: String): String {
             match.groupValues[3]
         }
         trimmed.startsWith("* ") -> trimmed.removePrefix("* ")
-        trimmed == "*" -> ""
+        trimmed == "*" || (trimmed.startsWith("*") && !trimmed.startsWith("***")) -> trimmed.removePrefix("*")
         trimmed.startsWith("- ") -> trimmed.removePrefix("- ")
-        trimmed == "-" -> ""
+        trimmed == "-" || (trimmed.startsWith("-") && !trimmed.startsWith("---")) -> trimmed.removePrefix("-")
         trimmed.startsWith("+ ") -> trimmed.removePrefix("+ ")
-        trimmed == "+" -> ""
+        trimmed == "+" || (trimmed.startsWith("+") && !trimmed.startsWith("+++")) -> trimmed.removePrefix("+")
         trimmed.startsWith("> ") -> trimmed.removePrefix("> ")
-        numberedListRegex.containsMatchIn(trimmed) -> trimmed.replaceFirst(numberedListRegex, "")
+        numberedListPrefixRegex.containsMatchIn(trimmed) -> trimmed.replaceFirst(numberedListPrefixRegex, "")
         trimmed.matches(Regex("""^[-*_]{3,}\s*$""")) -> ""
         else -> trimmed
     }

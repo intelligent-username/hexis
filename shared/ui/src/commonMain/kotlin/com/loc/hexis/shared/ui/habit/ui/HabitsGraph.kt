@@ -1,4 +1,4 @@
-﻿
+
 package com.loc.hexis.shared.ui.habit.ui
 
 import androidx.compose.animation.AnimatedVisibility
@@ -55,7 +55,6 @@ import com.loc.hexis.shared.ui.habit.HabitsAction
 import com.loc.hexis.shared.ui.habit.ui.component.HabitListFABs
 import com.loc.hexis.shared.ui.habit.ui.component.TimeDivisionEditDialog
 import com.loc.hexis.shared.ui.habit.ui.sections.AnalyticsPage
-import com.loc.hexis.shared.ui.habit.ui.sections.Calendar
 import com.loc.hexis.shared.ui.habit.ui.sections.CalendarHeatMap
 import com.loc.hexis.shared.ui.habit.ui.sections.HabitsList
 import com.loc.hexis.shared.ui.habit.ui.sections.OverallAnalytics
@@ -78,8 +77,6 @@ private sealed interface HabitRoutes : NavKey {
 
     @Serializable data object OverallAnalytics : HabitRoutes
 
-    @Serializable data object Calendar : HabitRoutes
-
     @Serializable data object CalendarHeatMap : HabitRoutes
 }
 
@@ -89,7 +86,6 @@ private val config = SavedStateConfiguration {
             subclass(HabitRoutes.HabitList::class, HabitRoutes.HabitList.serializer())
             subclass(HabitRoutes.HabitAnalytics::class, HabitRoutes.HabitAnalytics.serializer())
             subclass(HabitRoutes.OverallAnalytics::class, HabitRoutes.OverallAnalytics.serializer())
-            subclass(HabitRoutes.Calendar::class, HabitRoutes.Calendar.serializer())
             subclass(HabitRoutes.CalendarHeatMap::class, HabitRoutes.CalendarHeatMap.serializer())
         }
     }
@@ -189,7 +185,6 @@ fun HabitsGraph(
                             onNavigateBack = {
                                 if (backstack.size != 1) backstack.removeLastOrNull()
                             },
-                            onNavigateToCalendar = { backstack.add(HabitRoutes.Calendar) },
                             onPomodoroClick = onPomodoroClick,
                             modifier = Modifier.background(MaterialTheme.colorScheme.background),
                         )
@@ -207,19 +202,6 @@ fun HabitsGraph(
                             onNavigateToCalendarHeatMap = {
                                 backstack.add(HabitRoutes.CalendarHeatMap)
                             },
-                        )
-                    }
-
-                    entry<HabitRoutes.Calendar>(metadata = horizontalTransitionMetadata()) {
-                        Calendar(
-                            state = state,
-                            onNavigateBack = {
-                                if (backstack.size != 1) backstack.removeLastOrNull()
-                            },
-                            onDateClick = { habit, date ->
-                                onAction(HabitsAction.ToggleHabitProgress(habit, date))
-                            },
-                            modifier = Modifier.background(MaterialTheme.colorScheme.surface),
                         )
                     }
 
@@ -316,24 +298,7 @@ private fun ExpandedScreen(
                                     onNavigateBack = {
                                         onAction(HabitsAction.PrepareAnalytics(null))
                                     },
-                                    onNavigateToCalendar = { backstack.add(HabitRoutes.Calendar) },
                                     onPomodoroClick = onPomodoroClick,
-                                    modifier =
-                                        Modifier.background(
-                                            MaterialTheme.colorScheme.surfaceContainerHighest
-                                        ),
-                                )
-                            }
-
-                            entry<HabitRoutes.Calendar>(metadata = horizontalTransitionMetadata()) {
-                                Calendar(
-                                    state = state,
-                                    onNavigateBack = {
-                                        if (backstack.size != 1) backstack.removeLastOrNull()
-                                    },
-                                    onDateClick = { habit, date ->
-                                        onAction(HabitsAction.ToggleHabitProgress(habit, date))
-                                    },
                                     modifier =
                                         Modifier.background(
                                             MaterialTheme.colorScheme.surfaceContainerHighest

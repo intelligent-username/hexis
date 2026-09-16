@@ -83,7 +83,7 @@ User taps UI
 | `viewmodel/` | `TasksViewModel`, `HabitViewModel`, `SettingsViewModel`, `MainViewModel` |
 | `app/` | `MainApp` root composable, `AppSections`, `MainAppState` |
 | `task/` | `TaskState`, `TaskAction`, `TasksPage`, `TaskList`, `TaskUpsertSheet` |
-| `habit/` | `HabitState`, `HabitsAction`, `HabitsList`, `Calendar`, `CalendarHeatMap`, `AnalyticsPage`, `OverallAnalytics`, `HabitCard` |
+| `habit/` | `HabitState`, `HabitsAction`, `HabitsList`, `CalendarHeatMap`, `AnalyticsPage`, `OverallAnalytics`, `HabitCard` |
 | `setting/` | `SettingsGraph`, pages for root, look & feel, UX, backup, about, and changelog |
 | `components/` | `HexisDialog`, `HexisBottomSheet`, `HexisTimePicker`, `ColorPickerDialog`, `ExpressiveSwitch`, `Empty`, `PageFill` |
 | `theme/` | `HexisTheme` (expect), `AnimatedColorScheme`, `ProvideTypography` |

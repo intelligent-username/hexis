@@ -57,15 +57,6 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
-import androidx.compose.ui.input.key.Key
-import androidx.compose.ui.input.key.KeyEventType
-import androidx.compose.ui.input.key.isAltPressed
-import androidx.compose.ui.input.key.isCtrlPressed
-import androidx.compose.ui.input.key.isMetaPressed
-import androidx.compose.ui.input.key.isShiftPressed
-import androidx.compose.ui.input.key.key
-import androidx.compose.ui.input.key.onPreviewKeyEvent
-import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.PointerEventTimeoutCancellationException
 import androidx.compose.ui.input.pointer.pointerInput
@@ -89,7 +80,6 @@ import com.loc.hexis.core.now
 import com.loc.hexis.shared.ui.app.SystemBackHandler
 import com.loc.hexis.shared.ui.components.ColorPickerDialog
 import com.loc.hexis.shared.ui.components.FloatingLabelTextField
-import com.loc.hexis.shared.ui.note.getNextListPrefix
 import com.loc.hexis.shared.ui.note.getNoteColor
 import com.loc.hexis.shared.ui.note.noteColorPresets
 import com.loc.hexis.shared.ui.note.parseColor
@@ -238,42 +228,6 @@ fun NoteEditorSheet(
         val lineStart = text.substring(0, cursor.coerceAtMost(text.length)).lastIndexOf('\n') + 1
         val newCursor = (lineStart + newLine.length).coerceAtMost(newText.length)
         contentValue = TextFieldValue(newText, TextRange(newCursor))
-    }
-
-    fun handleEnterPress(value: TextFieldValue): TextFieldValue? {
-        if (value.selection.start != value.selection.end) return null
-        val cursor = value.selection.start
-        val text = value.text
-        if (cursor < 0 || cursor > text.length) return null
-
-        val lineStart = text.substring(0, cursor).lastIndexOf('\n') + 1
-        val lineEnd = text.indexOf('\n', lineStart).let { if (it == -1) text.length else it }
-        val currentLine = text.substring(lineStart, lineEnd)
-
-        val prefix = getNextListPrefix(currentLine) ?: return null
-        val cleanLine = removePrefix(currentLine).trim()
-
-        return if (cleanLine.isEmpty()) {
-            val resultText = text.substring(0, lineStart) + text.substring(lineEnd)
-            TextFieldValue(resultText, TextRange(lineStart))
-        } else {
-            val resultText = text.substring(0, cursor) + "\n" + prefix + text.substring(cursor)
-            val newCursor = cursor + 1 + prefix.length
-            TextFieldValue(resultText, TextRange(newCursor))
-        }
-    }
-
-    fun handleListEnter(oldValue: TextFieldValue, newValue: TextFieldValue): TextFieldValue? {
-        val oldText = oldValue.text
-        val newText = newValue.text
-
-        if (newText.length != oldText.length + 1) return null
-        val oldCursor = oldValue.selection.start
-        if (oldCursor < 0 || oldCursor > oldText.length) return null
-        if (newValue.selection.start != oldCursor + 1) return null
-        if (newText.getOrNull(oldCursor) != '\n') return null
-
-        return handleEnterPress(oldValue)
     }
 
     val focusManager = LocalFocusManager.current
@@ -709,8 +663,7 @@ fun NoteEditorSheet(
                                     newValue
                                 }
 
-                            val processed = handleListEnter(contentValue, cleanValue)
-                            contentValue = processed ?: cleanValue
+                            contentValue = cleanValue
                         },
                         keyboardOptions =
                             KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
@@ -734,26 +687,6 @@ fun NoteEditorSheet(
                         modifier =
                             Modifier.fillMaxWidth()
                                 .focusRequester(contentFocusRequester)
-                                .onPreviewKeyEvent { event ->
-                                    if (
-                                        event.type == KeyEventType.KeyDown &&
-                                            (event.key == Key.Enter || event.key == Key.NumPadEnter) &&
-                                            !event.isShiftPressed &&
-                                            !event.isCtrlPressed &&
-                                            !event.isAltPressed &&
-                                            !event.isMetaPressed
-                                    ) {
-                                        val handled = handleEnterPress(contentValue)
-                                        if (handled != null) {
-                                            contentValue = handled
-                                            true
-                                        } else {
-                                            false
-                                        }
-                                    } else {
-                                        false
-                                    }
-                                }
                                 .pointerInput(contentValue.text) {
                                     awaitEachGesture {
                                         val down = awaitFirstDown(pass = PointerEventPass.Initial)
