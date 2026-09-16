@@ -19,8 +19,6 @@ interface HabitsDao {
 
     @Query("DELETE FROM habit_index WHERE id = :habitId") suspend fun deleteHabit(habitId: Long)
 
-    @Query("DELETE FROM habit_index") suspend fun deleteAllHabits()
-
     @Query("SELECT * FROM habit_index WHERE pomodoroLinked = 1")
     fun getPomodoroLinkedHabits(): Flow<List<HabitEntity>>
 }

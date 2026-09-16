@@ -26,6 +26,4 @@ interface TasksDao {
 
     @Query("DELETE FROM task WHERE id IN (:ids)")
     suspend fun deleteTasksByIds(ids: List<Long>)
-
-    @Query("DELETE FROM task") suspend fun deleteAllTasks()
 }

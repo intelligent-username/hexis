@@ -260,21 +260,6 @@ class HabitRepository(
             .flowOn(Dispatchers.Default)
     }
 
-    override fun getWeeklyPointsFlow(): Flow<List<WeeklyPoints>> =
-        combine(habits, habitStatuses, firstDayOfWeek, archivedHabitIds) {
-                habitsFlow,
-                habitStatusesFlow,
-                firstDay,
-                archived ->
-                computeWeeklyPoints(
-                    habitsFlow.filter { it.id !in archived },
-                    habitStatusesFlow,
-                    firstDay,
-                )
-            }
-            .flowOn(Dispatchers.Default)
-            .distinctUntilChanged()
-
     override fun getPointsTrend(): Flow<PointsTrend> =
         combine(habits, habitStatuses, firstDayOfWeek, archivedHabitIds) {
                 habits,

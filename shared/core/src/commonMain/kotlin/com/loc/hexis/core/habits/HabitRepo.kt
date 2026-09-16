@@ -1,4 +1,4 @@
-﻿
+
 package com.loc.hexis.core.habits
 
 import kotlinx.coroutines.flow.Flow
@@ -48,8 +48,6 @@ interface HabitRepo {
     fun observePomodoroLinkedHabits(): Flow<List<Habit>>
 
     suspend fun isHabitCompleted(habitId: Long, date: LocalDate): Boolean
-
-    fun getWeeklyPointsFlow(): Flow<List<WeeklyPoints>>
 
     fun getPointsTrend(): Flow<PointsTrend>
 }

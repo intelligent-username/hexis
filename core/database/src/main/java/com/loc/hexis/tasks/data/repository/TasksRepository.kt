@@ -80,20 +80,12 @@ class TasksRepository(
         tasksDao.deleteTask(task.toTaskEntity())
     }
 
-    override suspend fun deleteAllTasks() {
-        tasksDao.deleteAllTasks()
-    }
-
     override suspend fun upsertCategory(category: Category) {
         categoryDao.upsertCategory(category.toCategoryEntity())
     }
 
     override suspend fun deleteCategory(category: Category) {
         categoryDao.deleteCategory(category.toCategoryEntity())
-    }
-
-    override suspend fun deleteAllCategories() {
-        categoryDao.deleteAllCategories()
     }
 
     override suspend fun importTasks(tasks: List<Task>): List<Long> {

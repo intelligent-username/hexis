@@ -1,16 +1,10 @@
-
 package com.loc.hexis.tasks.data.database
 
 import androidx.room.Dao
 import androidx.room.Query
-
 import androidx.room.Upsert
-import com.loc.hexis.core.tasks.PomodoroStats
 import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.LocalDateTime
-import androidx.room.ColumnInfo
-
-data class EpochDayCount(val epochDay: Long, val count: Int, @ColumnInfo(name = "totalMinutes") val totalMinutes: Double = 0.0)
 
 @Dao
 interface PomodoroDao {
@@ -28,41 +22,6 @@ interface PomodoroDao {
 
     @Query("SELECT * FROM pomodoro_sessions ORDER BY timeStarted ASC")
     fun getAllFlow(): Flow<List<PomodoroSessionEntity>>
-
-    @Query(
-        "SELECT CAST(COUNT(CASE WHEN completed = 1 THEN 1 END) AS INTEGER) AS sessionCount, CAST(COALESCE(SUM(timeCompletedMinutes), 0.0) AS REAL) AS totalMinutes FROM pomodoro_sessions WHERE timeStarted >= :todayStart"
-    )
-    suspend fun getTodayStats(todayStart: LocalDateTime): PomodoroStats
-
-    @Query(
-        "SELECT DISTINCT CAST(timeStarted / 86400 AS INTEGER) FROM pomodoro_sessions WHERE completed = 1 OR timeCompletedMinutes > 0 ORDER BY timeStarted DESC"
-    )
-    fun getCompletedDates(): Flow<List<Long>>
-
-    @Query("""
-        SELECT CAST(timeStarted / 86400 AS INTEGER) AS epochDay,
-               COUNT(*) AS count,
-               0.0 AS totalMinutes
-        FROM pomodoro_sessions
-        GROUP BY epochDay
-        ORDER BY epochDay
-    """)
-    fun getSessionCountsByDay(): Flow<List<EpochDayCount>>
-
-    @Query(
-        """
-        SELECT CAST(timeStarted / 86400 AS INTEGER) AS epochDay,
-               CAST(COUNT(*) AS INTEGER) AS count,
-               CAST(COALESCE(SUM(timeCompletedMinutes), 0.0) AS REAL) AS totalMinutes
-        FROM pomodoro_sessions
-        GROUP BY epochDay
-        ORDER BY epochDay
-    """
-    )
-    fun getSessionMinutesByDay(): Flow<List<EpochDayCount>>
-
-    @Query("SELECT MIN(timeStarted) FROM pomodoro_sessions")
-    suspend fun getEarliestSessionDate(): LocalDateTime?
 
     @Query(
         """

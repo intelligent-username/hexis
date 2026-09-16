@@ -1,4 +1,4 @@
-﻿
+
 package com.loc.hexis.core.tasks
 
 import kotlinx.coroutines.flow.Flow
@@ -20,8 +20,6 @@ interface PomodoroRepo {
     fun getTodayStatsFlow(): Flow<PomodoroStats>
 
     fun getCompletedDates(): Flow<List<LocalDate>>
-
-    suspend fun getEarliestSessionDate(): LocalDate?
 
     fun getSessionCountsByDay(): Flow<List<PomodoroDayCount>>
 

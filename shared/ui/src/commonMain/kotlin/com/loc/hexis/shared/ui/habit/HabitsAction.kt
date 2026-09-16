@@ -1,4 +1,4 @@
-﻿
+
 package com.loc.hexis.shared.ui.habit
 
 import com.loc.hexis.core.habits.Habit
@@ -27,8 +27,6 @@ sealed interface HabitsAction {
     /** set [habit]'s id to view analytics for */
     data class PrepareAnalytics(val habit: Habit?) : HabitsAction
 
-    data class AddHabit(val habit: Habit) : HabitsAction
-
     data class AddHabitWithDivision(val habit: Habit, val divisionId: Long?) : HabitsAction
 
     data class DeleteHabit(val habit: Habit) : HabitsAction
@@ -49,8 +47,6 @@ sealed interface HabitsAction {
 
     data class UpdateHabitOrder(val habits: List<com.loc.hexis.core.habits.HabitWithAnalytics>) :
         HabitsAction
-
-    data object ReorderHabits : HabitsAction
 
     data class FetchCompletedHabitsForDate(val date: LocalDate?) : HabitsAction
 

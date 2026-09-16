@@ -16,6 +16,4 @@ interface CategoryDao {
     @Upsert suspend fun upsertCategory(categoryEntity: CategoryEntity)
 
     @Delete suspend fun deleteCategory(categoryEntity: CategoryEntity)
-
-    @Query("DELETE FROM categories") suspend fun deleteAllCategories()
 }

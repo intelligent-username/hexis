@@ -1,4 +1,4 @@
-﻿
+
 package com.loc.hexis.tasks.data.repository
 
 import com.loc.hexis.core.now
@@ -73,9 +73,6 @@ class PomodoroRepository(private val pomodoroDao: PomodoroDao) : PomodoroRepo {
             .flowOn(Dispatchers.IO)
     }
 
-    override suspend fun getEarliestSessionDate(): LocalDate? {
-        return pomodoroDao.getEarliestSessionDate()?.date
-    }
 
     override fun getSessionCountsByDay(): Flow<List<PomodoroDayCount>> {
         return pomodoroDao

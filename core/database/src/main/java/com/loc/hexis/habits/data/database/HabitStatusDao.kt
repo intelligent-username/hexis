@@ -27,12 +27,7 @@ interface HabitStatusDao {
     @Query("DELETE FROM habit_status WHERE habitId = :habitId AND date = :date")
     suspend fun deleteStatus(habitId: Long, date: LocalDate)
 
-    @Query("DELETE FROM habit_status") suspend fun deleteAllHabitStatus()
-
     @Upsert suspend fun upsert(habitStatusEntity: HabitStatusEntity)
-
-    @Query("SELECT value FROM habit_status WHERE habitId = :habitId AND date = :date LIMIT 1")
-    suspend fun getProgress(habitId: Long, date: LocalDate): Double?
 
     @Query(
         "SELECT * FROM habit_status WHERE habitId = :habitId AND date = :date ORDER BY id DESC LIMIT 1"

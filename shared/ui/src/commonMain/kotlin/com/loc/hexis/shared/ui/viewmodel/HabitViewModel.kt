@@ -60,16 +60,6 @@ class HabitViewModel(
     fun onAction(action: HabitsAction) {
         viewModelScope.launch {
             when (action) {
-                is HabitsAction.AddHabit -> {
-                    val logicalToday = getLogicalToday(_state.value.isDayCutoffEnabled, _state.value.dayCutoffHour)
-                    val habitToSave = if (action.habit.time.date > logicalToday) {
-                        action.habit.copy(time = LocalDateTime(date = logicalToday, time = action.habit.time.time))
-                    } else {
-                        action.habit
-                    }
-                    upsertHabit(habitToSave)
-                }
-
                 is HabitsAction.AddHabitWithDivision -> {
                     val logicalToday = getLogicalToday(_state.value.isDayCutoffEnabled, _state.value.dayCutoffHour)
                     val habitToSave = if (action.habit.time.date > logicalToday) {
@@ -104,22 +94,6 @@ class HabitViewModel(
                             analytics.habit.copy(index = index)
                         }
                     launch { updatedHabits.forEach { upsertHabit(it) } }
-                }
-
-                HabitsAction.ReorderHabits -> {
-                    _state.update { it.copy(isReordering = true) }
-                    val currentList =
-                        _state.value.habitsWithAnalytics.mapIndexed { index, analytics ->
-                            analytics.habit.copy(index = index)
-                        }
-
-                    launch {
-                        try {
-                            currentList.forEach { upsertHabit(it) }
-                        } finally {
-                            _state.update { it.copy(isReordering = false) }
-                        }
-                    }
                 }
 
                 is HabitsAction.PrepareAnalytics -> {

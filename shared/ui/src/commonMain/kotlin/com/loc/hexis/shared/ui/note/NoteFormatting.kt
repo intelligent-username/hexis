@@ -63,53 +63,6 @@ fun parseContentLines(content: String): List<FormattedLine> {
     }
 }
 
-fun getLinePrefix(line: FormattedLine): String {
-    return when (line.type) {
-        LineType.HEADER -> "# "
-        LineType.SUB_HEADER -> "## "
-        LineType.SUB_SUB_HEADER -> "### "
-        LineType.BULLET_LIST -> "* "
-        LineType.NUMBERED_LIST -> "${line.number ?: 1}. "
-        LineType.CHECKLIST -> if (line.isChecked) "- [x] " else "- [ ] "
-        LineType.QUOTE -> "> "
-        LineType.HORIZONTAL_RULE -> "---\n"
-        LineType.REGULAR -> ""
-    }
-}
-
-fun isListLine(text: String): Boolean {
-    val trimmed = text.trimStart()
-    return trimmed.startsWith("* ") ||
-        trimmed == "*" ||
-        trimmed.startsWith("- ") ||
-        trimmed == "-" ||
-        trimmed.startsWith("+ ") ||
-        trimmed == "+" ||
-        checklistRegex.matches(trimmed) ||
-        numberedListRegex.containsMatchIn(trimmed)
-}
-
-fun getListPrefix(text: String): String? {
-    val indent = text.takeWhile { it == ' ' || it == '\t' }
-    val trimmed = text.substring(indent.length)
-    return when {
-        checklistRegex.matches(trimmed) -> {
-            val match = checklistRegex.find(trimmed)!!
-            val isChecked = match.groupValues[2].equals("x", ignoreCase = true)
-            if (isChecked) "$indent- [x] " else "$indent- [ ] "
-        }
-        trimmed.startsWith("* ") || trimmed == "*" -> "$indent* "
-        trimmed.startsWith("- ") || trimmed == "-" -> "$indent- "
-        trimmed.startsWith("+ ") || trimmed == "+" -> "$indent+ "
-        numberedListRegex.containsMatchIn(trimmed) -> {
-            val match = numberedListRegex.find(trimmed)!!
-            val num = match.groupValues[1]
-            val sep = if (match.value.contains(')')) ')' else '.'
-            "$indent$num$sep "
-        }
-        else -> null
-    }
-}
 
 fun getNextListPrefix(text: String): String? {
     val indent = text.takeWhile { it == ' ' || it == '\t' }
