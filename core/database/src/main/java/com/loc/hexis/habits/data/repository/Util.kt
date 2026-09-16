@@ -1,4 +1,4 @@
-﻿
+
 package com.loc.hexis.habits.data.repository
 
 import com.loc.hexis.core.habits.DisplayMode
@@ -13,6 +13,7 @@ import kotlin.math.roundToInt
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.daysUntil
 import kotlinx.datetime.format.DayOfWeekNames
 import kotlinx.datetime.isoDayNumber
 import kotlinx.datetime.minus
@@ -87,17 +88,17 @@ fun computePointsSummary(
 
     val today = LocalDate.now()
     val totalWeeks = 52
-    val targetVal = habit.targetValue ?: 1.0
+    val targetVal = (habit.targetValue ?: 1.0) - 0.001
 
     val weeklyPoints = mutableMapOf<LocalDate, Int>()
     val dailyPoints = mutableMapOf<LocalDate, Int>()
     var totalPoints = 0
 
-    val completedStatusesSoFar = mutableListOf<HabitStatus>()
+    val completedDates = mutableListOf<LocalDate>()
 
     for (status in allStatuses.sortedBy { it.date }) {
-        if (status.value >= targetVal - 0.001) completedStatusesSoFar.add(status)
-        val pts = computePointsForStatus(habit, status, completedStatusesSoFar.map { it.date })
+        if (status.value >= targetVal) completedDates.add(status.date)
+        val pts = computePointsForStatus(habit, status, completedDates)
 
         if (pts > 0) {
             totalPoints += pts
@@ -161,14 +162,17 @@ fun calculateConsistency(dates: List<LocalDate>, eligibleWeekdays: Set<DayOfWeek
     val eligibleDates = dates.filter { it.dayOfWeek in eligibleWeekdays }
     val firstCompletionDate = eligibleDates.minOrNull() ?: return 0f
     val today = LocalDate.now()
+    val totalDays = firstCompletionDate.daysUntil(today)
+    if (totalDays < 0) return 0f
 
-    var totalEligibleDays = 0
-    var current = firstCompletionDate
-    while (current <= today) {
-        if (current.dayOfWeek in eligibleWeekdays) {
+    val fullWeeks = totalDays / 7
+    val remainderDays = totalDays % 7
+    var totalEligibleDays = fullWeeks * eligibleWeekdays.size
+    val remainderStart = today.minus(remainderDays, DateTimeUnit.DAY)
+    for (i in 0..remainderDays) {
+        if (remainderStart.plus(i, DateTimeUnit.DAY).dayOfWeek in eligibleWeekdays) {
             totalEligibleDays++
         }
-        current = current.plus(1, DateTimeUnit.DAY)
     }
 
     return if (totalEligibleDays > 0) eligibleDates.size.toFloat() / totalEligibleDays else 0f

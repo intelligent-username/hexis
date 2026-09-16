@@ -299,7 +299,17 @@ fun TrendLineChart(
                             .height(210.dp)
                             .padding(horizontal = 16.dp, vertical = 4.dp)
                             .pointerInput(currentData) {
-                                detectTapGestures { offset -> touchX = offset.x }
+                                val padL = 36.dp.toPx()
+                                val padR = 12.dp.toPx()
+                                val gW = (size.width - padL - padR).coerceAtLeast(1f)
+                                val n = currentData.size
+                                detectTapGestures { offset ->
+                                    touchX = offset.x
+                                    if (n > 1) {
+                                        val frac = ((offset.x - padL) / gW).coerceIn(0f, 1f)
+                                        selectedIndex = (frac * (n - 1)).roundToInt().coerceIn(0, n - 1)
+                                    }
+                                }
                             }
                 ) {
                     val w = size.width
@@ -316,11 +326,6 @@ fun TrendLineChart(
                     fun yOf(v: Int) = h - padB - (v.toFloat() / niceScale.chartMax) * gH
 
                     val pts = currentData.mapIndexed { i, v -> Offset(xOf(i), yOf(v)) }
-
-                    // Resolve scrubbing index
-                    if (touchX >= 0f && n > 1) {
-                        selectedIndex = pts.indices.minByOrNull { abs(pts[it].x - touchX) } ?: -1
-                    }
 
                     // Dashed grid lines
                     val gridCount = niceScale.gridCount

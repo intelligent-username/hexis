@@ -1,4 +1,4 @@
-﻿
+
 package com.loc.hexis.shared.ui.habit.ui.component.stats
 
 import androidx.compose.foundation.Canvas
@@ -41,7 +41,8 @@ import com.kizitonwose.calendar.core.now
 import com.loc.hexis.core.habits.DisplayMode
 import com.loc.hexis.core.habits.HabitStatus
 import com.loc.hexis.core.habits.StreakPosition
-import com.loc.hexis.core.habits.areConsecutiveEligibleDays
+import com.loc.hexis.core.habits.getNextEligibleDate
+import com.loc.hexis.core.habits.getPreviousEligibleDate
 import com.loc.hexis.shared.ui.HexisPreviewWrapper
 import com.loc.hexis.shared.ui.components.endItemShape
 import com.loc.hexis.shared.ui.components.leadingItemShape
@@ -185,18 +186,10 @@ fun WeeklyBooleanHeatMap(
 
                         val done = day.date in doneDates
 
-                        val hasPreviousEligibleCompleted =
-                            doneDates.any { completedDate ->
-                                completedDate < day.date &&
-                                    completedDate.dayOfWeek in days &&
-                                    areConsecutiveEligibleDays(completedDate, day.date, days)
-                            }
-                        val hasNextEligibleCompleted =
-                            doneDates.any { completedDate ->
-                                completedDate > day.date &&
-                                    completedDate.dayOfWeek in days &&
-                                    areConsecutiveEligibleDays(day.date, completedDate, days)
-                            }
+                        val prevEligible = getPreviousEligibleDate(day.date, days)
+                        val nextEligible = getNextEligibleDate(day.date, days)
+                        val hasPreviousEligibleCompleted = prevEligible != null && prevEligible in doneDates
+                        val hasNextEligibleCompleted = nextEligible != null && nextEligible in doneDates
                         val streakPosition: StreakPosition =
                             when {
                                 hasPreviousEligibleCompleted && hasNextEligibleCompleted -> MIDDLE

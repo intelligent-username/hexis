@@ -69,6 +69,11 @@ fun HabitsList(
                     localHabits.sortedBy { it.habit.id in state.completedHabitIds }
                 else localHabits
 
+            val completedIndices =
+                displayedHabits.indices.filter {
+                    displayedHabits[it].habit.id in state.completedHabitIds
+                }
+
             itemsIndexed(
                 items = displayedHabits,
                 key = { _, it ->
@@ -87,10 +92,6 @@ fun HabitsList(
                         habitWithAnalytics.habit.id
                     }
                 ReorderableItem(reorderableListState, key = itemKey) {
-                    val completedIndices =
-                        displayedHabits.indices.filter {
-                            displayedHabits[it].habit.id in state.completedHabitIds
-                        }
                     val shape =
                         when {
                             !completed || completedIndices.size == 1 ->

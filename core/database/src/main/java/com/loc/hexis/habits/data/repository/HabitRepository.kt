@@ -329,7 +329,9 @@ class HabitRepository(
 
     override suspend fun getCompletedHabitsForDate(date: LocalDate): List<Habit> {
         val completedStatuses = habitStatusDao.getCompletedStatuses(date)
-        return completedStatuses.mapNotNull { habitDao.getHabitById(it.habitId)?.toHabit() }
+        if (completedStatuses.isEmpty()) return emptyList()
+        val habitMap = habitDao.getAllHabits().associateBy { it.id }
+        return completedStatuses.mapNotNull { habitMap[it.habitId]?.toHabit() }
     }
 
     override suspend fun incrementHabitProgress(
@@ -536,13 +538,15 @@ class HabitRepository(
     ): Int {
         var totalPoints = 0
         habits.forEach { habit ->
-            val habitStatuses = statuses.filter { it.habitId == habit.id }
-            val completed = filterCompletedStatuses(habit, habitStatuses)
-            val statusesInPeriod = habitStatuses.filter { it.date in from..to }
+            val habitStatuses = statuses.filter { it.habitId == habit.id }.sortedBy { it.date }
+            val completedDates = mutableListOf<LocalDate>()
+            val targetVal = (habit.targetValue ?: 1.0) - 0.001
 
-            for (status in statusesInPeriod) {
-                val allDatesUpTo = completed.filter { it.date <= status.date }.map { it.date }
-                totalPoints += computePointsForStatus(habit, status, allDatesUpTo)
+            for (status in habitStatuses) {
+                if (status.value >= targetVal) completedDates.add(status.date)
+                if (status.date in from..to) {
+                    totalPoints += computePointsForStatus(habit, status, completedDates)
+                }
             }
         }
         return totalPoints

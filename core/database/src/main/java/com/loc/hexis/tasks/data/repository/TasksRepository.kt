@@ -41,8 +41,9 @@ class TasksRepository(
     override fun getTasksFlow(): Flow<Map<Category, List<Task>>> {
         return tasksFlow
             .combine(categoriesFlow) { tasks, categories ->
+                val tasksByCategory = tasks.groupBy { it.categoryId }
                 categories.associateWith { category ->
-                    tasks.filter { it.categoryId == category.id }
+                    tasksByCategory[category.id].orEmpty()
                 }
             }
             .flowOn(Dispatchers.Default)

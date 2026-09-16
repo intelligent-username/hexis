@@ -52,7 +52,6 @@ Reusable composables in `shared:ui/components/`:
 | `ColorPickerDialog` | Color picker for task categories |
 | `Empty` | Empty state placeholder |
 | `PageFill` | Full-page fill spacer |
-| `FossPaywall` | Upsell for FOSS-flavor features |
 | `ChangelogSheet` | Changelog display bottom sheet |
 | `InitialLoading` | Splash loading state |
 | `ListItemExt` | Extended list item layout |

@@ -1,4 +1,4 @@
-﻿
+
 package com.loc.hexis.shared.ui.habit.ui.component
 
 import androidx.compose.foundation.Canvas
@@ -36,7 +36,8 @@ import com.kizitonwose.calendar.core.plusDays
 import com.loc.hexis.core.habits.DisplayMode
 import com.loc.hexis.core.habits.HabitStatus
 import com.loc.hexis.core.habits.StreakPosition
-import com.loc.hexis.core.habits.areConsecutiveEligibleDays
+import com.loc.hexis.core.habits.getNextEligibleDate
+import com.loc.hexis.core.habits.getPreviousEligibleDate
 import com.loc.hexis.shared.ui.calendarMapStreakShape
 import com.loc.hexis.shared.ui.theme.flexFontRounded
 import kotlinx.datetime.DayOfWeek
@@ -120,18 +121,10 @@ fun YearlyCalendarDayContent(
         }
     val done = day.date in doneDates
 
-    val hasPreviousEligibleCompleted =
-        doneDates.any { completedDate ->
-            completedDate < day.date &&
-                completedDate.dayOfWeek in habitDays &&
-                areConsecutiveEligibleDays(completedDate, day.date, habitDays)
-        }
-    val hasNextEligibleCompleted =
-        doneDates.any { completedDate ->
-            completedDate > day.date &&
-                completedDate.dayOfWeek in habitDays &&
-                areConsecutiveEligibleDays(day.date, completedDate, habitDays)
-        }
+    val prevEligible = getPreviousEligibleDate(day.date, habitDays)
+    val nextEligible = getNextEligibleDate(day.date, habitDays)
+    val hasPreviousEligibleCompleted = prevEligible != null && prevEligible in doneDates
+    val hasNextEligibleCompleted = nextEligible != null && nextEligible in doneDates
     val streakPosition: StreakPosition =
         when {
             hasPreviousEligibleCompleted && hasNextEligibleCompleted -> MIDDLE
@@ -259,18 +252,10 @@ fun MonthlyCalendarDayContent(
         }
     val done = day.date in doneDates
 
-    val hasPreviousEligibleCompleted =
-        doneDates.any { completedDate ->
-            completedDate < day.date &&
-                completedDate.dayOfWeek in habitDays &&
-                areConsecutiveEligibleDays(completedDate, day.date, habitDays)
-        }
-    val hasNextEligibleCompleted =
-        doneDates.any { completedDate ->
-            completedDate > day.date &&
-                completedDate.dayOfWeek in habitDays &&
-                areConsecutiveEligibleDays(day.date, completedDate, habitDays)
-        }
+    val prevEligible = getPreviousEligibleDate(day.date, habitDays)
+    val nextEligible = getNextEligibleDate(day.date, habitDays)
+    val hasPreviousEligibleCompleted = prevEligible != null && prevEligible in doneDates
+    val hasNextEligibleCompleted = nextEligible != null && nextEligible in doneDates
     val streakPosition: StreakPosition =
         when {
             hasPreviousEligibleCompleted && hasNextEligibleCompleted -> MIDDLE

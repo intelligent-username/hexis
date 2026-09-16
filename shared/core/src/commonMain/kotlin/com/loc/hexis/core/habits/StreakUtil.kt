@@ -1,4 +1,4 @@
-﻿
+
 package com.loc.hexis.core.habits
 
 import com.loc.hexis.core.now
@@ -7,6 +7,7 @@ import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.daysUntil
+import kotlinx.datetime.minus
 import kotlinx.datetime.plus
 
 fun areConsecutiveEligibleDays(
@@ -22,6 +23,24 @@ fun areConsecutiveEligibleDays(
         checkDate = checkDate.plus(1, DateTimeUnit.DAY)
     }
     return checkDate == date2
+}
+
+fun getPreviousEligibleDate(date: LocalDate, eligibleWeekdays: Set<DayOfWeek>): LocalDate? {
+    if (eligibleWeekdays.isEmpty()) return null
+    for (i in 1..7) {
+        val prev = date.minus(i, DateTimeUnit.DAY)
+        if (prev.dayOfWeek in eligibleWeekdays) return prev
+    }
+    return null
+}
+
+fun getNextEligibleDate(date: LocalDate, eligibleWeekdays: Set<DayOfWeek>): LocalDate? {
+    if (eligibleWeekdays.isEmpty()) return null
+    for (i in 1..7) {
+        val next = date.plus(i, DateTimeUnit.DAY)
+        if (next.dayOfWeek in eligibleWeekdays) return next
+    }
+    return null
 }
 
 fun countCurrentStreak(
