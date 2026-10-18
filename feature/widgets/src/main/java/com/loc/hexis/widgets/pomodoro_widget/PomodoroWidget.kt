@@ -220,7 +220,8 @@ private fun PomodoroWidgetContent(
                 val s = remainingSec % 60
                 val fraction = (totalSec - remainingSec).toFloat() / totalSec.toFloat()
                 val formatted = "${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}"
-                Triple(formatted, "Focusing", fraction.coerceIn(0f, 1f))
+                val label = if (activeSession.phase == "FOCUS") "Focusing" else "Break"
+                Triple(formatted, label, fraction.coerceIn(0f, 1f))
             }
             isSessionPaused && activeSession != null -> {
                 val totalSec =
@@ -231,7 +232,8 @@ private fun PomodoroWidgetContent(
                 val s = remainingSec % 60
                 val fraction = (totalSec - remainingSec).toFloat() / totalSec.toFloat()
                 val formatted = "${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}"
-                Triple(formatted, "Paused", fraction.coerceIn(0f, 1f))
+                val label = if (activeSession.phase == "FOCUS") "Paused" else "Break Paused"
+                Triple(formatted, label, fraction.coerceIn(0f, 1f))
             }
             else -> {
                 val focusM = settings.focusMinutes.toInt()

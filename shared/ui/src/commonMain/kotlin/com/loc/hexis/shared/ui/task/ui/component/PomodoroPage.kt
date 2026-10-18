@@ -114,11 +114,7 @@ fun PomodoroPage(
 
     LaunchedEffect(autoStart) {
         if (autoStart && !pomodoroState.isRunning) {
-            if (pomodoroState.currentSessionId == null) {
-                pomodoroManager.startSession(linkedHabitId ?: pomodoroState.linkedHabitId)
-            } else {
-                pomodoroManager.resumeSession(linkedHabitId ?: pomodoroState.linkedHabitId)
-            }
+            pomodoroManager.startOrResume(linkedHabitId ?: pomodoroState.linkedHabitId)
         }
     }
 
@@ -418,10 +414,8 @@ fun PomodoroPage(
                             ) {
                                 if (isRunning) {
                                     pomodoroManager.pauseSession()
-                                } else if (pomodoroState.currentSessionId == null) {
-                                    pomodoroManager.startSession(currentHabitId)
                                 } else {
-                                    pomodoroManager.resumeSession(currentHabitId)
+                                    pomodoroManager.startOrResume(currentHabitId)
                                 }
                             },
                         contentAlignment = Alignment.Center,

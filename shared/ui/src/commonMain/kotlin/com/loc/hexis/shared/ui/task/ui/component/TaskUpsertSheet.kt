@@ -150,6 +150,23 @@ fun TaskUpsertSheetContent(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
+                if (!isEditSheet && onImport != null) {
+                    FilledTonalButton(
+                        onClick = { isImportMode = !isImportMode },
+                        shapes =
+                            ButtonShapes(
+                                shape = MaterialTheme.shapes.extraLarge,
+                                pressedShape = MaterialTheme.shapes.small,
+                            ),
+                    ) {
+                        Text(
+                            text =
+                                if (isImportMode) stringResource(Res.string.add_task)
+                                else stringResource(Res.string.add_many)
+                        )
+                    }
+                }
+
                 Box(
                     contentAlignment = Alignment.Center,
                     modifier =
@@ -169,23 +186,6 @@ fun TaskUpsertSheetContent(
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.onPrimaryContainer,
                     )
-                }
-
-                if (!isEditSheet && onImport != null) {
-                    FilledTonalButton(
-                        onClick = { isImportMode = !isImportMode },
-                        shapes =
-                            ButtonShapes(
-                                shape = MaterialTheme.shapes.extraLarge,
-                                pressedShape = MaterialTheme.shapes.small,
-                            ),
-                    ) {
-                        Text(
-                            text =
-                                if (isImportMode) stringResource(Res.string.add_task)
-                                else stringResource(Res.string.add_many)
-                        )
-                    }
                 }
             }
 
