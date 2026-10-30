@@ -28,6 +28,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.loc.hexis.core.tasks.Task
+import com.loc.hexis.core.tasks.normalizeTitle
 import com.loc.hexis.core.toFormattedString
 import hexis.shared.ui.generated.resources.*
 import org.jetbrains.compose.resources.vectorResource
@@ -79,7 +80,7 @@ fun TaskCard(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = task.title,
+                    text = task.title.normalizeTitle(),
                     style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
                     textDecoration =
                         if (task.status) {

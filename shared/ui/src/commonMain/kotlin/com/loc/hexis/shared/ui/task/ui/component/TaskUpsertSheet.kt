@@ -60,6 +60,7 @@ import com.loc.hexis.core.now
 import com.loc.hexis.core.tasks.Category
 import com.loc.hexis.core.tasks.Task
 import com.loc.hexis.core.tasks.TaskImportParser
+import com.loc.hexis.core.tasks.normalizeTitle
 import com.loc.hexis.core.toFormattedString
 import com.loc.hexis.shared.ui.components.ExpressiveSwitch
 import com.loc.hexis.shared.ui.components.HexisBottomSheet
@@ -132,6 +133,7 @@ fun TaskUpsertSheetContent(
         } else true
 
     val focusManager = LocalFocusManager.current
+    val descFocusRequester = remember { FocusRequester() }
 
     HexisBottomSheet(
         modifier =
@@ -326,12 +328,9 @@ fun TaskUpsertSheetContent(
                         keyboardOptions =
                             KeyboardOptions.Default.copy(
                                 capitalization = KeyboardCapitalization.Sentences,
-                                imeAction = ImeAction.None,
+                                imeAction = ImeAction.Next,
                             ),
-                        onKeyboardAction = { defaultAction ->
-                            textFieldState.edit { append("\n") }
-                            defaultAction()
-                        },
+                        onKeyboardAction = { descFocusRequester.requestFocus() },
                         modifier = Modifier.fillMaxWidth().focusRequester(focusRequester),
                     )
 
@@ -357,7 +356,7 @@ fun TaskUpsertSheetContent(
                                 capitalization = KeyboardCapitalization.Sentences,
                                 imeAction = ImeAction.None,
                             ),
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().focusRequester(descFocusRequester),
                     )
                 }
 
@@ -431,7 +430,7 @@ fun TaskUpsertSheetContent(
                                 onClick = {
                                     onUpsert(
                                         newTask.copy(
-                                            title = textFieldState.text.toString(),
+                                            title = textFieldState.text.toString().normalizeTitle(),
                                             description = descFieldState.text.toString(),
                                         )
                                     )

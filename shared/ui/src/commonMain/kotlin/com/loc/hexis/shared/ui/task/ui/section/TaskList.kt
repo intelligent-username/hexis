@@ -77,6 +77,7 @@ import androidx.compose.ui.unit.dp
 import com.loc.hexis.core.tasks.Category
 import com.loc.hexis.core.tasks.CategoryColors
 import com.loc.hexis.core.tasks.Task
+import com.loc.hexis.core.tasks.normalizeTitle
 import com.loc.hexis.shared.ui.LocalWindowSizeClass
 import com.loc.hexis.shared.ui.components.Empty
 import com.loc.hexis.shared.ui.components.HexisDialog
@@ -896,7 +897,7 @@ private fun ExpandedTasksView(
                                             ),
                                         headlineContent = {
                                             Text(
-                                                text = task.title,
+                                                text = task.title.normalizeTitle(),
                                                 maxLines = 1,
                                                 overflow = TextOverflow.Ellipsis,
                                             )

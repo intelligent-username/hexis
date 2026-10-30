@@ -23,3 +23,6 @@ data class Task(
     val status: Boolean = false,
     val reminder: LocalDateTime? = null,
 )
+
+fun String.normalizeTitle(): String =
+    lines().map { it.trim() }.filter { it.isNotEmpty() }.joinToString("\n")
