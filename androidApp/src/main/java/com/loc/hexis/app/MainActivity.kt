@@ -60,6 +60,8 @@ class MainActivity : FragmentActivity() {
                     intent.getLongExtra("note_id", -1L).takeIf { id -> id != -1L }
                 else null
             mainViewModel.setShortcutAction(it, noteId)
+            intent.removeExtra("shortcut_action")
+            intent.removeExtra("note_id")
         }
 
         setContent {
@@ -128,6 +130,8 @@ class MainActivity : FragmentActivity() {
                     intent.getLongExtra("note_id", -1L).takeIf { id -> id != -1L }
                 else null
             mainViewModel.setShortcutAction(it, noteId)
+            intent.removeExtra("shortcut_action")
+            intent.removeExtra("note_id")
         }
     }
 
