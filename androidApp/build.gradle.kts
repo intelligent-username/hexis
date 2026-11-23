@@ -13,7 +13,14 @@ plugins {
 
 val appName = "Hexis"
 val appVersionCode = 6030
-val appVersionName = "1.6.0"
+val appVersionName =
+    providers.fileContents(rootProject.layout.projectDirectory.file("CHANGELOG.md")).asText.map {
+        val changelog = it.replace(Regex("<!--[\\s\\S]*?-->"), "")
+        Regex("""(?m)^## (\d+\.\d+\.\d+)(?=:|\s|$)""")
+            .find(changelog)
+            ?.groupValues
+            ?.get(1) ?: error("No release version found in CHANGELOG.md")
+    }.get()
 
 val gitHash = execute("git", "rev-parse", "HEAD").take(7)
 
@@ -116,6 +123,14 @@ android {
                     "${project(":shared:ui").projectDir}/src/commonMain/composeResources",
                 )
             )
+        }
+    }
+}
+
+androidComponents {
+    onVariants(selector().withBuildType("release")) { variant ->
+        variant.outputs.forEach { output ->
+            output.outputFileName.set("$appName-v$appVersionName.apk")
         }
     }
 }

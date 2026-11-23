@@ -1,7 +1,7 @@
 # Changelog
 
 <!-- 
-New releease
+## 1.8.1
 
 Got rid of monthly breakdown for per-hahbit stats
 Point-form support for task descriptions
