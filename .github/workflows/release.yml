@@ -24,7 +24,15 @@ jobs:
         id: version
         run: |
           echo "=== Extracting Version ==="
-          VERSION=$(grep -m1 -E '^## [0-9]+\.[0-9]+\.[0-9]+' CHANGELOG.md | sed -E 's/## ([0-9]+\.[0-9]+\.[0-9]+).*/\1/')
+          VERSION=$(python3 - <<'PY'
+          import re
+          from pathlib import Path
+
+          changelog = re.sub(r"<!--[\s\S]*?-->", "", Path("CHANGELOG.md").read_text())
+          match = re.search(r"(?m)^## (\d+\.\d+\.\d+)(?=:|\s|$)", changelog)
+          print(match.group(1) if match else "")
+          PY
+          )
           echo "Extracted version: '$VERSION'"
           if [ -z "$VERSION" ]; then
             echo "::error::Could not extract version from CHANGELOG.md"
@@ -86,7 +94,7 @@ jobs:
         id: apk
         run: |
           echo "=== Locating Output APK ==="
-          APK=$(find androidApp/build/outputs/apk -name '*release*.apk' -type f | head -1)
+          APK=$(find androidApp/build/outputs/apk/release -name 'Hexis-v*.apk' -type f | head -1)
           echo "Found APK at: $APK"
           if [ -z "$APK" ]; then
             echo "::error::No release APK found!"
@@ -99,8 +107,8 @@ jobs:
         if: steps.version.outputs.skip != 'true'
         run: |
           echo "=== Preparing Release Artifact ==="
-          cp "${{ steps.apk.outputs.path }}" "Hexis.apk"
-          echo "Copied ${{ steps.apk.outputs.path }} -> Hexis.apk"
+          cp "${{ steps.apk.outputs.path }}" "Hexis-v${{ steps.version.outputs.version }}.apk"
+          echo "Copied ${{ steps.apk.outputs.path }} -> Hexis-v${{ steps.version.outputs.version }}.apk"
 
       - name: Extract Release Notes from CHANGELOG
         if: steps.version.outputs.skip != 'true'
@@ -132,9 +140,9 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "=== Creating GitHub Release v${{ steps.version.outputs.version }} ==="
-          gh release create \
-            "v${{ steps.version.outputs.version }}" \
-            "Hexis.apk" \
+           gh release create \
+             "v${{ steps.version.outputs.version }}" \
+             "Hexis-v${{ steps.version.outputs.version }}.apk" \
             --title "v${{ steps.version.outputs.version }}" \
             --notes-file release_notes.txt \
             --generate-notes
