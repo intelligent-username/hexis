@@ -1,21 +1,39 @@
+/*
+ * Copyright (C) 2025-2026 Hexis
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
 
 package com.loc.hexis.shared.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.loc.hexis.core.getLogicalToday
 import com.loc.hexis.core.habits.Habit
 import com.loc.hexis.core.habits.HabitRepo
 import com.loc.hexis.core.interfaces.AlarmScheduler
 import com.loc.hexis.core.interfaces.SettingsDatastore
-import com.loc.hexis.core.getLogicalToday
 import com.loc.hexis.core.now
 import com.loc.hexis.shared.ui.habit.HabitState
 import com.loc.hexis.shared.ui.habit.HabitsAction
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
@@ -175,10 +193,19 @@ class HabitViewModel(
                 }
 
                 is HabitsAction.ToggleArchiveHabit -> {
-                    val currentArchived = _state.value.archivedHabitIds.toMutableSet()
-                    if (action.isArchived) currentArchived.add(action.id)
-                    else currentArchived.remove(action.id)
-                    datastore.setArchivedHabitIds(currentArchived)
+                    try {
+                        val currentArchived = datastore.getArchivedHabitIds().first().toMutableSet()
+                        if (action.isArchived) currentArchived.add(action.id)
+                        else currentArchived.remove(action.id)
+                        datastore.setArchivedHabitIds(currentArchived)
+                        repo.getHabitById(action.id)?.let { updateHabitReminder(it) }
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        _state.update {
+                            it.copy(errorMessage = e.message ?: "Failed to update habit archive")
+                        }
+                    }
                 }
 
                 is HabitsAction.ToggleShowArchivedHabits -> {
@@ -342,13 +369,44 @@ class HabitViewModel(
     }
 
     private suspend fun rescheduleAllHabits() {
-        repo.getHabits().forEach { habit -> scheduler.schedule(habit) }
+        try {
+            repo.getHabits().forEach { habit -> updateHabitReminder(habit) }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            _state.update { it.copy(errorMessage = e.message ?: "Failed to reschedule habits") }
+        }
+    }
+
+    private suspend fun updateHabitReminder(habit: Habit) {
+        try {
+            if (
+                !habit.reminder ||
+                    habit.days.isEmpty() ||
+                    habit.id in datastore.getArchivedHabitIds().first()
+            ) {
+                scheduler.cancel(habit)
+            } else {
+                scheduler.schedule(habit)
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            _state.update {
+                it.copy(
+                    errorMessage =
+                        "Failed to update reminder for ${habit.title}: ${e.message ?: "Unknown error"}"
+                )
+            }
+        }
     }
 
     private suspend fun upsertHabit(habit: Habit) {
         try {
             repo.upsertHabit(habit)
-            scheduler.schedule(habit)
+            updateHabitReminder(habit)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             _state.update { it.copy(errorMessage = e.message ?: "Failed to save habit") }
         }
@@ -369,6 +427,8 @@ class HabitViewModel(
             } else {
                 repo.incrementHabitProgress(habit.id, date, habit.incrementBy)
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             _state.update { it.copy(errorMessage = e.message ?: "Failed to update habit progress") }
         }

@@ -3,12 +3,17 @@ package com.loc.hexis.core.interfaces
 
 import com.loc.hexis.core.habits.TimeDivision
 import com.loc.hexis.core.settings.Sections
+import com.loc.hexis.core.settings.backup.BackupSettings
 import com.loc.hexis.core.tasks.PomodoroSettings
 import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
 
 interface SettingsDatastore {
+    suspend fun applyBackupSettings(settings: BackupSettings) {
+        throw UnsupportedOperationException("Backup settings restore is not supported")
+    }
+
     fun getStartOfTheWeekPref(): Flow<DayOfWeek>
 
     suspend fun setStartOfWeek(day: DayOfWeek)

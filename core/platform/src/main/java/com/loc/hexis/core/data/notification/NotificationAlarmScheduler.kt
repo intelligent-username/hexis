@@ -1,4 +1,20 @@
-﻿
+﻿/*
+ * Copyright (C) 2025-2026 Hexis
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.loc.hexis.core.data.notification
 
 import android.app.AlarmManager
@@ -8,21 +24,34 @@ import android.content.Intent
 import android.os.Build
 import android.util.Log
 import com.loc.hexis.core.data.HexisIntentReceiver
+import com.loc.hexis.core.data.scheduleRtcWakeup
 import com.loc.hexis.core.habits.Habit
+import com.loc.hexis.core.habits.HabitRepo
 import com.loc.hexis.core.interfaces.AlarmScheduler
 import com.loc.hexis.core.interfaces.IntentActions
-import com.loc.hexis.core.now
+import com.loc.hexis.core.interfaces.SettingsDatastore
 import com.loc.hexis.core.tasks.Task
+import com.loc.hexis.core.tasks.TaskRepo
+import kotlin.time.Clock
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.first
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.plus
 import kotlinx.datetime.toInstant
+import kotlinx.datetime.toLocalDateTime
+import org.koin.core.annotation.Provided
 import org.koin.core.annotation.Single
 
 // implementation of AlarmScheduler using AlarmManager
 @Single(binds = [AlarmScheduler::class])
-class NotificationAlarmScheduler(private val context: Context) : AlarmScheduler {
+class NotificationAlarmScheduler(
+    private val context: Context,
+    @Provided private val habitRepo: HabitRepo,
+    @Provided private val taskRepo: TaskRepo,
+    private val settingsDatastore: SettingsDatastore,
+) : AlarmScheduler {
 
     companion object {
         private const val TAG = "NotificationAlarmScheduler"
@@ -36,14 +65,23 @@ class NotificationAlarmScheduler(private val context: Context) : AlarmScheduler 
         cancel(habit)
         if (!habit.reminder || habit.days.isEmpty()) return
 
-        var scheduleTime = habit.time
-        val now = LocalDateTime.Companion.now()
+        val timeZone = TimeZone.currentSystemDefault()
+        val now = Clock.System.now()
+        var scheduleTime =
+            LocalDateTime(
+                date = maxOf(now.toLocalDateTime(timeZone).date, habit.time.date),
+                time = habit.time.time,
+            )
 
-        while ((scheduleTime < now) || !habit.days.contains(scheduleTime.dayOfWeek)) {
+        while (
+            scheduleTime.toInstant(timeZone) <= now ||
+                scheduleTime.dayOfWeek !in habit.days
+        ) {
             scheduleTime =
-                scheduleTime.date.plus(1, DateTimeUnit.Companion.DAY).let {
-                    LocalDateTime(date = it, time = scheduleTime.time)
-                }
+                LocalDateTime(
+                    date = scheduleTime.date.plus(1, DateTimeUnit.DAY),
+                    time = habit.time.time,
+                )
         }
 
         val notificationIntent =
@@ -60,9 +98,8 @@ class NotificationAlarmScheduler(private val context: Context) : AlarmScheduler 
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
             )
 
-        alarmManager.setExactAndAllowWhileIdle(
-            AlarmManager.RTC_WAKEUP,
-            scheduleTime.toInstant(TimeZone.Companion.currentSystemDefault()).toEpochMilliseconds(),
+        alarmManager.scheduleRtcWakeup(
+            scheduleTime.toInstant(timeZone).toEpochMilliseconds(),
             pendingIntent,
         )
 
@@ -71,13 +108,12 @@ class NotificationAlarmScheduler(private val context: Context) : AlarmScheduler 
 
     override fun schedule(task: Task) {
         cancel(task)
-        if (task.reminder == null) return
-        val scheduleTime = task.reminder!!
+        if (task.status) return
+        val scheduleTime = task.reminder ?: return
 
-        val now = LocalDateTime.now()
-
-        if (scheduleTime < now) {
-            Log.d(TAG, "Task #${task.id} reminder time is in the past")
+        val scheduleInstant = scheduleTime.toInstant(TimeZone.currentSystemDefault())
+        if (scheduleInstant <= Clock.System.now()) {
+            Log.d(TAG, "Task #${task.id} reminder time is not in the future")
             return
         }
 
@@ -95,13 +131,51 @@ class NotificationAlarmScheduler(private val context: Context) : AlarmScheduler 
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
             )
 
-        alarmManager.setExactAndAllowWhileIdle(
-            AlarmManager.RTC_WAKEUP,
-            scheduleTime.toInstant(TimeZone.currentSystemDefault()).toEpochMilliseconds(),
+        alarmManager.scheduleRtcWakeup(
+            scheduleInstant.toEpochMilliseconds(),
             pendingIntent,
         )
 
         Log.d(TAG, "Scheduled task #${task.id} at $scheduleTime")
+    }
+
+    override suspend fun rescheduleAll() {
+        try {
+            val archivedIds = settingsDatastore.getArchivedHabitIds().first()
+            habitRepo.getHabits().forEach { habit ->
+                try {
+                    if (habit.id in archivedIds || !habit.reminder || habit.days.isEmpty()) {
+                        cancel(habit)
+                    } else {
+                        schedule(habit)
+                    }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to reconcile habit #${habit.id}", e)
+                }
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to read habit reminder sources", e)
+        }
+
+        try {
+            taskRepo.getTasks().forEach { task ->
+                try {
+                    schedule(task)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to reconcile task #${task.id}", e)
+                }
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to read task reminder source", e)
+        }
     }
 
     override fun cancel(habit: Habit) {

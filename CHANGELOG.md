@@ -1,13 +1,16 @@
 # Changelog
 
-<!-- 
+
 ## 1.8.1
 
-Got rid of monthly breakdown for per-hahbit stats
-Point-form support for task descriptions
-New note opening animation
-
- -->
+- Got rid of monthly breakdown for per-hahbit stats
+- Point-form support for task descriptions
+- New note opening animation
+- Better haptics
+- More thorough imports and exports (for example, task descriptions preserved, fails documented, safer imports)
+- Remidner/notification improvements
+- Partially progressed habits fixed.
+- The app is basically complete and in maintenance mode now. I'll add new features as they are requested or needed.
 
 ## 1.8.0
 

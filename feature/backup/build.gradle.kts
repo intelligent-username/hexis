@@ -20,6 +20,7 @@ dependencies {
     implementation(projects.shared.core)
     implementation(projects.core.database)
     implementation(projects.core.platform)
+    implementation(libs.androidx.room.runtime)
 
     implementation(libs.filekit.core)
     implementation(libs.filekit.dialogs)

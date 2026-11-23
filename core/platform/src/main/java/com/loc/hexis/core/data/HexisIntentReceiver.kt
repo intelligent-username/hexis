@@ -1,4 +1,20 @@
-﻿
+﻿/*
+ * Copyright (C) 2025-2026 Hexis
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.loc.hexis.core.data
 
 import android.content.BroadcastReceiver
@@ -6,8 +22,8 @@ import android.content.Context
 import android.content.Intent
 import android.util.Log
 import com.loc.hexis.core.data.notification.HexisNotificationManager
+import com.loc.hexis.core.getLogicalToday
 import com.loc.hexis.core.habits.HabitRepo
-import com.loc.hexis.core.habits.HabitStatus
 import com.loc.hexis.core.interfaces.AlarmScheduler
 import com.loc.hexis.core.interfaces.IntentActions
 import com.loc.hexis.core.interfaces.SettingsDatastore
@@ -15,12 +31,12 @@ import com.loc.hexis.core.note.CountingTableData
 import com.loc.hexis.core.note.NoteRepo
 import com.loc.hexis.core.now
 import com.loc.hexis.core.tasks.TaskRepo
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.get
@@ -42,25 +58,16 @@ class HexisIntentReceiver : BroadcastReceiver(), KoinComponent {
                     when (intent.action) {
                         IntentActions.INCREMENT_NOTE_COUNTER.action -> incrementNoteCounter(intent)
                         IntentActions.DECREMENT_NOTE_COUNTER.action -> decrementNoteCounter(intent)
-                        else -> {
-                            val datastore = get<SettingsDatastore>()
-                            val pauseNotifications = datastore.getNotificationsFlow().first()
-                            if (!pauseNotifications) {
-                                when (intent.action) {
-                                    IntentActions.HABIT_NOTIFICATION.action ->
-                                        habitNotification(intent)
-                                    IntentActions.ADD_HABIT_STATUS.action -> addHabitStatus(intent)
-                                    IntentActions.MARK_TASK_DONE.action -> markTaskDone(intent)
-                                    IntentActions.TASK_NOTIFICATION.action ->
-                                        taskNotification(intent)
-                                    else -> return@launch
-                                }
-                            }
-                        }
+                        IntentActions.HABIT_NOTIFICATION.action -> habitNotification(intent)
+                        IntentActions.ADD_HABIT_STATUS.action -> addHabitStatus(intent)
+                        IntentActions.MARK_TASK_DONE.action -> markTaskDone(intent)
+                        IntentActions.TASK_NOTIFICATION.action -> taskNotification(intent)
                     }
                 }
-            } catch (t: Throwable) {
-                Log.e(TAG, "Error: ", t)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.e(TAG, "Error: ", e)
             } finally {
                 pendingResult.finish()
             }
@@ -125,10 +132,21 @@ class HexisIntentReceiver : BroadcastReceiver(), KoinComponent {
 
         val habitRepo = get<HabitRepo>()
         val habit = habitRepo.getHabitById(habitId) ?: return
+        val datastore = get<SettingsDatastore>()
+        if (habitId in datastore.getArchivedHabitIds().first()) return
+        val logicalToday =
+            getLogicalToday(
+                datastore.getDayCutoffEnabledPref().first(),
+                datastore.getDayCutoffHourPref().first(),
+            )
 
-        habitRepo.insertHabitStatus(
-            HabitStatus(habitId = habitId, date = LocalDate.now(), value = habit.targetValue ?: 1.0)
-        )
+        if (!habitRepo.isHabitCompleted(habitId, logicalToday)) {
+            val remaining =
+                (habit.targetValue ?: 1.0) - habitRepo.getHabitProgress(habitId, logicalToday)
+            if (remaining > 0.0) {
+                habitRepo.incrementHabitProgress(habitId, logicalToday, remaining)
+            }
+        }
 
         Log.d(TAG, "Habit status added successfully")
 
@@ -137,6 +155,7 @@ class HexisIntentReceiver : BroadcastReceiver(), KoinComponent {
 
     private suspend fun taskNotification(intent: Intent) {
         Log.d(TAG, "Task notification intent received")
+        if (get<SettingsDatastore>().getNotificationsFlow().first()) return
         val taskId = intent.getLongExtra("task_id", -1)
         if (taskId < 0) return
 
@@ -158,16 +177,43 @@ class HexisIntentReceiver : BroadcastReceiver(), KoinComponent {
         val habitRepo = get<HabitRepo>()
 
         val habit = habitRepo.getHabitById(habitId) ?: return
-        if (!habit.reminder) return
-
-        // check if habit is completed today, if not then show notification
-        val habitStatus = habitRepo.getStatusForHabit(habitId)
-        if (habitStatus.any { it.date == LocalDate.now() }) {
-            Log.d(TAG, "Habit already completed today")
-        } else {
-            get<HexisNotificationManager>().habitNotification(habit)
+        val datastore = get<SettingsDatastore>()
+        val scheduler = get<AlarmScheduler>()
+        try {
+            if (
+                !habit.reminder ||
+                    habit.days.isEmpty() ||
+                    habitId in datastore.getArchivedHabitIds().first()
+            ) return
+            if (datastore.getNotificationsFlow().first()) return
+            val logicalToday =
+                getLogicalToday(
+                    datastore.getDayCutoffEnabledPref().first(),
+                    datastore.getDayCutoffHourPref().first(),
+                )
+            if (habitRepo.isHabitCompleted(habitId, logicalToday)) {
+                Log.d(TAG, "Habit already completed today")
+            } else {
+                get<HexisNotificationManager>().habitNotification(habit)
+            }
+        } finally {
+            try {
+                val currentHabit = habitRepo.getHabitById(habitId)
+                if (
+                    currentHabit == null ||
+                        !currentHabit.reminder ||
+                        currentHabit.days.isEmpty() ||
+                        habitId in datastore.getArchivedHabitIds().first()
+                ) {
+                    scheduler.cancel(currentHabit ?: habit)
+                } else {
+                    scheduler.schedule(currentHabit)
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to rearm habit #$habitId", e)
+            }
         }
-
-        get<AlarmScheduler>().schedule(habit)
     }
 }

@@ -4,20 +4,17 @@ package com.loc.hexis.shared.ui.viewmodel
 import androidx.compose.ui.graphics.toArgb
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.loc.hexis.core.interfaces.AlarmScheduler
 import com.loc.hexis.core.interfaces.BiometricUtils
 import com.loc.hexis.core.interfaces.ChangelogManager
 import com.loc.hexis.core.interfaces.SettingsDatastore
 import com.loc.hexis.core.interfaces.ThemeDatastore
-import com.loc.hexis.core.settings.Sections
 import com.loc.hexis.core.settings.backup.ExportRepo
+import com.loc.hexis.core.settings.backup.ExportResult
 import com.loc.hexis.core.settings.backup.ExportState
 import com.loc.hexis.core.settings.backup.RestoreRepo
 import com.loc.hexis.core.settings.backup.RestoreResult
 import com.loc.hexis.core.settings.backup.RestoreState
-import com.loc.hexis.core.theme.AppTheme
-import com.loc.hexis.core.theme.Fonts
-import com.loc.hexis.core.theme.PaletteStyle
-import com.loc.hexis.shared.ui.setting.BackupState
 import com.loc.hexis.shared.ui.setting.SettingsAction
 import com.loc.hexis.shared.ui.setting.SettingsAction.ChangeAmoled
 import com.loc.hexis.shared.ui.setting.SettingsAction.ChangeAppTheme
@@ -43,6 +40,7 @@ import com.loc.hexis.shared.ui.setting.SettingsAction.OnResetBackupState
 import com.loc.hexis.shared.ui.setting.SettingsAction.OnRestore
 import com.loc.hexis.shared.ui.setting.SettingsAction.SetVaultPasswordHash
 import com.loc.hexis.shared.ui.setting.SettingsState
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -63,6 +61,7 @@ class SettingsViewModel(
     @Provided private val restoreRepo: RestoreRepo,
     @Provided private val themeDatastore: ThemeDatastore,
     @Provided private val settingsDatastore: SettingsDatastore,
+    @Provided private val alarmScheduler: AlarmScheduler,
     @Provided private val changelogManager: ChangelogManager,
     @Provided private val biometricUtils: BiometricUtils,
 ) : ViewModel() {
@@ -102,49 +101,125 @@ class SettingsViewModel(
                 is ChangeStartingPage -> settingsDatastore.setStartingPage(action.page)
 
                 OnResetBackupState -> {
-                    _state.update { it.copy(backupState = BackupState()) }
+                    _state.update {
+                        it.copy(
+                            backupState =
+                                it.backupState.copy(
+                                    exportState =
+                                        it.backupState.exportState.takeIf {
+                                            it == ExportState.EXPORTING
+                                        } ?: ExportState.IDLE,
+                                    restoreState =
+                                        it.backupState.restoreState.takeIf {
+                                            it == RestoreState.RESTORING
+                                        } ?: RestoreState.IDLE,
+                                )
+                        )
+                    }
                 }
 
                 OnExport -> {
+                    if (_state.value.backupState.exportState == ExportState.EXPORTING) return@launch
                     _state.update {
                         it.copy(
                             backupState = it.backupState.copy(exportState = ExportState.EXPORTING)
                         )
                     }
 
-                    exportRepo.exportToJson()
-
-                    _state.update {
-                        it.copy(
-                            backupState = it.backupState.copy(exportState = ExportState.EXPORTED)
-                        )
+                    try {
+                        val result = exportRepo.exportToJson()
+                        _state.update {
+                            it.copy(
+                                backupState =
+                                    it.backupState.copy(
+                                        exportState =
+                                            when (result) {
+                                                ExportResult.SUCCESS -> ExportState.EXPORTED
+                                                ExportResult.CANCELLED,
+                                                ExportResult.FAILURE -> ExportState.IDLE
+                                            }
+                                    )
+                            )
+                        }
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (_: Exception) {
+                        _state.update {
+                            it.copy(
+                                backupState = it.backupState.copy(exportState = ExportState.IDLE)
+                            )
+                        }
+                    } finally {
+                        _state.update {
+                            if (it.backupState.exportState == ExportState.EXPORTING) {
+                                it.copy(
+                                    backupState = it.backupState.copy(exportState = ExportState.IDLE)
+                                )
+                            } else {
+                                it
+                            }
+                        }
                     }
                 }
 
                 OnRestore -> {
+                    if (_state.value.backupState.restoreState == RestoreState.RESTORING) return@launch
                     _state.update {
                         it.copy(
                             backupState = it.backupState.copy(restoreState = RestoreState.RESTORING)
                         )
                     }
 
-                    val result = restoreRepo.restoreData()
-
-                    _state.update {
-                        it.copy(
-                            backupState =
-                                it.backupState.copy(
-                                    restoreState =
-                                        when (result) {
-                                            is RestoreResult.Failure -> RestoreState.FAILURE
-                                            RestoreResult.Success -> RestoreState.RESTORED
-                                        }
+                    try {
+                        val result = restoreRepo.restoreData()
+                        _state.update {
+                            it.copy(
+                                backupState =
+                                    it.backupState.copy(
+                                        restoreState =
+                                            when (result) {
+                                                is RestoreResult.Failure -> RestoreState.FAILURE
+                                                RestoreResult.Success -> RestoreState.RESTORED
+                                                RestoreResult.Cancelled -> RestoreState.IDLE
+                                            }
+                                    )
+                            )
+                        }
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (_: Exception) {
+                        _state.update {
+                            it.copy(
+                                backupState = it.backupState.copy(restoreState = RestoreState.FAILURE)
+                            )
+                        }
+                    } finally {
+                        _state.update {
+                            if (it.backupState.restoreState == RestoreState.RESTORING) {
+                                it.copy(
+                                    backupState = it.backupState.copy(restoreState = RestoreState.IDLE)
                                 )
-                        )
+                            } else {
+                                it
+                            }
+                        }
                     }
                 }
 
-                is ChangePauseNotifications -> settingsDatastore.setNotifications(action.pref)
+                is ChangePauseNotifications -> {
+                    settingsDatastore.setNotifications(action.pref)
+                    if (!action.pref) {
+                        try {
+                            alarmScheduler.rescheduleAll()
+                        } catch (e: CancellationException) {
+                            throw e
+                        } catch (e: Exception) {
+                            println(
+                                "Failed to reschedule notifications after unpausing (${e::class.simpleName})"
+                            )
+                        }
+                    }
+                }
 
                 is ChangeFontPref -> themeDatastore.setFontPref(action.font)
 

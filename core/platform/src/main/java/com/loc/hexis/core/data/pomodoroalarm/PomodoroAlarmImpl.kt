@@ -6,6 +6,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import com.loc.hexis.core.data.scheduleRtcWakeup
 import com.loc.hexis.core.interfaces.PomodoroAlarm
 import org.koin.core.annotation.Single
 
@@ -24,15 +25,11 @@ class PomodoroAlarmImpl(private val context: Context) : PomodoroAlarm {
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
             )
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            alarmManager.setExactAndAllowWhileIdle(
-                AlarmManager.RTC_WAKEUP,
-                timeMillis,
-                pendingIntent,
-            )
-        } else {
-            alarmManager.setExact(AlarmManager.RTC_WAKEUP, timeMillis, pendingIntent)
-        }
+        alarmManager.scheduleRtcWakeup(
+            timeMillis,
+            pendingIntent,
+            allowWhileIdle = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S,
+        )
     }
 
     override fun cancel() {

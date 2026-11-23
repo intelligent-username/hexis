@@ -2,7 +2,13 @@
 package com.loc.hexis.core.settings.backup
 
 interface ExportRepo {
-    suspend fun exportToJson()
+    suspend fun exportToJson(): ExportResult
+}
+
+enum class ExportResult {
+    SUCCESS,
+    CANCELLED,
+    FAILURE,
 }
 
 enum class ExportState {

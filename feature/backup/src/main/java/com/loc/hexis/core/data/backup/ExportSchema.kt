@@ -54,6 +54,7 @@ data class TaskSchema(
     val status: Boolean = false,
     val index: Int = 0,
     val reminder: Long? = null,
+    val description: String? = null,
 )
 
 @Serializable

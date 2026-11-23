@@ -11,6 +11,7 @@ import androidx.datastore.preferences.core.stringSetPreferencesKey
 import com.loc.hexis.core.habits.TimeDivision
 import com.loc.hexis.core.interfaces.SettingsDatastore
 import com.loc.hexis.core.settings.Sections
+import com.loc.hexis.core.settings.backup.BackupSettings
 import com.loc.hexis.core.tasks.PomodoroSettings
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -21,6 +22,42 @@ import org.koin.core.annotation.Single
 
 @Single(binds = [SettingsDatastore::class])
 class SettingsDatastoreImpl(private val datastore: DataStore<Preferences>) : SettingsDatastore {
+
+    override suspend fun applyBackupSettings(settings: BackupSettings) {
+        val pomodoroJson = settings.pomodoroSettings?.let { Json.encodeToString(it) }
+        datastore.edit { prefs ->
+            val merged =
+                settings.mergedWith(
+                    currentDivisions =
+                        prefs[timeDivisionsKey]?.let { Json.decodeFromString(it) } ?: emptyList(),
+                    currentAssignments =
+                        prefs[habitTimeDivisionMapKey]
+                            ?.let { Json.decodeFromString<Map<String, Long>>(it) }
+                            ?.mapKeys { it.key.toLong() } ?: emptyMap(),
+                    currentArchives =
+                        prefs[archivedHabitIdsKey]?.map { it.toLong() }?.toSet() ?: emptySet(),
+                    currentVaultHash = prefs[vaultPasswordHashKey],
+                )
+            prefs[timeDivisionsKey] = Json.encodeToString(merged.timeDivisions)
+            prefs[habitTimeDivisionMapKey] =
+                Json.encodeToString(merged.habitTimeDivisionMap.mapKeys { it.key.toString() })
+            prefs[archivedHabitIdsKey] = merged.archivedHabitIds.map { it.toString() }.toSet()
+            if (pomodoroJson != null) prefs[pomodoroSettingsKey] = pomodoroJson
+            merged.userSettings?.let { user ->
+                prefs[startOfWeekKey] = user.startOfTheWeek.name
+                prefs[is24HrKey] = user.is24Hr
+                prefs[dayCutoffEnabledKey] = user.dayCutoffEnabled
+                prefs[dayCutoffHourKey] = user.dayCutoffHour
+                prefs[compactHabitView] = user.compactHabitView
+                prefs[taskReorderKey] = user.taskReorderPref
+                prefs[habitReorderKey] = user.habitReorderPref
+                prefs[putNewTasksAtTopKey] = user.putNewTasksAtTopPref
+                prefs[showPomodoroPieChartKey] = user.showPomodoroPieChartPref
+                prefs[lockVaultNotesKey] = user.lockVaultNotesPref
+                user.vaultPasswordHash?.let { prefs[vaultPasswordHashKey] = it }
+            }
+        }
+    }
 
     companion object {
         private val startOfWeekKey = stringPreferencesKey("start_of_week")

@@ -1,6 +1,7 @@
 package com.loc.hexis.core.data.backup.export
 
 import android.content.Context
+import android.util.Log
 import com.loc.hexis.core.data.backup.ExportSchema
 import com.loc.hexis.core.data.backup.HabitTimeDivisionPairSchema
 import com.loc.hexis.core.data.backup.UserSettingsSchema
@@ -15,11 +16,13 @@ import com.loc.hexis.core.interfaces.SettingsDatastore
 import com.loc.hexis.core.note.NoteRepo
 import com.loc.hexis.core.now
 import com.loc.hexis.core.settings.backup.ExportRepo
+import com.loc.hexis.core.settings.backup.ExportResult
 import com.loc.hexis.core.tasks.PomodoroRepo
 import com.loc.hexis.core.tasks.TaskRepo
 import io.github.vinceglb.filekit.AndroidFile
 import io.github.vinceglb.filekit.FileKit
 import io.github.vinceglb.filekit.dialogs.openFileSaver
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -39,7 +42,7 @@ class ExportImpl(
     @Provided private val noteRepo: NoteRepo,
     @Provided private val settingsDatastore: SettingsDatastore,
 ) : ExportRepo {
-    override suspend fun exportToJson() {
+    override suspend fun exportToJson(): ExportResult = try {
         coroutineScope {
             val habitsDef =
                 async {
@@ -150,7 +153,7 @@ class ExportImpl(
 
             val jsonString =
                 withContext(Dispatchers.IO) {
-                    Json.encodeToString(
+                    Json { encodeDefaults = true }.encodeToString(
                         ExportSchema(
                             habits = habitsDef,
                             habitStatus = statusesDef,
@@ -174,22 +177,30 @@ class ExportImpl(
                 FileKit.openFileSaver(
                     suggestedName = "Hexis-Export-$time",
                     defaultExtension = "json",
-                )
+                ) ?: return@coroutineScope ExportResult.CANCELLED
 
-            if (file != null) {
-                withContext(Dispatchers.IO) {
-                    val outputStream =
-                        when (val af = file.androidFile) {
-                            is AndroidFile.UriWrapper -> context.contentResolver.openOutputStream(af.uri)
-                            is AndroidFile.FileWrapper -> af.file.outputStream()
-                        }
-                    outputStream?.use { stream ->
-                        stream.write(jsonString.toByteArray(Charsets.UTF_8))
-                        stream.flush()
+            withContext(Dispatchers.IO) {
+                val outputStream =
+                    when (val af = file.androidFile) {
+                        is AndroidFile.UriWrapper -> context.contentResolver.openOutputStream(af.uri)
+                        is AndroidFile.FileWrapper -> af.file.outputStream()
                     }
+                if (outputStream == null) {
+                    Log.e("ExportRepo", "Failed to open export output stream")
+                    return@withContext ExportResult.FAILURE
                 }
+                outputStream.use { stream ->
+                    stream.write(jsonString.toByteArray(Charsets.UTF_8))
+                    stream.flush()
+                }
+                ExportResult.SUCCESS
             }
         }
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        Log.e("ExportRepo", "Failed to export data", e)
+        ExportResult.FAILURE
     }
 }
 
