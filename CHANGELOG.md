@@ -12,7 +12,7 @@
 - Remidner/notification improvements
 - Partially progressed habits fixed.
 - And a bunch of other random stuff
-- The app is basically complete and in maintenance mode now. I'll add new features as they are requested or needed.
+- The app is complete and in maintenance mode now. .
 
 ## 1.8.0
 
