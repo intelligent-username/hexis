@@ -93,6 +93,11 @@ class MainViewModel(
                     }
                     .launchIn(this)
 
+                themeDatastore
+                    .getHapticPrefFlow()
+                    .onEach { pref -> _state.update { it.copy(uiHapticsEnabled = pref) } }
+                    .launchIn(this)
+
                 // Read startingSection eagerly so the initial page is correct before
                 // the UI is shown, then subscribe for ongoing changes.
                 val initialSection = settingsDatastore.getStartingSectionPref().first()

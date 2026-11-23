@@ -10,7 +10,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import hexis.shared.ui.generated.resources.*
+import hexis.shared.ui.generated.resources.analytics_expand
+import hexis.shared.ui.generated.resources.analytics_next
+import hexis.shared.ui.generated.resources.analytics_previous
 import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun CardArrows(
@@ -24,7 +28,7 @@ fun CardArrows(
         IconButton(onClick = onBackAction, enabled = enabled) {
             Icon(
                 painter = painterResource(Res.drawable.arrow_back),
-                contentDescription = null,
+                contentDescription = stringResource(Res.string.analytics_previous),
                 tint = MaterialTheme.colorScheme.onSurface,
             )
         }
@@ -32,7 +36,7 @@ fun CardArrows(
         IconButton(onClick = onForwardAction, enabled = enabled) {
             Icon(
                 painter = painterResource(Res.drawable.arrow_forward),
-                contentDescription = null,
+                contentDescription = stringResource(Res.string.analytics_next),
                 tint = MaterialTheme.colorScheme.onSurface,
             )
         }
@@ -45,7 +49,7 @@ fun CardArrows(
             ) {
                 Icon(
                     painter = painterResource(Res.drawable.expand),
-                    contentDescription = null,
+                    contentDescription = stringResource(Res.string.analytics_expand),
                     tint = MaterialTheme.colorScheme.onSurface,
                 )
             }

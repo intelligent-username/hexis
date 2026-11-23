@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ui_haptics_title">UI haptic feedback</string>
+    <string name="ui_haptics_description">Touch feedback for the interface. Pomodoro alarm vibration is unchanged.</string>
+</resources>

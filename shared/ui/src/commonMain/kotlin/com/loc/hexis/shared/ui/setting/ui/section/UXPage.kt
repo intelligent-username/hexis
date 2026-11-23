@@ -28,7 +28,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -46,12 +48,21 @@ import com.loc.hexis.shared.ui.setting.SettingsState
 import com.loc.hexis.shared.ui.theme.flexFontEmphasis
 import com.loc.hexis.shared.ui.theme.flexFontRounded
 import hexis.shared.ui.generated.resources.*
+import hexis.shared.ui.generated.resources.ui_haptics_description
+import hexis.shared.ui.generated.resources.ui_haptics_title
 import kotlinx.datetime.DayOfWeek
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.resources.vectorResource
 
 @Composable
 fun UXPage(state: SettingsState, onAction: (SettingsAction) -> Unit, onNavigateBack: () -> Unit) {
+    val haptic = LocalHapticFeedback.current
+    fun toggleFeedback(enabled: Boolean) {
+        haptic.performHapticFeedback(
+            if (enabled) HapticFeedbackType.ToggleOn else HapticFeedbackType.ToggleOff
+        )
+    }
+
     var showPasswordDialog by remember { mutableStateOf(false) }
     var showCutoffTimePicker by remember { mutableStateOf(false) }
     var newPassword by remember { mutableStateOf("") }
@@ -111,6 +122,9 @@ fun UXPage(state: SettingsState, onAction: (SettingsAction) -> Unit, onNavigateB
                                                 if (it) Sections.Habits else Sections.Tasks
                                             )
                                         )
+                                        if (state.startingPage != if (it) Sections.Habits else Sections.Tasks) {
+                                            toggleFeedback(it)
+                                        }
                                     },
                                 )
                             },
@@ -134,6 +148,9 @@ fun UXPage(state: SettingsState, onAction: (SettingsAction) -> Unit, onNavigateB
                                                 if (it) DayOfWeek.SUNDAY else DayOfWeek.MONDAY
                                             )
                                         )
+                                        if (state.startOfTheWeek != if (it) DayOfWeek.SUNDAY else DayOfWeek.MONDAY) {
+                                            toggleFeedback(it)
+                                        }
                                     },
                                 )
                             },
@@ -149,7 +166,30 @@ fun UXPage(state: SettingsState, onAction: (SettingsAction) -> Unit, onNavigateB
                             trailingContent = {
                                 ExpressiveSwitch(
                                     checked = state.is24Hr,
-                                    onCheckedChange = { onAction(SettingsAction.ChangeIs24Hr(it)) },
+                                    onCheckedChange = {
+                                        onAction(SettingsAction.ChangeIs24Hr(it))
+                                        if (it != state.is24Hr) toggleFeedback(it)
+                                    },
+                                )
+                            },
+                            colors = listItemColors(),
+                            modifier = Modifier.clip(middleItemShape()),
+                        )
+
+                        ListItem(
+                            headlineContent = {
+                                Text(text = stringResource(Res.string.ui_haptics_title))
+                            },
+                            supportingContent = {
+                                Text(text = stringResource(Res.string.ui_haptics_description))
+                            },
+                            trailingContent = {
+                                ExpressiveSwitch(
+                                    checked = state.uiHapticsEnabled,
+                                    onCheckedChange = {
+                                        if (it != state.uiHapticsEnabled) toggleFeedback(it)
+                                        onAction(SettingsAction.ChangeHapticFeedback(it))
+                                    },
                                 )
                             },
                             colors = listItemColors(),
@@ -168,6 +208,7 @@ fun UXPage(state: SettingsState, onAction: (SettingsAction) -> Unit, onNavigateB
                                     checked = state.pauseNotifications,
                                     onCheckedChange = {
                                         onAction(SettingsAction.ChangePauseNotifications(it))
+                                        if (it != state.pauseNotifications) toggleFeedback(it)
                                     },
                                 )
                             },
@@ -192,6 +233,7 @@ fun UXPage(state: SettingsState, onAction: (SettingsAction) -> Unit, onNavigateB
                                         checked = state.isBiometricLockOn == true,
                                         onCheckedChange = {
                                             onAction(SettingsAction.ChangeBiometricLock(it))
+                                            if (it != (state.isBiometricLockOn == true)) toggleFeedback(it)
                                         },
                                     )
                                 },
@@ -228,6 +270,7 @@ fun UXPage(state: SettingsState, onAction: (SettingsAction) -> Unit, onNavigateB
                                     checked = state.reorderHabits,
                                     onCheckedChange = {
                                         onAction(SettingsAction.ChangeReorderHabits(it))
+                                        if (it != state.reorderHabits) toggleFeedback(it)
                                     },
                                 )
                             },
@@ -256,6 +299,7 @@ fun UXPage(state: SettingsState, onAction: (SettingsAction) -> Unit, onNavigateB
                                     checked = state.isDayCutoffEnabled,
                                     onCheckedChange = { enabled ->
                                         onAction(SettingsAction.ChangeDayCutoffEnabled(enabled))
+                                        if (enabled != state.isDayCutoffEnabled) toggleFeedback(enabled)
                                         if (enabled) {
                                             showCutoffTimePicker = true
                                         }
@@ -299,6 +343,7 @@ fun UXPage(state: SettingsState, onAction: (SettingsAction) -> Unit, onNavigateB
                                     checked = state.reorderTasks,
                                     onCheckedChange = {
                                         onAction(SettingsAction.ChangeReorderTasks(it))
+                                        if (it != state.reorderTasks) toggleFeedback(it)
                                     },
                                 )
                             },
@@ -316,6 +361,7 @@ fun UXPage(state: SettingsState, onAction: (SettingsAction) -> Unit, onNavigateB
                                     checked = state.putNewTasksAtTop,
                                     onCheckedChange = {
                                         onAction(SettingsAction.ChangePutNewTasksAtTop(it))
+                                        if (it != state.putNewTasksAtTop) toggleFeedback(it)
                                     },
                                 )
                             },
@@ -338,6 +384,7 @@ fun UXPage(state: SettingsState, onAction: (SettingsAction) -> Unit, onNavigateB
                                     checked = state.showPomodoroPieChart,
                                     onCheckedChange = {
                                         onAction(SettingsAction.ChangeShowPomodoroPieChart(it))
+                                        if (it != state.showPomodoroPieChart) toggleFeedback(it)
                                     },
                                 )
                             },
@@ -366,9 +413,11 @@ fun UXPage(state: SettingsState, onAction: (SettingsAction) -> Unit, onNavigateB
                                                 showPasswordDialog = true
                                             } else {
                                                 onAction(SettingsAction.ChangeLockVaultNotes(true))
+                                                if (!state.isLockVaultNotesOn) toggleFeedback(true)
                                             }
                                         } else {
                                             onAction(SettingsAction.ChangeLockVaultNotes(false))
+                                            if (state.isLockVaultNotesOn) toggleFeedback(false)
                                         }
                                     },
                                 )
@@ -446,8 +495,10 @@ fun UXPage(state: SettingsState, onAction: (SettingsAction) -> Unit, onNavigateB
                             passwordError = "Password cannot be empty"
                         } else {
                             val hash = hashPassword(newPassword.trim())
+                            val changed = hash != state.vaultPasswordHash || !state.isLockVaultNotesOn
                             onAction(SettingsAction.SetVaultPasswordHash(hash))
                             onAction(SettingsAction.ChangeLockVaultNotes(true))
+                            if (changed) haptic.performHapticFeedback(HapticFeedbackType.Confirm)
                             showPasswordDialog = false
                         }
                     }
@@ -499,8 +550,11 @@ fun UXPage(state: SettingsState, onAction: (SettingsAction) -> Unit, onNavigateB
             onDismissRequest = { showCutoffTimePicker = false },
             state = cutoffTimePickerState,
             onConfirm = {
+                val changed =
+                    cutoffTimePickerState.hour != state.dayCutoffHour || !state.isDayCutoffEnabled
                 onAction(SettingsAction.ChangeDayCutoffHour(cutoffTimePickerState.hour))
                 onAction(SettingsAction.ChangeDayCutoffEnabled(true))
+                if (changed) haptic.performHapticFeedback(HapticFeedbackType.Confirm)
                 showCutoffTimePicker = false
             },
         )

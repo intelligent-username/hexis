@@ -1,0 +1,11 @@
+<resources>
+    <string name="journal_empty_title">No journal entries yet</string>
+    <string name="journal_empty_description">Write your first entry below</string>
+    <string name="analytics_previous">Previous period</string>
+    <string name="analytics_next">Next period</string>
+    <string name="analytics_expand">Expand analytics</string>
+    <string name="points_zero_percent">0%</string>
+    <string name="points_absolute_gain">+%1$d pts</string>
+    <string name="points_from_zero">From zero</string>
+    <string name="points_change_label">Change</string>
+</resources>

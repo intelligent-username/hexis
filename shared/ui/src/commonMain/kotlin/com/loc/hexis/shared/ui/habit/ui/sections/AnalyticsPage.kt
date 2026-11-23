@@ -45,7 +45,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -90,6 +92,20 @@ fun AnalyticsPage(
     val currentMonth = today.yearMonth
     val currentHabit =
         state.habitsWithAnalytics.find { it.habit.id == state.analyticsHabitId } ?: return
+    val hapticFeedback = LocalHapticFeedback.current
+    val threshold = (currentHabit.habit.targetValue ?: 1.0) - 0.001
+
+    fun progressFeedback(currentValue: Double, nextValue: Double) {
+        if (!currentHabit.habit.pomodoroLinked && nextValue != currentValue) {
+            hapticFeedback.performHapticFeedback(
+                when {
+                    currentValue < threshold && nextValue >= threshold -> HapticFeedbackType.Confirm
+                    currentValue >= threshold && nextValue < threshold -> HapticFeedbackType.ToggleOff
+                    else -> HapticFeedbackType.SegmentTick
+                }
+            )
+        }
+    }
 
     val heatMapState =
         rememberHeatMapCalendarState(
@@ -243,6 +259,7 @@ fun AnalyticsPage(
                     weeklyPointsHistory = currentHabit.pointsSummary.weeklyPointsHistory,
                     dailyPointsHistory = currentHabit.pointsSummary.dailyPointsHistory,
                     modifier = Modifier.widthIn(max = maxWidth),
+                    firstDayOfWeek = state.startingDay,
                 )
             }
 
@@ -376,6 +393,10 @@ fun AnalyticsPage(
                                                         selectedDate,
                                                     )
                                                 )
+                                                progressFeedback(
+                                                    currentValue,
+                                                    (currentValue - incrementBy).coerceAtLeast(0.0),
+                                                )
                                             }
                                         },
                                         enabled = currentValue > 0.0,
@@ -455,6 +476,10 @@ fun AnalyticsPage(
                                                     selectedDate,
                                                 )
                                             )
+                                            progressFeedback(
+                                                currentValue,
+                                                currentValue + incrementBy,
+                                            )
                                         },
                                         enabled = selectedDate <= today,
                                         modifier = Modifier.size(48.dp),
@@ -499,7 +524,14 @@ fun AnalyticsPage(
                             currentHabit.habit.displayMode !=
                                 com.loc.hexis.core.habits.DisplayMode.PROGRESS
                         ) {
+                            val currentValue =
+                                currentHabit.statuses.find { status -> status.date == it }?.value
+                                    ?: 0.0
+                            val nextValue =
+                                if (currentValue >= threshold) 0.0
+                                else currentValue + currentHabit.habit.incrementBy
                             onAction(HabitsAction.ToggleHabitProgress(currentHabit.habit, it))
+                            progressFeedback(currentValue, nextValue)
                         }
                     },
                 )

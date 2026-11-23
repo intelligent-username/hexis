@@ -43,9 +43,11 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -61,6 +63,7 @@ import hexis.shared.ui.generated.resources.*
 import kotlinx.coroutines.launch
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.DayOfWeek
+import kotlinx.datetime.LocalDate
 import kotlinx.datetime.isoDayNumber
 import kotlinx.datetime.minus
 import org.jetbrains.compose.resources.vectorResource
@@ -86,6 +89,24 @@ fun HabitCard(
 ) {
     val today by rememberToday(isDayCutoffEnabled, dayCutoffHour)
     val canCompleteToday = today.dayOfWeek in habitWithAnalytics.habit.days
+    val hapticFeedback = LocalHapticFeedback.current
+
+    fun toggleProgress(date: LocalDate) {
+        val habit = habitWithAnalytics.habit
+        val currentValue = habitWithAnalytics.statuses.find { it.date == date }?.value ?: 0.0
+        val threshold = (habit.targetValue ?: 1.0) - 0.001
+        val nextValue = if (currentValue >= threshold) 0.0 else currentValue + habit.incrementBy
+        action(HabitsAction.ToggleHabitProgress(habit, date))
+        if (!habit.pomodoroLinked && nextValue != currentValue) {
+            hapticFeedback.performHapticFeedback(
+                when {
+                    currentValue < threshold && nextValue >= threshold -> HapticFeedbackType.Confirm
+                    currentValue >= threshold && nextValue < threshold -> HapticFeedbackType.ToggleOff
+                    else -> HapticFeedbackType.SegmentTick
+                }
+            )
+        }
+    }
 
     // animated colors
     val cardContent by
@@ -170,7 +191,7 @@ fun HabitCard(
             if (habitWithAnalytics.habit.pomodoroLinked) {
                 onPomodoroClick(habitWithAnalytics.habit.id)
             } else if (canCompleteToday) {
-                action(HabitsAction.ToggleHabitProgress(habitWithAnalytics.habit, today))
+                toggleProgress(today)
             }
         },
         shape = shape,
@@ -435,12 +456,7 @@ fun HabitCard(
                                         enabled = validDay,
                                         onClick = {
                                             if (!habitWithAnalytics.habit.pomodoroLinked) {
-                                                action(
-                                                    HabitsAction.ToggleHabitProgress(
-                                                        habit = habitWithAnalytics.habit,
-                                                        date = weekDay.date,
-                                                    )
-                                                )
+                                                toggleProgress(weekDay.date)
                                             }
                                         },
                                     ),

@@ -23,7 +23,12 @@ import androidx.compose.ui.unit.sp
 import com.loc.hexis.core.habits.PointsSummary
 import com.loc.hexis.shared.ui.theme.flexFontEmphasis
 import com.loc.hexis.shared.ui.theme.flexFontRounded
-import kotlin.math.max
+import hexis.shared.ui.generated.resources.Res
+import hexis.shared.ui.generated.resources.points_absolute_gain
+import hexis.shared.ui.generated.resources.points_change_label
+import hexis.shared.ui.generated.resources.points_from_zero
+import hexis.shared.ui.generated.resources.points_zero_percent
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun PointsStatCards(pointsSummary: PointsSummary, modifier: Modifier = Modifier) {
@@ -40,10 +45,15 @@ fun PointsStatCards(pointsSummary: PointsSummary, modifier: Modifier = Modifier)
 @Composable
 private fun StatChangeCard(previous: Int, current: Int, modifier: Modifier = Modifier) {
     val (displayText, displayColor) =
-        if (previous == 0 && current == 0) {
-            "—" to MaterialTheme.colorScheme.onSurface
+        if (previous == 0) {
+            if (current == 0) {
+                stringResource(Res.string.points_zero_percent) to MaterialTheme.colorScheme.onSurface
+            } else {
+                stringResource(Res.string.points_absolute_gain, current) to
+                    MaterialTheme.colorScheme.tertiary
+            }
         } else {
-            val percent = ((current - previous).toFloat() / max(previous, 1)) * 100
+            val percent = ((current - previous).toFloat() / previous) * 100
             val intPercent = percent.toInt()
             when {
                 intPercent > 0 -> "+${intPercent}%" to MaterialTheme.colorScheme.tertiary
@@ -73,7 +83,11 @@ private fun StatChangeCard(previous: Int, current: Int, modifier: Modifier = Mod
             )
             Spacer(modifier = Modifier.height(2.dp))
             Text(
-                text = "Change",
+                text =
+                    stringResource(
+                        if (previous == 0 && current > 0) Res.string.points_from_zero
+                        else Res.string.points_change_label
+                    ),
                 style =
                     MaterialTheme.typography.labelSmall.copy(
                         fontFamily = flexFontRounded(),

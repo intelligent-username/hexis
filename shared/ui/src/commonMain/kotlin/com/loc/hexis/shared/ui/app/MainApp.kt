@@ -19,13 +19,18 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass.Companion.Compact
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.hapticfeedback.HapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavKey
@@ -52,6 +57,18 @@ import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun MainApp(state: MainAppState) {
+    val parentFeedback = LocalHapticFeedback.current
+    val hapticsEnabled = rememberUpdatedState(state.uiHapticsEnabled)
+    val feedback =
+        remember(parentFeedback) {
+            object : HapticFeedback {
+                override fun performHapticFeedback(hapticFeedbackType: HapticFeedbackType) {
+                    if (hapticsEnabled.value) {
+                        parentFeedback.performHapticFeedback(hapticFeedbackType)
+                    }
+                }
+            }
+        }
     val windowSizeClass = LocalWindowSizeClass.current
 
     val habitPage = AppSections.mainRoutes.indexOf(AppSections.HabitPages).coerceAtLeast(0)
@@ -178,18 +195,74 @@ fun MainApp(state: MainAppState) {
         }
     }
 
-    SystemBackHandler(enabled = true) {
-        val current = pagerState.currentPage
-        if (current > 0) {
-            coroutineScope.launch { pagerState.animateScrollToPage(current - 1) }
+    CompositionLocalProvider(LocalHapticFeedback provides feedback) {
+        SystemBackHandler(enabled = true) {
+            val current = pagerState.currentPage
+            if (current > 0) {
+                coroutineScope.launch { pagerState.animateScrollToPage(current - 1) }
+            }
         }
-    }
 
-    when (windowSizeClass.widthSizeClass) {
-        Compact -> {
-            Scaffold(
-                bottomBar = {
-                    AppNavBar(
+        when (windowSizeClass.widthSizeClass) {
+            Compact -> {
+                Scaffold(
+                    bottomBar = {
+                        AppNavBar(
+                            currentRoute = AppSections.mainRoutes[pagerState.currentPage],
+                            onNavigate = { route ->
+                                val index = AppSections.mainRoutes.indexOf(route)
+                                if (index != -1) {
+                                    coroutineScope.launch { pagerState.animateScrollToPage(index) }
+                                }
+                            },
+                        )
+                    }
+                ) { padding ->
+                    HorizontalPager(
+                        state = pagerState,
+                        modifier =
+                            Modifier.padding(
+                                    start = padding.calculateStartPadding(LocalLayoutDirection.current),
+                                    end = padding.calculateEndPadding(LocalLayoutDirection.current),
+                                    bottom = padding.calculateBottomPadding(),
+                                )
+                                .background(MaterialTheme.colorScheme.background),
+                    ) { page ->
+                        when (val route = AppSections.mainRoutes[page]) {
+                            is AppSections.TaskPages -> {
+                                val taskPageState by tvm.state.collectAsStateWithLifecycle()
+
+                                TasksPage(
+                                    state = taskPageState,
+                                    onAction = tvm::onAction,
+                                    onPomodoroClick = { showPomodoro = true },
+                                    onNotesClick = { showNotes = true },
+                                )
+                            }
+
+                            is AppSections.SettingsPages -> {
+                                val settingsState by svm.state.collectAsStateWithLifecycle()
+
+                                SettingsGraph(state = settingsState, onAction = svm::onAction)
+                            }
+
+                            is AppSections.HabitPages -> {
+                                val habitsPageState by hvm.state.collectAsStateWithLifecycle()
+
+                                HabitsGraph(
+                                    state = habitsPageState,
+                                    onAction = hvm::onAction,
+                                    onPomodoroClick = { pomodoroLinkedHabitId = it },
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            else -> {
+                Row(modifier = Modifier.background(MaterialTheme.colorScheme.surface)) {
+                    AppNavRail(
                         currentRoute = AppSections.mainRoutes[pagerState.currentPage],
                         onNavigate = { route ->
                             val index = AppSections.mainRoutes.indexOf(route)
@@ -198,125 +271,71 @@ fun MainApp(state: MainAppState) {
                             }
                         },
                     )
-                }
-            ) { padding ->
-                HorizontalPager(
-                    state = pagerState,
-                    modifier =
-                        Modifier.padding(
-                                start = padding.calculateStartPadding(LocalLayoutDirection.current),
-                                end = padding.calculateEndPadding(LocalLayoutDirection.current),
-                                bottom = padding.calculateBottomPadding(),
-                            )
-                            .background(MaterialTheme.colorScheme.background),
-                ) { page ->
-                    when (val route = AppSections.mainRoutes[page]) {
-                        is AppSections.TaskPages -> {
-                            val taskPageState by tvm.state.collectAsStateWithLifecycle()
 
-                            TasksPage(
-                                state = taskPageState,
-                                onAction = tvm::onAction,
-                                onPomodoroClick = { showPomodoro = true },
-                                onNotesClick = { showNotes = true },
-                            )
-                        }
+                    HorizontalPager(
+                        state = pagerState,
+                        modifier =
+                            Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) { page ->
+                        when (val route = AppSections.mainRoutes[page]) {
+                            is AppSections.TaskPages -> {
+                                val taskPageState by tvm.state.collectAsStateWithLifecycle()
 
-                        is AppSections.SettingsPages -> {
-                            val settingsState by svm.state.collectAsStateWithLifecycle()
+                                TasksPage(
+                                    state = taskPageState,
+                                    onAction = tvm::onAction,
+                                    onPomodoroClick = { showPomodoro = true },
+                                    onNotesClick = { showNotes = true },
+                                )
+                            }
 
-                            SettingsGraph(state = settingsState, onAction = svm::onAction)
-                        }
+                            is AppSections.SettingsPages -> {
+                                val settingsState by svm.state.collectAsStateWithLifecycle()
 
-                        is AppSections.HabitPages -> {
-                            val habitsPageState by hvm.state.collectAsStateWithLifecycle()
+                                SettingsGraph(state = settingsState, onAction = svm::onAction)
+                            }
 
-                            HabitsGraph(
-                                state = habitsPageState,
-                                onAction = hvm::onAction,
-                                onPomodoroClick = { pomodoroLinkedHabitId = it },
-                            )
+                            is AppSections.HabitPages -> {
+                                val habitsPageState by hvm.state.collectAsStateWithLifecycle()
+
+                                HabitsGraph(
+                                    state = habitsPageState,
+                                    onAction = hvm::onAction,
+                                    onPomodoroClick = { pomodoroLinkedHabitId = it },
+                                )
+                            }
                         }
                     }
                 }
             }
         }
 
-        else -> {
-            Row(modifier = Modifier.background(MaterialTheme.colorScheme.surface)) {
-                AppNavRail(
-                    currentRoute = AppSections.mainRoutes[pagerState.currentPage],
-                    onNavigate = { route ->
-                        val index = AppSections.mainRoutes.indexOf(route)
-                        if (index != -1) {
-                            coroutineScope.launch { pagerState.animateScrollToPage(index) }
-                        }
-                    },
-                )
-
-                HorizontalPager(
-                    state = pagerState,
-                    modifier =
-                        Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) { page ->
-                    when (val route = AppSections.mainRoutes[page]) {
-                        is AppSections.TaskPages -> {
-                            val taskPageState by tvm.state.collectAsStateWithLifecycle()
-
-                            TasksPage(
-                                state = taskPageState,
-                                onAction = tvm::onAction,
-                                onPomodoroClick = { showPomodoro = true },
-                                onNotesClick = { showNotes = true },
-                            )
-                        }
-
-                        is AppSections.SettingsPages -> {
-                            val settingsState by svm.state.collectAsStateWithLifecycle()
-
-                            SettingsGraph(state = settingsState, onAction = svm::onAction)
-                        }
-
-                        is AppSections.HabitPages -> {
-                            val habitsPageState by hvm.state.collectAsStateWithLifecycle()
-
-                            HabitsGraph(
-                                state = habitsPageState,
-                                onAction = hvm::onAction,
-                                onPomodoroClick = { pomodoroLinkedHabitId = it },
-                            )
-                        }
-                    }
-                }
-            }
+        if (showPomodoro || pomodoroLinkedHabitId != null) {
+            PomodoroPage(
+                linkedHabitId = if (showPomodoro) null else pomodoroLinkedHabitId,
+                autoStart = pomodoroAutoStart,
+                initialShowSettings = pomodoroInitialSettings,
+                initialShowAnalytics = pomodoroInitialHistory,
+                onDismiss = {
+                    showPomodoro = false
+                    pomodoroLinkedHabitId = null
+                    pomodoroAutoStart = false
+                    pomodoroInitialSettings = false
+                    pomodoroInitialHistory = false
+                },
+            )
         }
-    }
 
-    if (showPomodoro || pomodoroLinkedHabitId != null) {
-        PomodoroPage(
-            linkedHabitId = if (showPomodoro) null else pomodoroLinkedHabitId,
-            autoStart = pomodoroAutoStart,
-            initialShowSettings = pomodoroInitialSettings,
-            initialShowAnalytics = pomodoroInitialHistory,
-            onDismiss = {
-                showPomodoro = false
-                pomodoroLinkedHabitId = null
-                pomodoroAutoStart = false
-                pomodoroInitialSettings = false
-                pomodoroInitialHistory = false
-            },
-        )
-    }
-
-    if (showNotes) {
-        NotesPage(
-            initialNoteId = targetNoteId,
-            onDismiss = {
-                showNotes = false
-                targetNoteId = null
-            },
-        )
+        if (showNotes) {
+            NotesPage(
+                initialNoteId = targetNoteId,
+                onDismiss = {
+                    showNotes = false
+                    targetNoteId = null
+                },
+            )
+        }
     }
 }
 

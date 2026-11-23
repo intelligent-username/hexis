@@ -33,7 +33,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -64,6 +67,7 @@ fun LookAndFeelPage(
     onAction: (SettingsAction) -> Unit,
     onNavigateBack: () -> Unit,
 ) {
+    val haptic = LocalHapticFeedback.current
     var colorPickerDialog by remember { mutableStateOf(false) }
 
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
@@ -136,6 +140,9 @@ fun LookAndFeelPage(
                                     checked = appTheme == state.theme.appTheme,
                                     onCheckedChange = {
                                         onAction(SettingsAction.ChangeAppTheme(appTheme))
+                                        if (appTheme != state.theme.appTheme) {
+                                            haptic.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                                        }
                                     },
                                     modifier = Modifier.weight(1f),
                                     colors =
@@ -152,7 +159,14 @@ fun LookAndFeelPage(
 
                     MaterialYouToggle(
                         isMaterialYou = state.theme.isMaterialYou,
-                        onClick = { onAction(SettingsAction.ChangeMaterialYou(it)) },
+                        onClick = {
+                            onAction(SettingsAction.ChangeMaterialYou(it))
+                            if (it != state.theme.isMaterialYou) {
+                                haptic.performHapticFeedback(
+                                    if (it) HapticFeedbackType.ToggleOn else HapticFeedbackType.ToggleOff
+                                )
+                            }
+                        },
                     )
 
                     if (!state.theme.isMaterialYou) {
@@ -167,7 +181,14 @@ fun LookAndFeelPage(
                             trailingContent = {
                                 ExpressiveSwitch(
                                     checked = state.theme.isAmoled,
-                                    onCheckedChange = { onAction(SettingsAction.ChangeAmoled(it)) },
+                                    onCheckedChange = {
+                                        onAction(SettingsAction.ChangeAmoled(it))
+                                        if (it != state.theme.isAmoled) {
+                                            haptic.performHapticFeedback(
+                                                if (it) HapticFeedbackType.ToggleOn else HapticFeedbackType.ToggleOff
+                                            )
+                                        }
+                                    },
                                 )
                             },
                             colors = listItemColors(),
@@ -205,6 +226,9 @@ fun LookAndFeelPage(
                                     checked = state.theme.font == font,
                                     onCheckedChange = {
                                         onAction(SettingsAction.ChangeFontPref(font))
+                                        if (font != state.theme.font) {
+                                            haptic.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                                        }
                                     },
                                     colors =
                                         ToggleButtonDefaults.toggleButtonColors(
@@ -260,7 +284,12 @@ fun LookAndFeelPage(
                             seedColor = Color(state.theme.seedColor),
                             appTheme = state.theme.appTheme,
                             isAmoled = state.theme.isAmoled,
-                            onClick = { onAction(SettingsAction.ChangePaletteStyle(it)) },
+                            onClick = {
+                                onAction(SettingsAction.ChangePaletteStyle(it))
+                                if (it != state.theme.paletteStyle) {
+                                    haptic.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                                }
+                            },
                         )
                     }
                 }
@@ -271,7 +300,12 @@ fun LookAndFeelPage(
     if (colorPickerDialog) {
         ColorPickerDialog(
             initialColor = Color(state.theme.seedColor),
-            onSelect = { onAction(SettingsAction.ChangeSeedColor(it)) },
+            onSelect = {
+                onAction(SettingsAction.ChangeSeedColor(it))
+                if (it.toArgb() != state.theme.seedColor) {
+                    haptic.performHapticFeedback(HapticFeedbackType.Confirm)
+                }
+            },
             onDismiss = { colorPickerDialog = false },
         )
     }

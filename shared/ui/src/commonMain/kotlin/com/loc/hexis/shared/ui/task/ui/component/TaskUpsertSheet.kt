@@ -9,13 +9,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.rememberTextFieldState
@@ -49,8 +47,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.ImeAction
@@ -108,6 +108,7 @@ fun TaskUpsertSheetContent(
     modifier: Modifier = Modifier,
     onImport: ((List<Task>, Long) -> Unit)? = null,
 ) {
+    val hapticFeedback = LocalHapticFeedback.current
     var newTask by remember { mutableStateOf(task) }
     var isImportMode by remember { mutableStateOf(false) }
     var importText by remember { mutableStateOf("") }
@@ -228,6 +229,15 @@ fun TaskUpsertSheetContent(
 
             if (isImportMode) {
                 item {
+                    val keyboardController = LocalSoftwareKeyboardController.current
+                    val focusRequester = remember { FocusRequester() }
+
+                    LaunchedEffect(Unit) {
+                        delay(400.milliseconds)
+                        focusRequester.requestFocus()
+                        keyboardController?.show()
+                    }
+
                     val primaryColor = MaterialTheme.colorScheme.primary
                     val onSurfaceColor = MaterialTheme.colorScheme.onSurface
                     val onSurfaceVariantColor = MaterialTheme.colorScheme.onSurfaceVariant
@@ -253,7 +263,8 @@ fun TaskUpsertSheetContent(
                         visualTransformation = visualTransformation,
                         modifier =
                             Modifier.fillMaxWidth()
-                                .heightIn(min = 160.dp, max = 260.dp),
+                                .heightIn(min = 160.dp, max = 260.dp)
+                                .focusRequester(focusRequester),
                     )
                 }
 
@@ -285,7 +296,12 @@ fun TaskUpsertSheetContent(
                                                 description = item.description,
                                             )
                                         }
-                                    onImport?.invoke(tasksToImport, newTask.categoryId)
+                                    onImport?.let {
+                                        it(tasksToImport, newTask.categoryId)
+                                        hapticFeedback.performHapticFeedback(
+                                            HapticFeedbackType.Confirm
+                                        )
+                                    }
                                     onDismissRequest()
                                 }
                             },
@@ -428,12 +444,17 @@ fun TaskUpsertSheetContent(
 
                             Button(
                                 onClick = {
-                                    onUpsert(
+                                    val candidate =
                                         newTask.copy(
                                             title = textFieldState.text.toString().normalizeTitle(),
                                             description = descFieldState.text.toString(),
                                         )
-                                    )
+                                    onUpsert(candidate)
+                                    if (candidate != task) {
+                                        hapticFeedback.performHapticFeedback(
+                                            HapticFeedbackType.Confirm
+                                        )
+                                    }
                                     onDismissRequest()
                                 },
                                 shapes =

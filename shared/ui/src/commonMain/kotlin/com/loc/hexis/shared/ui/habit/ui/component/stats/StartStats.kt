@@ -207,7 +207,9 @@ fun StartStats(
             ) {
                 val fraction by
                     animateFloatAsState(
-                        targetValue = (currentStreak.toFloat() / bestStreak).coerceIn(0f, 1f),
+                        targetValue =
+                            if (bestStreak == 0) 0f
+                            else (currentStreak.toFloat() / bestStreak).coerceIn(0f, 1f),
                         animationSpec = MaterialTheme.motionScheme.slowSpatialSpec(),
                     )
 

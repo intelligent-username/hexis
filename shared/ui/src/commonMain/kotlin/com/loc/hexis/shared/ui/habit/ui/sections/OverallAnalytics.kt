@@ -135,6 +135,7 @@ fun OverallAnalytics(
                     weeklyPointsHistory = state.overallAnalytics.weeklyPointsHistory,
                     dailyPointsHistory = state.overallAnalytics.dailyPointsHistory,
                     modifier = Modifier.widthIn(max = 400.dp),
+                    firstDayOfWeek = state.startingDay,
                 )
             }
 

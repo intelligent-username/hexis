@@ -93,4 +93,11 @@ class ThemeDatastoreImpl(private val datastore: DataStore<Preferences>) : ThemeD
     override suspend fun setFontPref(font: Fonts) {
         datastore.edit { prefs -> prefs[fontPrefKey] = font.name }
     }
+
+    override fun getHapticPrefFlow(): Flow<Boolean> =
+        datastore.data.map { prefs -> prefs[hapticPrefKey] ?: true }
+
+    override suspend fun setHapticPref(pref: Boolean) {
+        datastore.edit { prefs -> prefs[hapticPrefKey] = pref }
+    }
 }

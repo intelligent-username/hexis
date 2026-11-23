@@ -19,6 +19,8 @@ sealed interface SettingsAction {
 
     data class ChangeIs24Hr(val pref: Boolean) : SettingsAction
 
+    data class ChangeHapticFeedback(val pref: Boolean) : SettingsAction
+
     data class ChangeStartingPage(val page: Sections) : SettingsAction
 
     data class ChangePauseNotifications(val pref: Boolean) : SettingsAction

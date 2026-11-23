@@ -26,7 +26,6 @@ import androidx.compose.material3.ToggleButtonDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -48,11 +47,15 @@ import androidx.compose.ui.unit.dp
 import com.loc.hexis.core.habits.WeeklyTimePeriod
 import com.loc.hexis.core.habits.WeeklyTimePeriod.Companion.toDisplayString
 import com.loc.hexis.core.habits.WeeklyTimePeriod.Companion.toWeeks
-import com.loc.hexis.core.now
+import com.loc.hexis.core.toFormattedString
 import com.loc.hexis.shared.ui.habit.ui.component.AnalyticsCard
 import com.loc.hexis.shared.ui.habit.ui.component.NotEnoughData
 import com.loc.hexis.shared.ui.theme.flexFontRounded
-import hexis.shared.ui.generated.resources.*
+import com.loc.hexis.shared.ui.util.rememberToday
+import hexis.shared.ui.generated.resources.Res
+import hexis.shared.ui.generated.resources.chart_data
+import hexis.shared.ui.generated.resources.chart_point_tooltip
+import hexis.shared.ui.generated.resources.points_trend
 import kotlin.math.abs
 import kotlin.math.ceil
 import kotlin.math.floor
@@ -60,18 +63,18 @@ import kotlin.math.log10
 import kotlin.math.pow
 import kotlin.math.roundToInt
 import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.format
+import kotlinx.datetime.format.MonthNames
 import kotlinx.datetime.isoDayNumber
 import kotlinx.datetime.minus
+import kotlinx.datetime.plus
 import org.jetbrains.compose.resources.stringResource
 
-private fun LocalDate.weekOfYear(): Int {
-    val firstDayOfYear = LocalDate(year, 1, 1)
-    val firstDayOfWeekOffset = firstDayOfYear.dayOfWeek.isoDayNumber - 1
-    return (dayOfYear + firstDayOfWeekOffset - 1) / 7 + 1
-}
-
 private data class NiceScale(val chartMax: Int, val step: Int, val gridCount: Int)
+
+private data class TrendPoint(val date: LocalDate, val points: Int)
 
 private fun calculateNiceScale(rawMax: Int): NiceScale {
     if (rawMax <= 2) return NiceScale(chartMax = 2, step = 1, gridCount = 2)
@@ -110,52 +113,42 @@ fun TrendLineChart(
     weeklyPointsHistory: List<Int>,
     dailyPointsHistory: List<Int> = emptyList(),
     modifier: Modifier = Modifier,
+    firstDayOfWeek: DayOfWeek = DayOfWeek.MONDAY,
 ) {
     var selectedTimePeriod by rememberSaveable { mutableStateOf(WeeklyTimePeriod.DAYS_7) }
+    val historyToday by rememberToday()
+    val isDaily = selectedTimePeriod == WeeklyTimePeriod.DAYS_7
+    val history = if (isDaily) dailyPointsHistory else weeklyPointsHistory
+    val slots = if (isDaily) 7 else selectedTimePeriod.toWeeks()
+    val weekStart =
+        historyToday.minus(
+            (historyToday.dayOfWeek.isoDayNumber - firstDayOfWeek.isoDayNumber + 7) % 7,
+            DateTimeUnit.DAY,
+        )
 
-    val pageCount =
-        remember(selectedTimePeriod, weeklyPointsHistory, dailyPointsHistory) {
-            if (selectedTimePeriod == WeeklyTimePeriod.DAYS_7) {
-                val firstData = dailyPointsHistory.indexOfFirst { it > 0 }
-                val dataDays = if (firstData >= 0) dailyPointsHistory.size - firstData else 0
-                (dataDays + 6) / 7
-            } else {
-                val weeks = selectedTimePeriod.toWeeks()
-                val firstData = weeklyPointsHistory.indexOfFirst { it > 0 }
-                val dataWeeks = if (firstData >= 0) weeklyPointsHistory.size - firstData else 0
-                (dataWeeks + weeks - 1) / weeks
-            }.coerceAtLeast(1)
+    fun pagePoints(page: Int): List<TrendPoint> {
+        val endExclusive = (history.size - page * slots).coerceAtLeast(0)
+        val start = (endExclusive - slots).coerceAtLeast(0)
+        return (start until endExclusive).map { index ->
+            val offset = history.lastIndex - index
+            val date =
+                if (isDaily) historyToday.minus(offset, DateTimeUnit.DAY)
+                else weekStart.minus(offset, DateTimeUnit.WEEK)
+            TrendPoint(date, history[index])
         }
+    }
+
+    val pageCount = ((history.size + slots - 1) / slots).coerceAtLeast(1)
     val pagerState = rememberPagerState(pageCount = { pageCount })
 
     LaunchedEffect(selectedTimePeriod) { pagerState.scrollToPage(0) }
+    LaunchedEffect(pageCount) {
+        if (pagerState.currentPage >= pageCount) pagerState.scrollToPage(pageCount - 1)
+    }
 
-    val pageDataList =
-        remember(
-            pagerState.currentPage,
-            selectedTimePeriod,
-            weeklyPointsHistory,
-            dailyPointsHistory,
-        ) {
-            val page = pagerState.currentPage
-            if (selectedTimePeriod == WeeklyTimePeriod.DAYS_7) {
-                val fullList =
-                    if (dailyPointsHistory.isNotEmpty()) dailyPointsHistory
-                    else listOf(0, 0, 0, 0, 0, 0, 0)
-                val dropCount = page * 7
-                fullList.dropLast(dropCount).takeLast(7).ifEmpty { listOf(0, 0, 0, 0, 0, 0, 0) }
-            } else {
-                val weeks = selectedTimePeriod.toWeeks()
-                val dropCount = page * weeks
-                weeklyPointsHistory.dropLast(dropCount).takeLast(weeks).ifEmpty {
-                    List(weeks) { 0 }
-                }
-            }
-        }
+    val pageDataList = pagePoints(pagerState.currentPage)
 
-    val hasAnyData =
-        if (selectedTimePeriod == WeeklyTimePeriod.DAYS_7) dailyPointsHistory.any { it > 0 }
-        else weeklyPointsHistory.any { it > 0 }
+    val hasAnyData = dailyPointsHistory.isNotEmpty() || weeklyPointsHistory.isNotEmpty()
 
     // Draw-in animation: line traces itself left to right (initial view / period change only)
     val drawProgress = remember(selectedTimePeriod) { Animatable(0f) }
@@ -164,9 +157,18 @@ fun TrendLineChart(
         drawProgress.animateTo(1f, animationSpec = tween(700, easing = FastOutSlowInEasing))
     }
 
-    // Touch scrubbing
-    var touchX by remember { mutableFloatStateOf(-1f) }
-    var selectedIndex by remember { mutableIntStateOf(-1) }
+    val selectedIndexState =
+        remember(
+            pagerState.currentPage,
+            selectedTimePeriod,
+            pageDataList,
+            historyToday,
+            firstDayOfWeek,
+            pagerState.isScrollInProgress,
+        ) {
+            mutableIntStateOf(-1)
+        }
+    var selectedIndex by selectedIndexState
 
     AnalyticsCard(
         title = stringResource(Res.string.points_trend),
@@ -184,7 +186,6 @@ fun TrendLineChart(
                         checked = period == selectedTimePeriod,
                         onCheckedChange = {
                             selectedTimePeriod = period
-                            touchX = -1f
                             selectedIndex = -1
                         },
                         shapes =
@@ -208,32 +209,38 @@ fun TrendLineChart(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Tooltip: shows selected point value with week of year or day of week
+            if (history.isEmpty()) {
+                NotEnoughData()
+                return@AnalyticsCard
+            }
+
             Box(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).height(28.dp),
                 contentAlignment = Alignment.CenterStart,
             ) {
                 val tooltipVal =
-                    if (selectedIndex >= 0 && selectedIndex < pageDataList.size)
-                        pageDataList[selectedIndex]
+                    if (!pagerState.isScrollInProgress) pageDataList.getOrNull(selectedIndex)
                     else null
                 if (tooltipVal != null) {
-                    val today = LocalDate.now()
-                    val page = pagerState.currentPage
-                    val labelText =
-                        if (selectedTimePeriod == WeeklyTimePeriod.DAYS_7) {
-                            val dayOffset = page * 7 + (pageDataList.size - 1 - selectedIndex)
-                            val dayDate = today.minus(dayOffset, DateTimeUnit.DAY)
-                            "$tooltipVal pts · ${dayDate.dayOfWeek.name.take(3)}"
-                        } else {
-                            val currentWeekStart =
-                                today.minus(today.dayOfWeek.isoDayNumber - 1, DateTimeUnit.DAY)
-                            val weekOffset =
-                                page * selectedTimePeriod.toWeeks() +
-                                    (pageDataList.size - 1 - selectedIndex)
-                            val weekDate = currentWeekStart.minus(weekOffset, DateTimeUnit.WEEK)
-                            "$tooltipVal pts · week ${weekDate.weekOfYear()}"
+                    val day = tooltipVal.date.day
+                    val suffix =
+                        if (day % 100 in 11..13) "th"
+                        else when (day % 10) {
+                            1 -> "st"
+                            2 -> "nd"
+                            3 -> "rd"
+                            else -> "th"
                         }
+                    val dateLabel =
+                        tooltipVal.date.format(
+                            LocalDate.Format {
+                                monthName(MonthNames.ENGLISH_FULL)
+                                chars(" $day$suffix ")
+                                year()
+                            }
+                        )
+                    val labelText =
+                        stringResource(Res.string.chart_point_tooltip, tooltipVal.points, dateLabel)
                     Surface(
                         shape = RoundedCornerShape(8.dp),
                         color = MaterialTheme.colorScheme.surfaceContainerHigh,
@@ -277,37 +284,26 @@ fun TrendLineChart(
                 reverseLayout = true,
                 modifier = Modifier.fillMaxWidth().height(210.dp),
             ) { page ->
-                val currentData =
-                    if (selectedTimePeriod == WeeklyTimePeriod.DAYS_7) {
-                        val fullList =
-                            if (dailyPointsHistory.isNotEmpty()) dailyPointsHistory
-                            else listOf(0, 0, 0, 0, 0, 0, 0)
-                        val dropCount = page * 7
-                        fullList.dropLast(dropCount).takeLast(7).ifEmpty {
-                            listOf(0, 0, 0, 0, 0, 0, 0)
-                        }
-                    } else {
-                        val weeks = selectedTimePeriod.toWeeks()
-                        val dropCount = page * weeks
-                        weeklyPointsHistory.dropLast(dropCount).takeLast(weeks).ifEmpty {
-                            List(weeks) { 0 }
-                        }
-                    }
+                val currentPoints = pagePoints(page)
+                val currentData = currentPoints.map { it.points }
                 Canvas(
                     modifier =
                         Modifier.fillMaxWidth()
                             .height(210.dp)
                             .padding(horizontal = 16.dp, vertical = 4.dp)
-                            .pointerInput(currentData) {
+                            .pointerInput(page, selectedTimePeriod, currentPoints, selectedIndexState) {
                                 val padL = 36.dp.toPx()
                                 val padR = 12.dp.toPx()
                                 val gW = (size.width - padL - padR).coerceAtLeast(1f)
                                 val n = currentData.size
                                 detectTapGestures { offset ->
-                                    touchX = offset.x
-                                    if (n > 1) {
-                                        val frac = ((offset.x - padL) / gW).coerceIn(0f, 1f)
-                                        selectedIndex = (frac * (n - 1)).roundToInt().coerceIn(0, n - 1)
+                                    if (page == pagerState.currentPage && !pagerState.isScrollInProgress) {
+                                        selectedIndex =
+                                            if (n == 1) 0
+                                            else if (n > 1) {
+                                                val frac = ((offset.x - padL) / gW).coerceIn(0f, 1f)
+                                                (frac * (n - 1)).roundToInt().coerceIn(0, n - 1)
+                                            } else -1
                                     }
                                 }
                             }
@@ -406,7 +402,10 @@ fun TrendLineChart(
                         // Dots
                         val visibleCount = ((n - 1) * progress).toInt() + 1
                         pts.take(visibleCount).forEachIndexed { i, pt ->
-                            val isSelected = i == selectedIndex
+                            val isSelected =
+                                page == pagerState.currentPage &&
+                                    !pagerState.isScrollInProgress &&
+                                    i == selectedIndex
                             if (isSelected) {
                                 drawLine(
                                     color = lineColor.copy(alpha = 0.25f),
@@ -452,20 +451,19 @@ fun TrendLineChart(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
-                val page = pagerState.currentPage
-                val periodLabel =
-                    if (page == 0) "Current"
-                    else if (selectedTimePeriod == WeeklyTimePeriod.DAYS_7) "${page}w ago"
-                    else "${page * selectedTimePeriod.toWeeks()}w ago"
+                val rangeEnd =
+                    pageDataList.lastOrNull()?.date?.let { date ->
+                        if (isDaily) date
+                        else minOf(historyToday, date.plus(6, DateTimeUnit.DAY))
+                    }
                 Text(
-                    text = periodLabel,
+                    text = pageDataList.firstOrNull()?.date?.toFormattedString().orEmpty(),
                     style =
                         MaterialTheme.typography.labelSmall.copy(fontFamily = flexFontRounded()),
                     color = outlineVariantColor,
                 )
                 Text(
-                    text =
-                        if (page == 0) "Now" else "${page} period${if (page > 1) "s" else ""} ago",
+                    text = rangeEnd?.toFormattedString().orEmpty(),
                     style =
                         MaterialTheme.typography.labelSmall.copy(fontFamily = flexFontRounded()),
                     color = outlineVariantColor,

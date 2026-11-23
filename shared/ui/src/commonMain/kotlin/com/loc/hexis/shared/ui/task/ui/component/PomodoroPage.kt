@@ -52,7 +52,9 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -93,6 +95,7 @@ fun PomodoroPage(
 
     val pomodoroManager: PomodoroManager = koinInject()
     val pomodoroState by pomodoroManager.state.collectAsStateWithLifecycle()
+    val haptic = LocalHapticFeedback.current
 
     val settings = pomodoroState.settings
     val phase = pomodoroState.phase
@@ -144,15 +147,23 @@ fun PomodoroPage(
         if (mins == mins.toInt().toFloat()) mins.toInt().toString() else mins.toString()
 
     fun applyPomodoroSettings() {
+        val currentSettings = pomodoroManager.state.value.settings
         val ns =
             PomodoroSettings(
-                focusMinutes = focusText.toFloatOrNull() ?: settings.focusMinutes,
-                shortBreakMinutes = shortBreakText.toFloatOrNull() ?: settings.shortBreakMinutes,
-                longBreakMinutes = longBreakText.toFloatOrNull() ?: settings.longBreakMinutes,
-                longBreakInterval = intervalText.toIntOrNull() ?: settings.longBreakInterval,
+                focusMinutes = focusText.toFloatOrNull() ?: currentSettings.focusMinutes,
+                shortBreakMinutes = shortBreakText.toFloatOrNull() ?: currentSettings.shortBreakMinutes,
+                longBreakMinutes = longBreakText.toFloatOrNull() ?: currentSettings.longBreakMinutes,
+                longBreakInterval = intervalText.toIntOrNull() ?: currentSettings.longBreakInterval,
             )
         pomodoroManager.applyPomodoroSettings(ns)
+        if (ns != currentSettings) haptic.performHapticFeedback(HapticFeedbackType.Confirm)
         showSettings = false
+    }
+
+    fun pauseSession() {
+        val wasRunning = pomodoroManager.state.value.isRunning
+        pomodoroManager.pauseSession()
+        if (wasRunning) haptic.performHapticFeedback(HapticFeedbackType.ToggleOff)
     }
 
     fun handleDismiss() {
@@ -215,7 +226,7 @@ fun PomodoroPage(
         modifier =
             Modifier.fillMaxSize().background(backgroundColor).pointerInput(isRunning) {
                 if (isRunning) {
-                    detectTapGestures { pomodoroManager.pauseSession() }
+                    detectTapGestures { pauseSession() }
                 }
             }
     ) {
@@ -385,7 +396,21 @@ fun PomodoroPage(
                 ) {
                     // reset
                     FilledTonalIconButton(
-                        onClick = { pomodoroManager.resetTimer() },
+                        onClick = {
+                            val before = pomodoroManager.state.value
+                            val resetSeconds =
+                                (when (before.phase) {
+                                    PomodoroPhase.FOCUS -> before.settings.focusMinutes
+                                    PomodoroPhase.SHORT_BREAK -> before.settings.shortBreakMinutes
+                                    PomodoroPhase.LONG_BREAK -> before.settings.longBreakMinutes
+                                } * 60).toInt()
+                            val changed =
+                                before.isRunning || before.currentSessionId != null ||
+                                    before.secondsRemaining != resetSeconds ||
+                                    before.durationSeconds != resetSeconds
+                            pomodoroManager.resetTimer()
+                            if (changed) haptic.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                        },
                         modifier = Modifier.size(48.dp),
                         colors =
                             IconButtonDefaults.filledTonalIconButtonColors(
@@ -412,10 +437,11 @@ fun PomodoroPage(
                                 interactionSource = remember { MutableInteractionSource() },
                                 indication = null,
                             ) {
-                                if (isRunning) {
-                                    pomodoroManager.pauseSession()
+                                if (pomodoroManager.state.value.isRunning) {
+                                    pauseSession()
                                 } else {
                                     pomodoroManager.startOrResume(currentHabitId)
+                                    haptic.performHapticFeedback(HapticFeedbackType.ToggleOn)
                                 }
                             },
                         contentAlignment = Alignment.Center,
@@ -434,7 +460,11 @@ fun PomodoroPage(
                     // settings / skip
                     if (phase != PomodoroPhase.FOCUS) {
                         FilledTonalIconButton(
-                            onClick = { pomodoroManager.skipBreak() },
+                            onClick = {
+                                val wasBreak = pomodoroManager.state.value.phase != PomodoroPhase.FOCUS
+                                pomodoroManager.skipBreak()
+                                if (wasBreak) haptic.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                            },
                             modifier = Modifier.size(48.dp),
                             colors =
                                 IconButtonDefaults.filledTonalIconButtonColors(

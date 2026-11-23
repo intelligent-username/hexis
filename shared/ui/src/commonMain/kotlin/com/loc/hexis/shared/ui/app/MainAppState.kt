@@ -22,6 +22,7 @@ data class MainAppState(
     val isBiometricLockOn: Boolean? = null,
     val startingSection: Sections = Sections.Tasks,
     val theme: Theme = Theme(),
+    val uiHapticsEnabled: Boolean = true,
     val currentChangelog: VersionEntry? = null,
     val shortcutAction: String? = null,
     val targetNoteId: Long? = null,

@@ -20,6 +20,7 @@ data class SettingsState(
     // datastore
     val theme: Theme = Theme(),
     val is24Hr: Boolean = false,
+    val uiHapticsEnabled: Boolean = true,
     val reorderTasks: Boolean = false,
     val putNewTasksAtTop: Boolean = false,
     val reorderHabits: Boolean = false,

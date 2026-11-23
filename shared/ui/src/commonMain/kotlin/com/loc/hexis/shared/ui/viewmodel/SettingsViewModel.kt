@@ -1,7 +1,6 @@
 
 package com.loc.hexis.shared.ui.viewmodel
 
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -26,6 +25,7 @@ import com.loc.hexis.shared.ui.setting.SettingsAction.ChangeBiometricLock
 import com.loc.hexis.shared.ui.setting.SettingsAction.ChangeDayCutoffEnabled
 import com.loc.hexis.shared.ui.setting.SettingsAction.ChangeDayCutoffHour
 import com.loc.hexis.shared.ui.setting.SettingsAction.ChangeFontPref
+import com.loc.hexis.shared.ui.setting.SettingsAction.ChangeHapticFeedback
 import com.loc.hexis.shared.ui.setting.SettingsAction.ChangeIs24Hr
 import com.loc.hexis.shared.ui.setting.SettingsAction.ChangeLockVaultNotes
 import com.loc.hexis.shared.ui.setting.SettingsAction.ChangeMaterialYou
@@ -88,6 +88,8 @@ class SettingsViewModel(
                 is ChangeAppTheme -> themeDatastore.setAppTheme(action.appTheme)
 
                 is ChangeIs24Hr -> settingsDatastore.setIs24Hr(action.pref)
+
+                is ChangeHapticFeedback -> themeDatastore.setHapticPref(action.pref)
 
                 is ChangeMaterialYou -> themeDatastore.setMaterialYou(action.pref)
 
@@ -256,6 +258,11 @@ class SettingsViewModel(
                 settingsDatastore
                     .getIs24Hr()
                     .onEach { is24Hr: Boolean -> _state.update { it.copy(is24Hr = is24Hr) } }
+                    .launchIn(this)
+
+                themeDatastore
+                    .getHapticPrefFlow()
+                    .onEach { pref -> _state.update { it.copy(uiHapticsEnabled = pref) } }
                     .launchIn(this)
 
                 settingsDatastore

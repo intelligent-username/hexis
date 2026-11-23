@@ -51,6 +51,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -72,10 +74,13 @@ import hexis.shared.ui.generated.resources.check
 import hexis.shared.ui.generated.resources.close
 import hexis.shared.ui.generated.resources.delete
 import hexis.shared.ui.generated.resources.edit
+import hexis.shared.ui.generated.resources.journal_empty_description
+import hexis.shared.ui.generated.resources.journal_empty_title
 import hexis.shared.ui.generated.resources.search
 import kotlin.random.Random
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
+import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.resources.vectorResource
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -91,6 +96,7 @@ fun JournalEditor(
     onSurfaceVariantColor: Color,
     hasEditorCustomColor: Boolean,
 ) {
+    val haptic = LocalHapticFeedback.current
     val journalData = remember(note.payloadJson) { note.parseJournal() }
     val entries =
         remember(journalData) {
@@ -134,6 +140,7 @@ fun JournalEditor(
             )
         entries.add(newEntry)
         save()
+        haptic.performHapticFeedback(HapticFeedbackType.Confirm)
         newEntryText = ""
         selectedMood = null
     }
@@ -329,7 +336,7 @@ fun JournalEditor(
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
-                                text = "📖 No journal entries yet",
+                                text = stringResource(Res.string.journal_empty_title),
                                 style =
                                     MaterialTheme.typography.titleSmall.copy(
                                         fontFamily = flexFontEmphasis()
@@ -338,7 +345,7 @@ fun JournalEditor(
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = "Log your first thought below!",
+                                text = stringResource(Res.string.journal_empty_description),
                                 style =
                                     MaterialTheme.typography.bodySmall.copy(
                                         fontFamily = flexFontRounded()
@@ -436,7 +443,6 @@ fun JournalEditor(
                     }
 
                     itemsIndexed(entriesForDate, key = { _, entry -> entry.id }) { index, entry ->
-                        val isFirst = index == 0
                         val isLast = index == entriesForDate.size - 1
 
                         // Continuous Intrinsic Container Row for seamless connected vertical line

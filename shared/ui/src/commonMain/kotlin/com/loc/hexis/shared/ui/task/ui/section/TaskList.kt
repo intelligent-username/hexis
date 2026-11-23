@@ -71,6 +71,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -108,6 +110,7 @@ fun TaskList(
     onPomodoroClick: () -> Unit,
     onNotesClick: () -> Unit,
 ) = PageFill {
+    val hapticFeedback = LocalHapticFeedback.current
     val windowSizeClass = LocalWindowSizeClass.current
 
     var showTaskAddSheet by remember { mutableStateOf(false) }
@@ -246,7 +249,12 @@ fun TaskList(
                     color = MaterialTheme.colorScheme.inverseOnSurface,
                 )
                 TextButton(
-                    onClick = { onAction(TaskAction.UndoImport) },
+                    onClick = {
+                        onAction(TaskAction.UndoImport)
+                        if ((state.undoImportCount ?: 0) > 0) {
+                            hapticFeedback.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                        }
+                    },
                     shapes =
                         ButtonShapes(
                             shape = MaterialTheme.shapes.small,
@@ -479,6 +487,7 @@ private fun CompactTasksView(
     isCompact: Boolean,
     lazyListState: LazyListState = rememberLazyListState(),
 ) {
+    val hapticFeedback = LocalHapticFeedback.current
     Surface(
         color = MaterialTheme.colorScheme.surfaceContainer,
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
@@ -584,6 +593,10 @@ private fun CompactTasksView(
                                                         task.copy(status = !task.status)
 
                                                     onAction(TaskAction.UpsertTask(updatedTask))
+                                                    hapticFeedback.performHapticFeedback(
+                                                        if (task.status) HapticFeedbackType.ToggleOff
+                                                        else HapticFeedbackType.Confirm
+                                                    )
                                                 }
                                             },
                                             onLongClick = {
@@ -645,6 +658,10 @@ private fun CompactTasksView(
                                                         task.copy(status = !task.status)
 
                                                     onAction(TaskAction.UpsertTask(updatedTask))
+                                                    hapticFeedback.performHapticFeedback(
+                                                        if (task.status) HapticFeedbackType.ToggleOff
+                                                        else HapticFeedbackType.Confirm
+                                                    )
                                                 }
                                             },
                                             onLongClick = {},
@@ -668,6 +685,7 @@ private fun ExpandedTasksView(
     onAction: (TaskAction) -> Unit,
     onEditTask: (Task) -> Unit,
 ) {
+    val hapticFeedback = LocalHapticFeedback.current
     val tasksAndCategories = state.tasks.toList()
 
     LazyVerticalStaggeredGrid(
@@ -756,6 +774,10 @@ private fun ExpandedTasksView(
                                         onClick = {
                                             val updatedTask = task.copy(status = !task.status)
                                             onAction(TaskAction.UpsertTask(updatedTask))
+                                            hapticFeedback.performHapticFeedback(
+                                                if (task.status) HapticFeedbackType.ToggleOff
+                                                else HapticFeedbackType.Confirm
+                                            )
                                         },
                                         onLongClick = { if (!task.status) onEditTask(task) },
                                     ),
@@ -805,6 +827,10 @@ private fun ExpandedTasksView(
                                             onClick = {
                                                 val updatedTask = task.copy(status = !task.status)
                                                 onAction(TaskAction.UpsertTask(updatedTask))
+                                                hapticFeedback.performHapticFeedback(
+                                                    if (task.status) HapticFeedbackType.ToggleOff
+                                                    else HapticFeedbackType.Confirm
+                                                )
                                             },
                                             onLongClick = { if (!task.status) onEditTask(task) },
                                         ),

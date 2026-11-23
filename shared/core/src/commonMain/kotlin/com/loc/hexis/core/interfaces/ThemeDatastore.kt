@@ -32,4 +32,8 @@ interface ThemeDatastore {
     fun getFontPrefFlow(): Flow<Fonts>
 
     suspend fun setFontPref(font: Fonts)
+
+    fun getHapticPrefFlow(): Flow<Boolean>
+
+    suspend fun setHapticPref(pref: Boolean)
 }
